@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import BrowseDirectory from './BrowseDirectory'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
