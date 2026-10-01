@@ -6,7 +6,7 @@ import BrowseDirectory from './BrowseDirectory'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false)
+  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false)
 
   useEffect(()=>{
     const t=setTimeout(()=>{
@@ -551,8 +551,8 @@ export default function App(){
 
             {!searched && (
               <div className="quick-links">
-                <button onClick={()=>setBrowse('companies')}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
-                <button onClick={()=>setBrowse('distributors')}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
+                <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
+                <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
               </div>
             )}
           </div>
@@ -570,7 +570,7 @@ export default function App(){
 
             <div className="category-grid">
               {categories.map(x => (
-                <button className="category-card" key={x}>
+                <button className="category-card" key={x} onClick={()=>{setBrowse('companies');setBrowseCategory(x);setProfile(null);setSearched(false);setShowSuggestions(false)}}>
                   <span>{x}</span>
                   <ArrowRight size={17}/>
                 </button>
@@ -594,14 +594,14 @@ export default function App(){
             </div>
           </a>
           <nav className="header-nav">
-            <button onClick={()=>setBrowse('companies')}>Companies</button>
-            <button onClick={()=>setBrowse('distributors')}>Distributors</button>
+            <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
+            <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
           </nav>
         </div>
       </header>
 
       <main>
-        {profile ? renderProfile() : browse ? <BrowseDirectory type={browse} onBack={()=>setBrowse(null)} onOpenProfile={(type,id)=>{setBrowse(null);openProfile(type,id)}} /> : renderSearch()}
+        {profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
       </main>
 
       <footer>
