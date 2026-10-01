@@ -94,3 +94,5 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 .suggestion-item>svg{color:#8a96a8;flex:none}
 .suggestion-empty{padding:13px;color:#69758a;font-size:12px}
 @media(max-width:600px){.search-suggestions{margin-top:7px}.suggestion-item{padding:11px 10px}}
+
+.profile-summary{display:block;margin-top:5px;color:#69758a;font-size:11px;font-weight:700}.profile-rel-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.profile-rel-action{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border:1px solid #dfe5ed;border-radius:7px;background:#fff;color:#3159a8;text-decoration:none;font-size:10px;font-weight:800}.profile-rel-action:hover{background:#f5f8fd}@media(max-width:600px){.profile-rel-actions{gap:4px}.profile-rel-action{padding:6px 8px}}
