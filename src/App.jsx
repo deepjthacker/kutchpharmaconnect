@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound } from 'lucide-react'
+import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import BrowseDirectory from './BrowseDirectory'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false)
+  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
 
   useEffect(()=>{
     const t=setTimeout(()=>{
@@ -55,6 +55,27 @@ export default function App(){
     })
     setSuggestions(next.slice(0,10))
     setSuggestionLoading(false)
+  }
+
+  async function submitReport(e){
+    e.preventDefault()
+    if(!report.message.trim()) return
+    setReportSubmitting(true);setReportError('')
+    const payload={
+      entity_type: profile?.type || null,
+      entity_id: profile?.entity?.id || null,
+      report_type: report.type,
+      message: report.message.trim(),
+      contact: report.contact.trim() || null
+    }
+    const { error } = await supabase.from('correction_reports').insert(payload)
+    if(error){setReportError(error.message);setReportSubmitting(false);return}
+    setReportSent(true);setReportSubmitting(false)
+  }
+
+  function openReport(){
+    setReport({type:'incorrect_relationship',message:'',contact:''})
+    setReportError('');setReportSent(false);setReportOpen(true)
   }
 
   function chooseSuggestion(item){
@@ -607,6 +628,38 @@ export default function App(){
       <main>
         {profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
       </main>
+
+      <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
+
+      {reportOpen && <div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&setReportOpen(false)}>
+        <div className="report-modal">
+          <button className="report-close" onClick={()=>setReportOpen(false)} aria-label="Close"><X size={18}/></button>
+          {!reportSent ? <>
+            <p className="section-kicker">DIRECTORY FEEDBACK</p>
+            <h2>Report Incorrect Information</h2>
+            <p className="report-help">Help us keep KutchPharmaConnect accurate. Report an outdated relationship, incorrect contact detail, company name, or other directory issue.</p>
+            {profile && <div className="report-target"><strong>{profile.entity?.company_name || profile.entity?.distributor_name}</strong><span>Profile currently open</span></div>}
+            <form onSubmit={submitReport}>
+              <label>What is incorrect?
+                <select value={report.type} onChange={e=>setReport({...report,type:e.target.value})}>
+                  <option value="incorrect_relationship">Company / distributor relationship</option>
+                  <option value="incorrect_contact">Contact details</option>
+                  <option value="incorrect_company_name">Company or distributor name</option>
+                  <option value="other">Other directory information</option>
+                </select>
+              </label>
+              <label>Details <span className="required">*</span>
+                <textarea required value={report.message} onChange={e=>setReport({...report,message:e.target.value})} placeholder="Tell us what should be corrected..." rows="5" />
+              </label>
+              <label>Contact (optional)
+                <input value={report.contact} onChange={e=>setReport({...report,contact:e.target.value})} placeholder="Phone or email" />
+              </label>
+              {reportError && <div className="report-error">{reportError}</div>}
+              <button className="report-submit" disabled={reportSubmitting}>{reportSubmitting ? <><LoaderCircle className="spin" size={16}/> Sending…</> : <><Flag size={16}/> Submit Report</>}</button>
+            </form>
+          </> : <div className="report-success"><CheckCircle2 size={42}/><h2>Report submitted</h2><p>Thank you. Your correction will be reviewed before directory data is changed.</p><button onClick={()=>setReportOpen(false)}>Close</button></div>}
+        </div>
+      </div>}
 
       <footer>
         <div className="container footer-inner">
