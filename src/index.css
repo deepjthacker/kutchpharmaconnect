@@ -50,3 +50,28 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 
 .profile-link-button{border:0;background:transparent;padding:0;margin:0;color:#172033;font:inherit;font-weight:750;text-align:left;cursor:pointer}
 .profile-link-button:hover{color:#3159a8;text-decoration:underline}
+
+.header-inner{justify-content:space-between}
+.header-nav{display:flex;align-items:center;gap:4px}
+.header-nav button{border:0;background:transparent;color:#40506a;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:750;cursor:pointer}
+.header-nav button:hover{background:#eef3ff;color:#173a8f}
+.browse-section{background:#f7f9fc;min-height:calc(100vh - 142px);padding:38px 0 70px}
+.browse-container{max-width:960px}
+.browse-header{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:18px}
+.browse-header h2{margin:0}
+.browse-header p:not(.section-kicker){color:#69758a;font-size:14px;margin:7px 0 0;line-height:1.5}
+.browse-count{color:#5570a4;background:#eef3ff;border:1px solid #dce6ff;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:800;white-space:nowrap}
+.browse-search{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #d5dce7;border-radius:11px;padding:11px 13px;margin-bottom:14px}
+.browse-search svg{color:#718096;flex:none}
+.browse-search input{border:0;outline:0;width:100%;font-size:14px;color:#172033;background:transparent}
+.browse-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.browse-card{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #e0e5ec;background:#fff;border-radius:12px;padding:14px;text-align:left;color:#172033;cursor:pointer}
+.browse-card:hover{border-color:#b9c8e7;box-shadow:0 5px 18px rgba(31,52,88,.05)}
+.browse-card-icon{width:38px;height:38px;border-radius:10px;background:#eef3ff;color:#3159a8;display:grid;place-items:center;flex:none}
+.browse-card-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.browse-card-copy strong{font-size:14px}
+.browse-card-copy span{font-size:11px;color:#3159a8;font-weight:700}
+.browse-card-copy small{font-size:11px;color:#7b8699}
+.browse-card>svg{color:#718096;flex:none}
+.profile-rel-location{display:block;color:#69758a;font-size:11px;font-weight:650;margin-top:5px}
+@media(max-width:700px){.browse-grid{grid-template-columns:1fr}.browse-header{align-items:flex-start}.header-nav{display:none}}
