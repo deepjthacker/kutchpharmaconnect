@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile }) {
   const isCompanies = type === 'companies'
+  const isLocations = type === 'locations'
   const [items, setItems] = useState([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -80,6 +81,33 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
             return { ...x, relationshipCount: info.count, locations: [...info.locations.values()] }
           }))
         }
+      } else if (isLocations) {
+        const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').order('city')
+        if (locationError) { if (!cancelled) { setError(locationError.message); setLoading(false) }; return }
+        const ids = (locations || []).map(x => x.id)
+        const { data: rels, error: relError } = ids.length
+          ? await supabase.from('distributorships').select('location_id,company_id,distributor_id').eq('status','active').in('location_id', ids)
+          : { data: [], error: null }
+        if (relError) { if (!cancelled) { setError(relError.message); setLoading(false) }; return }
+        const companyIds=[...new Set((rels||[]).map(x=>x.company_id).filter(Boolean))]
+        const distributorIds=[...new Set((rels||[]).map(x=>x.distributor_id).filter(Boolean))]
+        const [companies,distributors]=await Promise.all([
+          companyIds.length ? supabase.from('companies').select('id,company_name').in('id',companyIds).eq('status','active') : Promise.resolve({data:[],error:null}),
+          distributorIds.length ? supabase.from('distributors').select('id,distributor_name').in('id',distributorIds).eq('status','active') : Promise.resolve({data:[],error:null})
+        ])
+        if (companies.error || distributors.error) { if (!cancelled) { setError((companies.error||distributors.error).message); setLoading(false) }; return }
+        const cm=new Map((companies.data||[]).map(x=>[x.id,x])), dm=new Map((distributors.data||[]).map(x=>[x.id,x]))
+        const grouped=new Map()
+        ;(rels||[]).forEach(rel=>{
+          const e=grouped.get(rel.location_id)||{companies:new Map(),distributors:new Map()}
+          if(cm.has(rel.company_id)) e.companies.set(rel.company_id,cm.get(rel.company_id))
+          if(dm.has(rel.distributor_id)) e.distributors.set(rel.distributor_id,dm.get(rel.distributor_id))
+          grouped.set(rel.location_id,e)
+        })
+        if(!cancelled) setItems((locations||[]).map(location=>{
+          const e=grouped.get(location.id)||{companies:new Map(),distributors:new Map()}
+          return {...location,companies:[...e.companies.values()],distributors:[...e.distributors.values()]}
+        }).filter(x=>x.companies.length||x.distributors.length))
       } else {
         const { data, error: distributorError } = await supabase
           .from('distributors')
@@ -134,13 +162,13 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
 
     load()
     return () => { cancelled = true }
-  }, [isCompanies, category])
+  }, [isCompanies, isLocations, category])
 
   const term = query.trim().toLowerCase()
   const filtered = items.filter(item => {
-    const name = isCompanies ? item.company_name : item.distributor_name
-    const secondary = isCompanies ? item.short_name : item.contact_person
-    const locationText = isCompanies
+    const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? item.company_name : item.distributor_name
+    const secondary = isLocations ? '' : isCompanies ? item.short_name : item.contact_person
+    const locationText = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies
       ? (item.locations || []).map(x => [x.city, x.district, x.state].filter(Boolean).join(', ')).join(' ')
       : item.location
         ? [item.location.city, item.location.district, item.location.state].filter(Boolean).join(' ')
@@ -164,8 +192,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         <div className="browse-header">
           <div>
             <p className="section-kicker">DIRECTORY</p>
-            <h2>{isCompanies && category ? category : isCompanies ? 'Companies' : 'Distributors'}</h2>
-            <p>{isCompanies
+            <h2>{isLocations ? 'Kutch Locations' : isCompanies && category ? category : isCompanies ? 'Companies' : 'Distributors'}</h2>
+            <p>{isLocations ? 'Browse Kutch locations with active company and distributor relationships.' : isCompanies
               ? (category ? 'Companies listed in this category with current Kutch distributorship relationships.' : 'Browse active companies with current Kutch distributorship relationships.')
               : 'Browse active distributors and the companies they currently handle.'}</p>
           </div>
@@ -177,7 +205,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={isCompanies ? (category ? `Search ${category} companies or locations...` : 'Search companies or locations...') : 'Search distributors or locations...'}
+            placeholder={isLocations ? 'Search locations...' : isCompanies ? (category ? `Search ${category} companies or locations...` : 'Search companies or locations...') : 'Search distributors or locations...'}
             aria-label={isCompanies ? 'Search companies' : 'Search distributors'}
           />
         </div>
@@ -194,35 +222,38 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
               <button
                 className="browse-card"
                 key={item.id}
-                onClick={() => onOpenProfile(isCompanies ? 'company' : 'distributor', item.id)}
+                onClick={() => !isLocations && onOpenProfile(isCompanies ? 'company' : 'distributor', item.id)}
               >
                 <div className="browse-card-icon">
-                  {isCompanies ? <Building2 size={20} /> : <Truck size={20} />}
+                  {isLocations ? <MapPin size={20} /> : isCompanies ? <Building2 size={20} /> : <Truck size={20} />}
                 </div>
                 <div className="browse-card-copy">
-                  <strong>{isCompanies ? item.company_name : item.distributor_name}</strong>
-                  {isCompanies && item.short_name && <span>{item.short_name}</span>}
-                  {isCompanies && item.locations?.length > 0 && (
-                    <div className="browse-card-locations">
-                      {item.locations.map(location => (
-                        <span className="browse-location" key={location.id}>
-                          {formatLocation(location)}
-                        </span>
-                      ))}
-                    </div>
+                  <strong>{isLocations ? item.city : isCompanies ? item.company_name : item.distributor_name}</strong>
+                  {isLocations ? (
+                    <>
+                      <span>{[item.district,item.state,item.pincode].filter(Boolean).join(', ')}</span>
+                      <div className="browse-location-links">
+                        {item.companies.slice(0,4).map(x => <button key={x.id} type="button" onClick={e => {e.stopPropagation();onOpenProfile('company',x.id)}}>{x.company_name}</button>)}
+                      </div>
+                      <small>{item.companies.length} companies • {item.distributors.length} distributors</small>
+                    </>
+                  ) : (
+                    <>
+                      {isCompanies && item.short_name && <span>{item.short_name}</span>}
+                      {isCompanies && item.locations?.length > 0 && <div className="browse-card-locations">{item.locations.map(location => <span className="browse-location" key={location.id}>{formatLocation(location)}</span>)}</div>}
+                      {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
+                      {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
+                      <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
+                    </>
                   )}
-                  {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
-                  {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
-                  <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
                 </div>
                 <ArrowRight size={18} />
-              </button>
-            ))}
+              </button>         ))}
           </div>
         )}
 
         {!loading && !error && filtered.length === 0 && (
-          <div className="result-state">No matching {isCompanies ? 'companies' : 'distributors'} found.</div>
+          <div className="result-state">No matching {isLocations ? 'locations' : isCompanies ? 'companies' : 'distributors'} found.</div>
         )}
       </div>
     </section>
