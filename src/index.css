@@ -75,3 +75,6 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 .browse-card>svg{color:#718096;flex:none}
 .profile-rel-location{display:block;color:#69758a;font-size:11px;font-weight:650;margin-top:5px}
 @media(max-width:700px){.browse-grid{grid-template-columns:1fr}.browse-header{align-items:flex-start}.header-nav{display:none}}
+
+.browse-card-locations{display:flex;flex-direction:column;gap:2px;margin-top:3px}
+.browse-location{font-size:11px!important;color:#69758a!important;font-weight:650!important;line-height:1.35}
