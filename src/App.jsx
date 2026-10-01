@@ -555,6 +555,7 @@ export default function App(){
               <div className="quick-links">
                 <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
                 <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
+                <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}><MapPin size={17}/> Browse Locations <ArrowRight size={15}/></button>
               </div>
             )}
           </div>
@@ -598,6 +599,7 @@ export default function App(){
           <nav className="header-nav">
             <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
             <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
+            <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
           </nav>
         </div>
       </header>
