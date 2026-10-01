@@ -23,4 +23,22 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 .result-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.result-actions a{display:inline-flex;align-items:center;gap:5px;text-decoration:none;border:1px solid #dbe1ea;border-radius:8px;padding:6px 9px;color:#334057;font-size:11px;font-weight:700;background:#fff}.result-actions a:hover{border-color:#b9c8e7}
 .result-state{display:flex;justify-content:center;align-items:center;gap:8px;background:#f7f9fc;border:1px solid #e0e5ec;border-radius:12px;padding:16px;color:#66748a;font-size:13px}.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:760px){.container{width:min(100% - 24px,1120px)}.hero-inner{padding:54px 0 60px}.hero-copy{font-size:15px}.search-box{padding:6px 6px 6px 13px}.search-box button{padding:11px 15px}.category-grid{grid-template-columns:1fr 1fr}.section-heading{display:block}.section-heading>p{margin-top:8px}.footer-inner{padding:15px 0;display:block}.footer-inner span{display:block}.footer-inner span+span{margin-top:5px}}
+
+.result-card{cursor:pointer}
+.result-card:focus-visible{outline:2px solid #3159a8;outline-offset:2px}
+.result-phone{display:flex;align-items:center;gap:5px;margin-top:6px;color:#4d5d76;font-size:12px;font-weight:650}
+.result-phone a{color:inherit;text-decoration:none}.result-phone a:hover{text-decoration:underline}
+.result-open{border:0;background:transparent;color:#40506a;display:grid;place-items:center;padding:5px;border-radius:8px;flex:none}.result-open:hover{background:#eef3ff;color:#173a8f}
+.profile-section{background:#f7f9fc;min-height:calc(100vh - 142px);padding:38px 0 70px}
+.profile-container{max-width:900px}
+.back-button{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:#3159a8;font-weight:750;padding:7px 0;margin-bottom:18px}
+.profile-card{background:#fff;border:1px solid #e0e5ec;border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(31,52,88,.06)}
+.profile-heading{display:flex;align-items:center;gap:14px;padding-bottom:22px;border-bottom:1px solid #e8ecf2}
+.profile-icon{width:48px;height:48px;border-radius:12px;background:#eef3ff;color:#3159a8;display:grid;place-items:center;flex:none}
+.profile-kicker{font-size:10px;font-weight:850;letter-spacing:.13em;color:#5570a4;margin:0 0 5px}.profile-heading h2{font-size:28px}.profile-short{display:block;color:#7b8699;font-size:13px;margin-top:3px}
+.contact-panel{margin-top:20px;padding:16px;background:#f7f9fc;border:1px solid #e4e9f0;border-radius:12px;display:grid;gap:10px}
+.contact-panel>div{display:flex;align-items:flex-start;gap:9px;color:#4e5d73;font-size:13px}.contact-panel svg{color:#3159a8;flex:none;margin-top:1px}.contact-panel a{color:#3159a8;text-decoration:none;font-weight:700}.contact-panel a:hover{text-decoration:underline}.contact-symbol{width:15px;color:#3159a8;font-weight:800;text-align:center}
+.profile-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:5px}.profile-actions a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border:1px solid #cfd8e6;border-radius:8px;padding:8px 11px;color:#263a5d;background:#fff;font-size:12px;font-weight:750}.profile-actions a:hover{border-color:#9fb3d5;background:#fff}
+.profile-list{margin-top:24px}.profile-list-title{font-size:13px;font-weight:800;color:#334057;margin-bottom:9px}.profile-rel{display:flex;justify-content:space-between;align-items:center;gap:18px;border:1px solid #e2e7ee;border-radius:10px;padding:13px 14px;margin-top:8px}.profile-rel strong{display:block;font-size:14px}.profile-rel span{display:block;color:#3159a8;font-size:11px;font-weight:700;margin-top:3px}.profile-rel small{color:#7b8699;font-size:11px;white-space:nowrap}
+@media(max-width:600px){.profile-card{padding:18px}.profile-heading h2{font-size:23px}.profile-rel{display:block}.profile-rel small{display:block;margin-top:7px}.result-open{padding:7px}.result-card{padding:12px}}
 @media(max-width:430px){.category-grid{grid-template-columns:1fr}.search-box button{font-size:0;width:42px}.search-box button:after{content:'→';font-size:18px}.result-actions a{flex:1;justify-content:center}}
