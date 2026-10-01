@@ -28,18 +28,13 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           return
         }
 
-        const locationIds = [...new Set((data || []).map(x => x.city_id).filter(Boolean))]
-        const { data: locations, error: locationError } = locationIds.length
-          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
-          : { data: [], error: null }
-        if (locationError) {
-          if (!cancelled) { setError(locationError.message); setLoading(false) }
-          return
-        }
-        const locationMap = new Map((locations || []).map(x => [x.id, x]))
         const ids = (data || []).map(x => x.id)
         const { data: rels, error: relError } = ids.length
-          ? await supabase.from('distributorships').select('company_id').eq('status', 'active').in('company_id', ids)
+          ? await supabase
+              .from('distributorships')
+              .select('company_id,distributor_id,location_id')
+              .eq('status', 'active')
+              .in('company_id', ids)
           : { data: [], error: null }
 
         if (relError) {
@@ -47,10 +42,33 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           return
         }
 
-        const counts = new Map()
-        ;(rels || []).forEach(x => counts.set(x.company_id, (counts.get(x.company_id) || 0) + 1))
+        const locationIds = [...new Set((rels || []).map(x => x.location_id).filter(Boolean))]
+        const { data: locations, error: locationError } = locationIds.length
+          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
+          : { data: [], error: null }
 
-        if (!cancelled) setItems((data || []).map(x => ({ ...x, location: locationMap.get(x.city_id), relationshipCount: counts.get(x.id) || 0 })))
+        if (locationError) {
+          if (!cancelled) { setError(locationError.message); setLoading(false) }
+          return
+        }
+
+        const locationMap = new Map((locations || []).map(x => [x.id, x]))
+        const relationshipMap = new Map()
+        ;(rels || []).forEach(rel => {
+          const entry = relationshipMap.get(rel.company_id) || { count: 0, locations: new Map() }
+          entry.count += 1
+          if (rel.location_id && locationMap.has(rel.location_id)) {
+            entry.locations.set(rel.location_id, locationMap.get(rel.location_id))
+          }
+          relationshipMap.set(rel.company_id, entry)
+        })
+
+        if (!cancelled) {
+          setItems((data || []).map(x => {
+            const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
+            return { ...x, relationshipCount: info.count, locations: [...info.locations.values()] }
+          }))
+        }
       } else {
         const { data, error: distributorError } = await supabase
           .from('distributors')
@@ -65,7 +83,11 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
 
         const ids = (data || []).map(x => x.id)
         const { data: rels, error: relError } = ids.length
-          ? await supabase.from('distributorships').select('distributor_id').eq('status', 'active').in('distributor_id', ids)
+          ? await supabase
+              .from('distributorships')
+              .select('distributor_id')
+              .eq('status', 'active')
+              .in('distributor_id', ids)
           : { data: [], error: null }
 
         if (relError) {
@@ -73,10 +95,27 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           return
         }
 
+        const locationIds = [...new Set((data || []).map(x => x.city_id).filter(Boolean))]
+        const { data: locations, error: locationError } = locationIds.length
+          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
+          : { data: [], error: null }
+
+        if (locationError) {
+          if (!cancelled) { setError(locationError.message); setLoading(false) }
+          return
+        }
+
+        const locationMap = new Map((locations || []).map(x => [x.id, x]))
         const counts = new Map()
         ;(rels || []).forEach(x => counts.set(x.distributor_id, (counts.get(x.distributor_id) || 0) + 1))
 
-        if (!cancelled) setItems((data || []).map(x => ({ ...x, relationshipCount: counts.get(x.id) || 0 })))
+        if (!cancelled) {
+          setItems((data || []).map(x => ({
+            ...x,
+            location: locationMap.get(x.city_id),
+            relationshipCount: counts.get(x.id) || 0
+          })))
+        }
       }
 
       if (!cancelled) setLoading(false)
@@ -90,8 +129,19 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
   const filtered = items.filter(item => {
     const name = isCompanies ? item.company_name : item.distributor_name
     const secondary = isCompanies ? item.short_name : item.contact_person
-    return !term || name.toLowerCase().includes(term) || (secondary || '').toLowerCase().includes(term)
+    const locationText = isCompanies
+      ? (item.locations || []).map(x => [x.city, x.district, x.state].filter(Boolean).join(', ')).join(' ')
+      : item.location
+        ? [item.location.city, item.location.district, item.location.state].filter(Boolean).join(' ')
+        : ''
+    return !term ||
+      name.toLowerCase().includes(term) ||
+      (secondary || '').toLowerCase().includes(term) ||
+      locationText.toLowerCase().includes(term)
   })
+
+  const formatLocation = location =>
+    [location.city, location.district, location.state].filter(Boolean).join(', ')
 
   return (
     <section className="browse-section">
@@ -116,7 +166,7 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={isCompanies ? 'Search companies...' : 'Search distributors...'}
+            placeholder={isCompanies ? 'Search companies or locations...' : 'Search distributors or locations...'}
             aria-label={isCompanies ? 'Search companies' : 'Search distributors'}
           />
         </div>
@@ -141,7 +191,16 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
                 <div className="browse-card-copy">
                   <strong>{isCompanies ? item.company_name : item.distributor_name}</strong>
                   {isCompanies && item.short_name && <span>{item.short_name}</span>}
-                  {!isCompanies && item.location && <span>{[item.location.city, item.location.district, item.location.state].filter(Boolean).join(', ')}</span>}
+                  {isCompanies && item.locations?.length > 0 && (
+                    <div className="browse-card-locations">
+                      {item.locations.map(location => (
+                        <span className="browse-location" key={location.id}>
+                          {formatLocation(location)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
                   {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
                   <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
                 </div>
