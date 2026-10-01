@@ -6,9 +6,65 @@ import BrowseDirectory from './BrowseDirectory'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null)
+  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false)
 
-  useEffect(()=>{const t=setTimeout(()=>q.trim().length>=2?search(q.trim()):(setResults([]),setSearched(false)),250);return()=>clearTimeout(t)},[q])
+  useEffect(()=>{
+    const t=setTimeout(()=>{
+      const term=q.trim()
+      if(term.length<2){
+        setResults([])
+        setSearched(false)
+        setSuggestions([])
+        setShowSuggestions(false)
+        return
+      }
+      loadSuggestions(term)
+      search(term)
+    },250)
+    return()=>clearTimeout(t)
+  },[q])
+
+  async function loadSuggestions(term){
+    setSuggestionLoading(true)
+    const p='%'+term.replace(/[%_]/g,'')+'%'
+    const [co,di,dv,al]=await Promise.all([
+      supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(5),
+      supabase.from('distributors').select('id,distributor_name,contact_person').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(5),
+      supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(5),
+      supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(8)
+    ])
+    if(co.error||di.error||dv.error||al.error){setSuggestions([]);setSuggestionLoading(false);return}
+
+    const companyAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
+    const distributorAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='distributor').map(x=>x.entity_id))]
+    const [ac,ad]=await Promise.all([
+      companyAliasIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyAliasIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      distributorAliasIds.length?supabase.from('distributors').select('id,distributor_name,contact_person').in('id',distributorAliasIds).eq('status','active'):Promise.resolve({data:[],error:null})
+    ])
+
+    const next=[]
+    const seen=new Set()
+    ;[...(co.data||[]),...(ac.data||[])].forEach(x=>{
+      if(!seen.has('company-'+x.id)){seen.add('company-'+x.id);next.push({type:'company',id:x.id,label:x.company_name,meta:x.short_name||'Company'})}
+    })
+    ;[...(di.data||[]),...(ad.data||[])].forEach(x=>{
+      if(!seen.has('distributor-'+x.id)){seen.add('distributor-'+x.id);next.push({type:'distributor',id:x.id,label:x.distributor_name,meta:x.contact_person?'Distributor • '+x.contact_person:'Distributor'})}
+    })
+    ;(dv.data||[]).forEach(x=>{
+      if(!seen.has('division-'+x.id)){seen.add('division-'+x.id);next.push({type:'division',id:x.id,companyId:x.company_id,label:x.division_name,meta:'Division'})}
+    })
+    setSuggestions(next.slice(0,10))
+    setSuggestionLoading(false)
+  }
+
+  function chooseSuggestion(item){
+    setShowSuggestions(false)
+    if(item.type==='company'||item.type==='distributor'){
+      openProfile(item.type,item.id)
+      return
+    }
+    setQ(item.label)
+  }
 
 
   async function search(term){
@@ -336,7 +392,9 @@ export default function App(){
               <Search size={22}/>
               <input
                 value={q}
-                onChange={e => setQ(e.target.value)}
+                onChange={e => {setQ(e.target.value);setShowSuggestions(true)}}
+                onFocus={()=>q.trim().length>=2&&setShowSuggestions(true)}
+                onKeyDown={e=>{if(e.key==='Escape')setShowSuggestions(false)}}
                 type="search"
                 placeholder="Search company, distributor, division..."
                 aria-label="Search"
@@ -344,8 +402,35 @@ export default function App(){
               <button>Search</button>
             </form>
 
+            {showSuggestions && q.trim().length>=2 && (
+              <div className="search-suggestions">
+                <div className="suggestion-heading">
+                  <span>QUICK RESULTS</span>
+                  {suggestionLoading && <LoaderCircle className="spin" size={13}/>}
+                </div>
+                {!suggestionLoading && suggestions.length>0 ? (
+                  <div className="suggestion-list">
+                    {suggestions.map(item=>(
+                      <button className="suggestion-item" key={item.type+'-'+item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>chooseSuggestion(item)}>
+                        <span className={`suggestion-icon ${item.type==='distributor'?'suggestion-distributor':''}`}>
+                          {item.type==='company'?<Building2 size={15}/>:item.type==='distributor'?<Truck size={15}/>:<ArrowRight size={15}/>}
+                        </span>
+                        <span className="suggestion-copy">
+                          <strong>{item.label}</strong>
+                          <small>{item.meta}</small>
+                        </span>
+                        <ArrowRight size={14}/>
+                      </button>
+                    ))}
+                  </div>
+                ) : !suggestionLoading ? (
+                  <div className="suggestion-empty">No direct matches yet. Press Search to run the full directory search.</div>
+                ) : null}
+              </div>
+            )}
+
             {searched && (
-              <div className="search-results">
+              <div className="search-results" onMouseDown={()=>setShowSuggestions(false)}>
                 {loading && (
                   <div className="result-state">
                     <LoaderCircle className="spin" size={20}/> Searching…
