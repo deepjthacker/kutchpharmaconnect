@@ -150,60 +150,336 @@ export default function App(){
     setProfile(null);setProfileLoading(false)
   }
 
-  return <div className="app">
-    <header className="header"><div className="container header-inner"><a className="brand" href="/"><div className="brand-mark">KP</div><div><div className="brand-name">KutchPharmaConnect</div><div className="brand-tagline">Find Who Handles What in Kutch</div></div></a></div></header>
-    <main>{profile?<section className="profile-section"><div className="container profile-container">
-      <button className="back-button" onClick={closeProfile}><ArrowLeft size={16}/> Back to search</button>
-      {profileLoading?<div className="result-state"><LoaderCircle className="spin" size={20}/> Loading profile…</div>:error?<div className="result-state">{error}</div>:<div className="profile-card">
-        <div className="profile-heading">
-          <div className="profile-icon">{profile.type==='company'?<Building2 size={24}/>:<Truck size={24}/>}</div>
-          <div><p className="profile-kicker">{profile.type==='company'?'COMPANY':'DISTRIBUTOR'}</p><h2>{profile.entity?.company_name||profile.entity?.distributor_name}</h2>{profile.entity?.short_name&&<span className="profile-short">{profile.entity.short_name}</span>}</div>
+  function renderProfile(){
+    return (
+      <section className="profile-section">
+        <div className="container profile-container">
+          <button className="back-button" onClick={closeProfile}>
+            <ArrowLeft size={16}/> Back to search
+          </button>
+
+          {profileLoading && (
+            <div className="result-state">
+              <LoaderCircle className="spin" size={20}/> Loading profile…
+            </div>
+          )}
+
+          {!profileLoading && error && (
+            <div className="result-state">{error}</div>
+          )}
+
+          {!profileLoading && !error && profile && (
+            <div className="profile-card">
+              <div className="profile-heading">
+                <div className="profile-icon">
+                  {profile.type === 'company' ? <Building2 size={24}/> : <Truck size={24}/>}
+                </div>
+                <div>
+                  <p className="profile-kicker">
+                    {profile.type === 'company' ? 'COMPANY' : 'DISTRIBUTOR'}
+                  </p>
+                  <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
+                  {profile.entity?.short_name && (
+                    <span className="profile-short">{profile.entity.short_name}</span>
+                  )}
+                </div>
+              </div>
+
+              {profile.type === 'distributor' && (
+                <div className="contact-panel">
+                  {profile.entity.contact_person && (
+                    <div><UserRound size={15}/><span>{profile.entity.contact_person}</span></div>
+                  )}
+                  {profile.entity.mobile && (
+                    <div>
+                      <Phone size={15}/>
+                      <a href={`tel:${profile.entity.mobile}`}>{profile.entity.mobile}</a>
+                    </div>
+                  )}
+                  {profile.entity.whatsapp && (
+                    <div>
+                      <MessageCircle size={15}/>
+                      <a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">
+                        {profile.entity.whatsapp}
+                      </a>
+                    </div>
+                  )}
+                  {profile.entity.email && (
+                    <div>
+                      <span className="contact-symbol">@</span>
+                      <a href={`mailto:${profile.entity.email}`}>{profile.entity.email}</a>
+                    </div>
+                  )}
+                  {profile.entity.address && (
+                    <div><MapPin size={15}/><span>{profile.entity.address}</span></div>
+                  )}
+
+                  <div className="profile-actions">
+                    {profile.entity.mobile && (
+                      <a href={`tel:${profile.entity.mobile}`}><Phone size={15}/> Call</a>
+                    )}
+                    {profile.entity.whatsapp && (
+                      <a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">
+                        <MessageCircle size={15}/> WhatsApp
+                      </a>
+                    )}
+                    {profile.entity.maps_url && (
+                      <a href={profile.entity.maps_url} target="_blank" rel="noreferrer">
+                        <MapPin size={15}/> Maps
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="profile-list">
+                <div className="profile-list-title">
+                  {profile.type === 'company' ? 'Currently handled by' : 'Currently handles'}
+                </div>
+
+                {profile.relationships.length > 0 ? (
+                  profile.relationships.map(rel => (
+                    <div className="profile-rel" key={rel.id}>
+                      <div>
+                        <strong>
+                          {profile.type === 'company'
+                            ? rel.distributor?.distributor_name
+                            : rel.company?.company_name}
+                        </strong>
+                        {rel.division && <span>{rel.division.division_name}</span>}
+                      </div>
+                      <small>
+                        {rel.territory || 'Kutch'} • {
+                          rel.verification_status === 'verified'
+                            ? '✓ Verified'
+                            : rel.verification_status === 'needs_review'
+                              ? 'Under Review'
+                              : '! Not Verified'
+                        }
+                      </small>
+                    </div>
+                  ))
+                ) : (
+                  <div className="result-state">No active distributorships found.</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-        {profile.type==='distributor'&&<div className="contact-panel">
-          {profile.entity.contact_person&&<div><UserRound size={15}/><span>{profile.entity.contact_person}</span></div>}
-          {profile.entity.mobile&&<div><Phone size={15}/><a href={`tel:${profile.entity.mobile}`}>{profile.entity.mobile}</a></div>}
-          {profile.entity.whatsapp&&<div><MessageCircle size={15}/><a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer">{profile.entity.whatsapp}</a></div>}
-          {profile.entity.email&&<div><span className="contact-symbol">@</span><a href={`mailto:${profile.entity.email}`}>{profile.entity.email}</a></div>}
-          {profile.entity.address&&<div><MapPin size={15}/><span>{profile.entity.address}</span></div>}
-          <div className="profile-actions">
-            {profile.entity.mobile&&<a href={`tel:${profile.entity.mobile}`}><Phone size={15}/> Call</a>}
-            {profile.entity.whatsapp&&<a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> WhatsApp</a>}
-            {profile.entity.maps_url&&<a href={profile.entity.maps_url} target="_blank" rel="noreferrer"><MapPin size={15}/> Maps</a>}
+      </section>
+    )
+  }
+
+  function renderSearch(){
+    return (
+      <>
+        <section className="hero">
+          <div className="container hero-inner">
+            <div className="eyebrow">
+              <ShieldCheck size={16}/> Kutch pharmaceutical directory
+            </div>
+
+            <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
+
+            <p className="hero-copy">
+              Search a company or distributor to find the current Kutch distributorship relationship and contact details.
+            </p>
+
+            <form
+              className="search-box"
+              onSubmit={e => {
+                e.preventDefault()
+                if (q.trim().length >= 2) search(q.trim())
+              }}
+            >
+              <Search size={22}/>
+              <input
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                type="search"
+                placeholder="Search company, distributor, division..."
+                aria-label="Search"
+              />
+              <button>Search</button>
+            </form>
+
+            {searched && (
+              <div className="search-results">
+                {loading && (
+                  <div className="result-state">
+                    <LoaderCircle className="spin" size={20}/> Searching…
+                  </div>
+                )}
+
+                {!loading && error && (
+                  <div className="result-state">{error}</div>
+                )}
+
+                {!loading && !error && results.length > 0 && (
+                  <div className="results-list">
+                    {results.map(r => {
+                      const profileType = r.icon === 'company' ? 'company' : 'distributor'
+                      const profileId = r.icon === 'company'
+                        ? r.rel.company_id
+                        : r.rel.distributor_id
+
+                      return (
+                        <div
+                          className="result-card"
+                          key={r.type + r.rel.id}
+                          onClick={() => openProfile(profileType, profileId)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') openProfile(profileType, profileId)
+                          }}
+                        >
+                          <div className={`result-icon ${r.icon === 'distributor' ? 'distributor-icon' : ''}`}>
+                            {r.icon === 'company' ? <Building2 size={19}/> : <Truck size={19}/>}
+                          </div>
+
+                          <div className="result-copy">
+                            <strong>{r.title}</strong>
+                            {r.subtitle && <span className="result-division">{r.subtitle}</span>}
+                            <span className="result-relation">{r.relation}</span>
+                            <span className="result-target">
+                              {r.target.company_name || r.target.distributor_name}
+                            </span>
+                            <span className="result-meta">
+                              {r.rel.territory || 'Kutch'} • {
+                                r.rel.verification_status === 'verified'
+                                  ? '✓ Verified'
+                                  : r.rel.verification_status === 'needs_review'
+                                    ? 'Under Review'
+                                    : '! Not Verified'
+                              }
+                            </span>
+
+                            {r.target.mobile && (
+                              <div className="result-phone">
+                                <Phone size={13}/>
+                                <a
+                                  href={`tel:${r.target.mobile}`}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  {r.target.mobile}
+                                </a>
+                              </div>
+                            )}
+
+                            <div className="result-actions">
+                              {r.target.mobile && (
+                                <a
+                                  href={`tel:${r.target.mobile}`}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <Phone size={14}/> Call
+                                </a>
+                              )}
+                              {r.target.whatsapp && (
+                                <a
+                                  href={`https://wa.me/${r.target.whatsapp.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <MessageCircle size={14}/> WhatsApp
+                                </a>
+                              )}
+                              {r.target.maps_url && (
+                                <a
+                                  href={r.target.maps_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <MapPin size={14}/> Maps
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            className="result-open"
+                            aria-label="Open profile"
+                            onClick={e => {
+                              e.stopPropagation()
+                              openProfile(profileType, profileId)
+                            }}
+                          >
+                            <ArrowRight size={18}/>
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {!loading && !error && results.length === 0 && (
+                  <div className="result-state">
+                    No current distributor relationship found for this search.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!searched && (
+              <div className="quick-links">
+                <button><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
+                <button><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
+              </div>
+            )}
           </div>
-        </div>}
-        <div className="profile-list">
-          <div className="profile-list-title">{profile.type==='company'?'Currently handled by':'Currently handles'}</div>
-          {profile.relationships.length?profile.relationships.map(rel=><div className="profile-rel" key={rel.id}>
-            <div><strong>{profile.type==='company'?rel.distributor?.distributor_name:rel.company?.company_name}</strong>{rel.division&&<span>{rel.division.division_name}</span>}</div>
-            <small>{rel.territory||'Kutch'} • {rel.verification_status==='verified'?'✓ Verified':rel.verification_status==='needs_review'?'Under Review':'! Not Verified'}</small>
-          </div>):<div className="result-state">No active distributorships found.</div>}
-        </div>
-      </div>}
-    </div></section>:<section className="hero"><div className="container hero-inner">
-      <div className="eyebrow"><ShieldCheck size={16}/> Kutch pharmaceutical directory</div>
-      <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
-      <p className="hero-copy">Search a company or distributor to find the current Kutch distributorship relationship and contact details.</p>
-      <form className="search-box" onSubmit={e=>{e.preventDefault();if(q.trim().length>=2)search(q.trim())}}><Search size={22}/><input value={q} onChange={e=>setQ(e.target.value)} type="search" placeholder="Search company, distributor, division..." aria-label="Search"/><button>Search</button></form>
-      {searched&&<div className="search-results">{loading?<div className="result-state"><LoaderCircle className="spin" size={20}/> Searching…</div>:error?<div className="result-state">{error}</div>:results.length?<div className="results-list">{results.map(r=><div className="result-card" key={r.type+r.rel.id} onClick={()=>openProfile(r.icon==='company'?'company':'distributor',r.icon==='company'?r.rel.company_id:r.rel.distributor_id)} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')openProfile(r.icon==='company'?'company':'distributor',r.icon==='company'?r.rel.company_id:r.rel.distributor_id)}}>
-        <div className={`result-icon ${r.icon==='distributor'?'distributor-icon':''}`}>{r.icon==='company'?<Building2 size={19}/>:<Truck size={19}/>}</div>
-        <div className="result-copy">
-          <strong>{r.title}</strong>
-          {r.subtitle&&<span className="result-division">{r.subtitle}</span>}
-          <span className="result-relation">{r.relation}</span>
-          <span className="result-target">{r.target.company_name||r.target.distributor_name}</span>
-          <span className="result-meta">{r.rel.territory||'Kutch'} • {r.rel.verification_status==='verified'?'✓ Verified':r.rel.verification_status==='needs_review'?'Under Review':'! Not Verified'}</span>
-          {r.target.mobile&&<div className="result-phone"><Phone size={13}/><a href={`tel:${r.target.mobile}`} onClick={e=>e.stopPropagation()}>{r.target.mobile}</a></div>}
-          <div className="result-actions">
-            {r.target.mobile&&<a href={`tel:${r.target.mobile}`} onClick={e=>e.stopPropagation()}><Phone size={14}/> Call</a>}
-            {r.target.whatsapp&&<a href={`https://wa.me/${r.target.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={14}/> WhatsApp</a>}
-            {r.target.maps_url&&<a href={r.target.maps_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/> Maps</a>}
+        </section>
+
+        <section className="directory-section">
+          <div className="container">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">DIRECTORY</p>
+                <h2>Browse by category</h2>
+              </div>
+              <p>Find companies and distributors across Kutch.</p>
+            </div>
+
+            <div className="category-grid">
+              {categories.map(x => (
+                <button className="category-card" key={x}>
+                  <span>{x}</span>
+                  <ArrowRight size={17}/>
+                </button>
+              ))}
+            </div>
           </div>
+        </section>
+      </>
+    )
+  }
+
+  return (
+    <div className="app">
+      <header className="header">
+        <div className="container header-inner">
+          <a className="brand" href="/">
+            <div className="brand-mark">KP</div>
+            <div>
+              <div className="brand-name">KutchPharmaConnect</div>
+              <div className="brand-tagline">Find Who Handles What in Kutch</div>
+            </div>
+          </a>
         </div>
-        <button className="result-open" aria-label="Open profile" onClick={()=>openProfile(r.icon==='company'?'company': 'distributor', r.icon==='company'?r.rel.company_id:r.rel.distributor_id)}><ArrowRight size={18}/></button>
-      </div>)}</div>:<div className="result-state">No current distributor relationship found for this search.</div>}</div>}
-      {!searched&&<div className="quick-links"><button><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button><button><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button></div>}
-    </div></section>
-    <section className="directory-section"><div className="container"><div className="section-heading"><div><p className="section-kicker">DIRECTORY</p><h2>Browse by category</h2></div><p>Find companies and distributors across Kutch.</p></div><div className="category-grid">{categories.map(x=><button className="category-card" key={x}><span>{x}</span><ArrowRight size={17}/></button>)}</div></div></section></>}</main>
-    <footer><div className="container footer-inner"><span>KutchPharmaConnect</span><span>Companies • Distributors • Divisions • Contact Details</span></div></footer>
-  </div>
+      </header>
+
+      <main>
+        {profile ? renderProfile() : renderSearch()}
+      </main>
+
+      <footer>
+        <div className="container footer-inner">
+          <span>KutchPharmaConnect</span>
+          <span>Companies • Distributors • Divisions • Contact Details</span>
+        </div>
+      </footer>
+    </div>
+  )
 }
