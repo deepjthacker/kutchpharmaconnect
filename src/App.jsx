@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle } from 'lucide-react'
+import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState('')
+  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false)
 
   useEffect(()=>{const t=setTimeout(()=>q.trim().length>=2?search(q.trim()):(setResults([]),setSearched(false)),250);return()=>clearTimeout(t)},[q])
 
@@ -106,9 +106,80 @@ export default function App(){
     setLoading(false)
   }
 
+  async function openProfile(type,id){
+    setProfileLoading(true);setError('')
+    if(type==='company'){
+      const [companyRes, relRes]=await Promise.all([
+        supabase.from('companies').select('id,company_name,short_name').eq('id',id).maybeSingle(),
+        supabase.from('distributorships').select('id,distributor_id,division_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
+      ])
+      if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
+      const rels=relRes.data||[]
+      const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
+      const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
+      const [dRes,vRes]=await Promise.all([
+        distributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').in('id',distributorIds):Promise.resolve({data:[],error:null}),
+        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null})
+      ])
+      if(dRes.error||vRes.error){setError((dRes.error||vRes.error).message);setProfileLoading(false);return}
+      const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
+      const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
+      setProfile({type:'company',entity:companyRes.data,relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null})).filter(x=>x.distributor)})
+    }else{
+      const [distRes,relRes]=await Promise.all([
+        supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').eq('id',id).maybeSingle(),
+        supabase.from('distributorships').select('id,company_id,division_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active')
+      ])
+      if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
+      const rels=relRes.data||[]
+      const companyIds=[...new Set(rels.map(x=>x.company_id))]
+      const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
+      const [cRes,vRes]=await Promise.all([
+        companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds):Promise.resolve({data:[],error:null}),
+        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null})
+      ])
+      if(cRes.error||vRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
+      const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
+      const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
+      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null})).filter(x=>x.company)})
+    }
+    setProfileLoading(false)
+  }
+
+  function closeProfile(){
+    setProfile(null);setProfileLoading(false)
+  }
+
   return <div className="app">
     <header className="header"><div className="container header-inner"><a className="brand" href="/"><div className="brand-mark">KP</div><div><div className="brand-name">KutchPharmaConnect</div><div className="brand-tagline">Find Who Handles What in Kutch</div></div></a></div></header>
-    <main><section className="hero"><div className="container hero-inner">
+    <main>{profile?<section className="profile-section"><div className="container profile-container">
+      <button className="back-button" onClick={closeProfile}><ArrowLeft size={16}/> Back to search</button>
+      {profileLoading?<div className="result-state"><LoaderCircle className="spin" size={20}/> Loading profile…</div>:error?<div className="result-state">{error}</div>:<div className="profile-card">
+        <div className="profile-heading">
+          <div className="profile-icon">{profile.type==='company'?<Building2 size={24}/>:<Truck size={24}/>}</div>
+          <div><p className="profile-kicker">{profile.type==='company'?'COMPANY':'DISTRIBUTOR'}</p><h2>{profile.entity?.company_name||profile.entity?.distributor_name}</h2>{profile.entity?.short_name&&<span className="profile-short">{profile.entity.short_name}</span>}</div>
+        </div>
+        {profile.type==='distributor'&&<div className="contact-panel">
+          {profile.entity.contact_person&&<div><UserRound size={15}/><span>{profile.entity.contact_person}</span></div>}
+          {profile.entity.mobile&&<div><Phone size={15}/><a href={`tel:${profile.entity.mobile}`}>{profile.entity.mobile}</a></div>}
+          {profile.entity.whatsapp&&<div><MessageCircle size={15}/><a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer">{profile.entity.whatsapp}</a></div>}
+          {profile.entity.email&&<div><span className="contact-symbol">@</span><a href={`mailto:${profile.entity.email}`}>{profile.entity.email}</a></div>}
+          {profile.entity.address&&<div><MapPin size={15}/><span>{profile.entity.address}</span></div>}
+          <div className="profile-actions">
+            {profile.entity.mobile&&<a href={`tel:${profile.entity.mobile}`}><Phone size={15}/> Call</a>}
+            {profile.entity.whatsapp&&<a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> WhatsApp</a>}
+            {profile.entity.maps_url&&<a href={profile.entity.maps_url} target="_blank" rel="noreferrer"><MapPin size={15}/> Maps</a>}
+          </div>
+        </div>}
+        <div className="profile-list">
+          <div className="profile-list-title">{profile.type==='company'?'Currently handled by':'Currently handles'}</div>
+          {profile.relationships.length?profile.relationships.map(rel=><div className="profile-rel" key={rel.id}>
+            <div><strong>{profile.type==='company'?rel.distributor?.distributor_name:rel.company?.company_name}</strong>{rel.division&&<span>{rel.division.division_name}</span>}</div>
+            <small>{rel.territory||'Kutch'} • {rel.verification_status==='verified'?'✓ Verified':rel.verification_status==='needs_review'?'Under Review':'! Not Verified'}</small>
+          </div>):<div className="result-state">No active distributorships found.</div>}
+        </div>
+      </div>}
+    </div></section>:<section className="hero"><div className="container hero-inner">
       <div className="eyebrow"><ShieldCheck size={16}/> Kutch pharmaceutical directory</div>
       <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
       <p className="hero-copy">Search a company or distributor to find the current Kutch distributorship relationship and contact details.</p>
@@ -121,13 +192,14 @@ export default function App(){
           <span className="result-relation">{r.relation}</span>
           <span className="result-target">{r.target.company_name||r.target.distributor_name}</span>
           <span className="result-meta">{r.rel.territory||'Kutch'} • {r.rel.verification_status==='verified'?'✓ Verified':r.rel.verification_status==='needs_review'?'Under Review':'! Not Verified'}</span>
+          {r.target.mobile&&<div className="result-phone"><Phone size={13}/><a href={`tel:${r.target.mobile}`} onClick={e=>e.stopPropagation()}>{r.target.mobile}</a></div>}
           <div className="result-actions">
-            {r.target.mobile&&<a href={`tel:${r.target.mobile}`}><Phone size={14}/> Call</a>}
-            {r.target.whatsapp&&<a href={`https://wa.me/${r.target.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"><MessageCircle size={14}/> WhatsApp</a>}
-            {r.target.maps_url&&<a href={r.target.maps_url} target="_blank" rel="noreferrer"><MapPin size={14}/> Maps</a>}
+            {r.target.mobile&&<a href={`tel:${r.target.mobile}`} onClick={e=>e.stopPropagation()}><Phone size={14}/> Call</a>}
+            {r.target.whatsapp&&<a href={`https://wa.me/${r.target.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={14}/> WhatsApp</a>}
+            {r.target.maps_url&&<a href={r.target.maps_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/> Maps</a>}
           </div>
         </div>
-        <ArrowRight size={17}/>
+        <button className="result-open" aria-label="Open profile" onClick={()=>openProfile(r.icon==='company'?'company': 'distributor', r.icon==='company'?r.rel.company_id:r.rel.distributor_id)}><ArrowRight size={18}/></button>
       </div>)}</div>:<div className="result-state">No current distributor relationship found for this search.</div>}</div>}
       {!searched&&<div className="quick-links"><button><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button><button><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button></div>}
     </div></section>
