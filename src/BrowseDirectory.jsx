@@ -28,6 +28,15 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           return
         }
 
+        const locationIds = [...new Set((data || []).map(x => x.city_id).filter(Boolean))]
+        const { data: locations, error: locationError } = locationIds.length
+          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
+          : { data: [], error: null }
+        if (locationError) {
+          if (!cancelled) { setError(locationError.message); setLoading(false) }
+          return
+        }
+        const locationMap = new Map((locations || []).map(x => [x.id, x]))
         const ids = (data || []).map(x => x.id)
         const { data: rels, error: relError } = ids.length
           ? await supabase.from('distributorships').select('company_id').eq('status', 'active').in('company_id', ids)
@@ -41,11 +50,11 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
         const counts = new Map()
         ;(rels || []).forEach(x => counts.set(x.company_id, (counts.get(x.company_id) || 0) + 1))
 
-        if (!cancelled) setItems((data || []).map(x => ({ ...x, relationshipCount: counts.get(x.id) || 0 })))
+        if (!cancelled) setItems((data || []).map(x => ({ ...x, location: locationMap.get(x.city_id), relationshipCount: counts.get(x.id) || 0 })))
       } else {
         const { data, error: distributorError } = await supabase
           .from('distributors')
-          .select('id,distributor_name,contact_person,mobile')
+          .select('id,distributor_name,contact_person,mobile,city_id')
           .eq('status', 'active')
           .order('distributor_name')
 
@@ -132,6 +141,7 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
                 <div className="browse-card-copy">
                   <strong>{isCompanies ? item.company_name : item.distributor_name}</strong>
                   {isCompanies && item.short_name && <span>{item.short_name}</span>}
+                  {!isCompanies && item.location && <span>{[item.location.city, item.location.district, item.location.state].filter(Boolean).join(', ')}</span>}
                   {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
                   <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
                 </div>
