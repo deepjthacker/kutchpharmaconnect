@@ -241,11 +241,15 @@ export default function App(){
                   profile.relationships.map(rel => (
                     <div className="profile-rel" key={rel.id}>
                       <div>
-                        <strong>
-                          {profile.type === 'company'
-                            ? rel.distributor?.distributor_name
-                            : rel.company?.company_name}
-                        </strong>
+                        {profile.type === 'company' ? (
+                          <button className="profile-link-button" onClick={() => openProfile('distributor', rel.distributor_id)}>
+                            {rel.distributor?.distributor_name}
+                          </button>
+                        ) : (
+                          <button className="profile-link-button" onClick={() => openProfile('company', rel.company_id)}>
+                            {rel.company?.company_name}
+                          </button>
+                        )}
                         {rel.division && <span>{rel.division.division_name}</span>}
                         {profile.type === 'company' && rel.distributor?.mobile && (
                           <div className="profile-rel-phone">
