@@ -10,49 +10,64 @@ export default function App(){
 
   useEffect(()=>{const t=setTimeout(()=>q.trim().length>=2?search(q.trim()):(setResults([]),setSearched(false)),250);return()=>clearTimeout(t)},[q])
 
+
   async function search(term){
     setLoading(true);setSearched(true);setError('')
-    const p='%'+term.replace(/[%_]/g,'')+'%'
-    const [co,di,dv,al]=await Promise.all([
-      supabase.from('companies').select('id,company_name,short_name').eq('status','active').or(`company_name.ilike.${p},legal_name.ilike.${p},short_name.ilike.${p}`).limit(12),
-      supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active').or(`distributor_name.ilike.${p},legal_name.ilike.${p},contact_person.ilike.${p}`).limit(12),
-      supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or(`division_name.ilike.${p},division_code.ilike.${p}`).limit(12),
-      supabase.from('search_aliases').select('entity_id,alias').eq('entity_type','company').ilike('alias',p).limit(12)
+
+    const cleanTerm=term.trim().replace(/[%_]/g,'')
+    const p='%'+cleanTerm+'%'
+
+    const [co,di,dv,al,loc] = await Promise.all([
+      supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
+      supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(12),
+      supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(12),
+      supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(24),
+      supabase.from('locations').select('id,city,district,state,pincode').or('city.ilike.'+p+',district.ilike.'+p+',state.ilike.'+p+',pincode.ilike.'+p).limit(12)
     ])
-    const err=co.error||di.error||dv.error||al.error
+
+    const err=co.error||di.error||dv.error||al.error||loc.error
     if(err){setError(err.message);setResults([]);setLoading(false);return}
 
-    const aliasIds=[...new Set((al.data||[]).map(x=>x.entity_id))]
-    let aliasCompanies=[]
-    if(aliasIds.length){
-      const r=await supabase.from('companies').select('id,company_name').in('id',aliasIds).eq('status','active')
-      if(r.error){setError(r.error.message);setLoading(false);return}
-      aliasCompanies=r.data||[]
-    }
+    const aliasCompanyIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
+    const aliasDistributorIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='distributor').map(x=>x.entity_id))]
+    const locationIds=(loc.data||[]).map(x=>x.id)
 
-    const companyRows=[...(co.data||[]),...aliasCompanies]
-    const companies=[...new Map(companyRows.map(x=>[x.id,x])).values()]
-    const distributorRows=di.data||[]
+    const [aliasCompaniesRes,aliasDistributorsRes,locationRelsRes] = await Promise.all([
+      aliasCompanyIds.length
+        ? supabase.from('companies').select('id,company_name,short_name').in('id',aliasCompanyIds).eq('status','active')
+        : Promise.resolve({data:[],error:null}),
+      aliasDistributorIds.length
+        ? supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').in('id',aliasDistributorIds).eq('status','active')
+        : Promise.resolve({data:[],error:null}),
+      locationIds.length
+        ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('location_id',locationIds)
+        : Promise.resolve({data:[],error:null})
+    ])
+
+    const aliasError=aliasCompaniesRes.error||aliasDistributorsRes.error||locationRelsRes.error
+    if(aliasError){setError(aliasError.message);setResults([]);setLoading(false);return}
+
+    const companies=[...new Map([...(co.data||[]),...(aliasCompaniesRes.data||[])].map(x=>[x.id,x])).values()]
+    const distributors=[...new Map([...(di.data||[]),...(aliasDistributorsRes.data||[])].map(x=>[x.id,x])).values()]
     const divisionRows=dv.data||[]
 
     const companyIds=[...new Set(companies.map(x=>x.id))]
     const divisionIds=divisionRows.map(x=>x.id)
-    const distributorIds=distributorRows.map(x=>x.id)
-
+    const distributorIds=[...new Set(distributors.map(x=>x.id))]
     const relatedCompanyIds=[...new Set([...companyIds,...divisionRows.map(x=>x.company_id)])]
 
     const relQuery=relatedCompanyIds.length
-      ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id').eq('status','active').in('company_id',relatedCompanyIds)
+      ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('company_id',relatedCompanyIds)
       : Promise.resolve({data:[],error:null})
 
     const distributorRelQuery=distributorIds.length
-      ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id').eq('status','active').in('distributor_id',distributorIds)
+      ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('distributor_id',distributorIds)
       : Promise.resolve({data:[],error:null})
 
     const [rr,dr]=await Promise.all([relQuery,distributorRelQuery])
     if(rr.error||dr.error){setError((rr.error||dr.error).message);setResults([]);setLoading(false);return}
 
-    const relationships=[...new Map([...(rr.data||[]),...(dr.data||[])].map(x=>[x.id,x])).values()]
+    const relationships=[...new Map([...(rr.data||[]),...(dr.data||[]),...(locationRelsRes.data||[])].map(x=>[x.id,x])).values()]
     const allCompanyIds=[...new Set(relationships.map(x=>x.company_id))]
     const allDistributorIds=[...new Set(relationships.map(x=>x.distributor_id))]
     const allDivisionIds=[...new Set(relationships.map(x=>x.division_id).filter(Boolean))]
@@ -72,6 +87,7 @@ export default function App(){
     const searchedCompanyIds=new Set(companyIds)
     const searchedDistributorIds=new Set(distributorIds)
     const searchedDivisionIds=new Set(divisionIds)
+    const searchedLocationIds=new Set(locationIds)
 
     const cards=[]
     const seen=new Set()
@@ -85,17 +101,18 @@ export default function App(){
       const companyMatch=searchedCompanyIds.has(rel.company_id)
       const distributorMatch=searchedDistributorIds.has(rel.distributor_id)
       const divisionMatch=searchedDivisionIds.has(rel.division_id)
+      const locationMatch=searchedLocationIds.has(rel.location_id)
 
-      if(companyMatch||divisionMatch){
-        const key=`company-${rel.id}`
+      if(companyMatch||divisionMatch||locationMatch){
+        const key='company-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
           cards.push({type:'relationship',icon:'company',title:company.company_name,subtitle:division?division.division_name:null,relation:'Currently handled by',target:distributor,rel})
         }
       }
 
-      if(distributorMatch){
-        const key=`distributor-${rel.id}`
+      if(distributorMatch||locationMatch){
+        const key='distributor-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
           cards.push({type:'relationship',icon:'distributor',title:distributor.distributor_name,subtitle:division?division.division_name:null,relation:'Currently handles',target:company,rel})
