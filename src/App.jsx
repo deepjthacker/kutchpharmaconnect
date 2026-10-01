@@ -112,37 +112,43 @@ export default function App(){
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name').eq('id',id).maybeSingle(),
-        supabase.from('distributorships').select('id,distributor_id,division_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
+        supabase.from('distributorships').select('id,distributor_id,division_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
       const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
-      const [dRes,vRes]=await Promise.all([
-        distributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').in('id',distributorIds):Promise.resolve({data:[],error:null}),
-        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null})
+      const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
+      const [dRes,vRes,lRes]=await Promise.all([
+        distributorIds.length?supabase.from('distributors').select('undefined').in('id',distributorIds):Promise.resolve({data:[],error:null}),
+        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
+        locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null})
       ])
-      if(dRes.error||vRes.error){setError((dRes.error||vRes.error).message);setProfileLoading(false);return}
+      if(dRes.error||vRes.error||lRes.error){setError((dRes.error||vRes.error).message);setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'company',entity:companyRes.data,relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null})).filter(x=>x.distributor)})
+      const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
+      setProfile({type:'company',entity:companyRes.data,relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
-        supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').eq('id',id).maybeSingle(),
+        supabase.from('distributors').select('undefined').eq('id',id).maybeSingle(),
         supabase.from('distributorships').select('id,company_id,division_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active')
       ])
       if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
       const companyIds=[...new Set(rels.map(x=>x.company_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
-      const [cRes,vRes]=await Promise.all([
+      const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
+      const [cRes,vRes,lRes]=await Promise.all([
         companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds):Promise.resolve({data:[],error:null}),
-        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null})
+        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
+        locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null})
       ])
-      if(cRes.error||vRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
+      if(cRes.error||vRes.error||lRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null})).filter(x=>x.company)})
+      const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
+      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
     }
     setProfileLoading(false)
   }
@@ -261,7 +267,7 @@ export default function App(){
                       </div>
                       <div className="profile-rel-right">
                         <small>
-                          {rel.territory || 'Kutch'} • {
+                          {rel.location ? [rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ') : (rel.territory || 'Kutch')} • {
                             rel.verification_status === 'verified'
                               ? '✓ Verified'
                               : rel.verification_status === 'needs_review'
