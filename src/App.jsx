@@ -6,7 +6,7 @@ import BrowseDirectory from './BrowseDirectory'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false)
+  const [q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null)
 
   useEffect(()=>{const t=setTimeout(()=>q.trim().length>=2?search(q.trim()):(setResults([]),setSearched(false)),250);return()=>clearTimeout(t)},[q])
 
