@@ -260,7 +260,7 @@ export default function App(){
                   </p>
                   <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
                   {profile.entity?.short_name && (
-                    <span className="profile-short">{profile.entity.short_name}</span>
+                    <span className="profile-short">{profile.entity.short_name}</span><span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
                   )}
                 </div>
               </div>
@@ -348,10 +348,12 @@ export default function App(){
                                 : '! Not Verified'
                           }
                         </small>
-                        {profile.type === 'company' && rel.distributor?.mobile && (
-                          <a className="profile-rel-call" href={`tel:${rel.distributor.mobile}`}>
-                            <Phone size={13}/> Call
-                          </a>
+                        {profile.type === 'company' && (
+                          <div className="profile-rel-actions">
+                            {rel.distributor?.mobile && <a className="profile-rel-action" href={`tel:${rel.distributor.mobile}`}><Phone size={13}/> Call</a>}
+                            {rel.distributor?.whatsapp && <a className="profile-rel-action" href={`https://wa.me/${rel.distributor.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>}
+                            {rel.distributor?.maps_url && <a className="profile-rel-action" href={rel.distributor.maps_url} target="_blank" rel="noreferrer"><MapPin size={13}/> Maps</a>}
+                          </div>
                         )}
                       </div>
                     </div>
