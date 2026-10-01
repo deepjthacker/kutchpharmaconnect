@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
+export default function BrowseDirectory({ type, category, onBack, onOpenProfile }) {
   const isCompanies = type === 'companies'
   const [items, setItems] = useState([])
   const [query, setQuery] = useState('')
@@ -17,6 +17,16 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
       setError('')
 
       if (isCompanies) {
+        let categoryCompanyIds = null
+        if (category) {
+          const { data: categoryRow, error: categoryError } = await supabase.from('categories').select('id,category_name').ilike('category_name', category).eq('status', 'active').maybeSingle()
+          if (categoryError) { if (!cancelled) { setError(categoryError.message); setLoading(false) }; return }
+          if (!categoryRow) { if (!cancelled) { setError('Category not found.'); setLoading(false) }; return }
+          const { data: categoryLinks, error: categoryLinkError } = await supabase.from('company_categories').select('company_id').eq('category_id', categoryRow.id)
+          if (categoryLinkError) { if (!cancelled) { setError(categoryLinkError.message); setLoading(false) }; return }
+          categoryCompanyIds = [...new Set((categoryLinks || []).map(x => x.company_id).filter(Boolean))]
+        }
+
         const { data, error: companyError } = await supabase
           .from('companies')
           .select('id,company_name,short_name')
@@ -28,7 +38,8 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           return
         }
 
-        const ids = (data || []).map(x => x.id)
+        const companyRows = categoryCompanyIds ? (data || []).filter(x => categoryCompanyIds.includes(x.id)) : (data || [])
+        const ids = companyRows.map(x => x.id)
         const { data: rels, error: relError } = ids.length
           ? await supabase
               .from('distributorships')
@@ -64,7 +75,7 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
         })
 
         if (!cancelled) {
-          setItems((data || []).map(x => {
+          setItems(companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
             return { ...x, relationshipCount: info.count, locations: [...info.locations.values()] }
           }))
@@ -123,7 +134,7 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
 
     load()
     return () => { cancelled = true }
-  }, [isCompanies])
+  }, [isCompanies, category])
 
   const term = query.trim().toLowerCase()
   const filtered = items.filter(item => {
@@ -153,9 +164,9 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
         <div className="browse-header">
           <div>
             <p className="section-kicker">DIRECTORY</p>
-            <h2>{isCompanies ? 'Companies' : 'Distributors'}</h2>
+            <h2>{isCompanies && category ? category : isCompanies ? 'Companies' : 'Distributors'}</h2>
             <p>{isCompanies
-              ? 'Browse active companies with current Kutch distributorship relationships.'
+              ? (category ? 'Companies listed in this category with current Kutch distributorship relationships.' : 'Browse active companies with current Kutch distributorship relationships.')
               : 'Browse active distributors and the companies they currently handle.'}</p>
           </div>
           {!loading && !error && <div className="browse-count">{filtered.length} {filtered.length === 1 ? 'record' : 'records'}</div>}
@@ -166,7 +177,7 @@ export default function BrowseDirectory({ type, onBack, onOpenProfile }) {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={isCompanies ? 'Search companies or locations...' : 'Search distributors or locations...'}
+            placeholder={isCompanies ? (category ? `Search ${category} companies or locations...` : 'Search companies or locations...') : 'Search distributors or locations...'}
             aria-label={isCompanies ? 'Search companies' : 'Search distributors'}
           />
         </div>
