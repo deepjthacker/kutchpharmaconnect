@@ -484,6 +484,10 @@ export default function App(){
               <div className="brand-tagline">Find Who Handles What in Kutch</div>
             </div>
           </a>
+          <nav className="header-nav">
+            <button>Companies</button>
+            <button>Distributors</button>
+          </nav>
         </div>
       </header>
 
