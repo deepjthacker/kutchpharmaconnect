@@ -443,8 +443,8 @@ export default function App(){
 
             {!searched && (
               <div className="quick-links">
-                <button><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
-                <button><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
+                <button onClick={()=>setBrowse('companies')}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
+                <button onClick={()=>setBrowse('distributors')}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
               </div>
             )}
           </div>
@@ -486,14 +486,14 @@ export default function App(){
             </div>
           </a>
           <nav className="header-nav">
-            <button>Companies</button>
-            <button>Distributors</button>
+            <button onClick={()=>setBrowse('companies')}>Companies</button>
+            <button onClick={()=>setBrowse('distributors')}>Distributors</button>
           </nav>
         </div>
       </header>
 
       <main>
-        {profile ? renderProfile() : renderSearch()}
+        {profile ? renderProfile() : browse ? <BrowseDirectory type={browse} onBack={()=>setBrowse(null)} onOpenProfile={(type,id)=>{setBrowse(null);openProfile(type,id)}} /> : renderSearch()}
       </main>
 
       <footer>
