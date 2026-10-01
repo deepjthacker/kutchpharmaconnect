@@ -247,16 +247,29 @@ export default function App(){
                             : rel.company?.company_name}
                         </strong>
                         {rel.division && <span>{rel.division.division_name}</span>}
+                        {profile.type === 'company' && rel.distributor?.mobile && (
+                          <div className="profile-rel-phone">
+                            <Phone size={13}/>
+                            <a href={`tel:${rel.distributor.mobile}`}>{rel.distributor.mobile}</a>
+                          </div>
+                        )}
                       </div>
-                      <small>
-                        {rel.territory || 'Kutch'} • {
-                          rel.verification_status === 'verified'
-                            ? '✓ Verified'
-                            : rel.verification_status === 'needs_review'
-                              ? 'Under Review'
-                              : '! Not Verified'
-                        }
-                      </small>
+                      <div className="profile-rel-right">
+                        <small>
+                          {rel.territory || 'Kutch'} • {
+                            rel.verification_status === 'verified'
+                              ? '✓ Verified'
+                              : rel.verification_status === 'needs_review'
+                                ? 'Under Review'
+                                : '! Not Verified'
+                          }
+                        </small>
+                        {profile.type === 'company' && rel.distributor?.mobile && (
+                          <a className="profile-rel-call" href={`tel:${rel.distributor.mobile}`}>
+                            <Phone size={13}/> Call
+                          </a>
+                        )}
+                      </div>
                     </div>
                   ))
                 ) : (
