@@ -184,7 +184,7 @@ export default function App(){
       <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
       <p className="hero-copy">Search a company or distributor to find the current Kutch distributorship relationship and contact details.</p>
       <form className="search-box" onSubmit={e=>{e.preventDefault();if(q.trim().length>=2)search(q.trim())}}><Search size={22}/><input value={q} onChange={e=>setQ(e.target.value)} type="search" placeholder="Search company, distributor, division..." aria-label="Search"/><button>Search</button></form>
-      {searched&&<div className="search-results">{loading?<div className="result-state"><LoaderCircle className="spin" size={20}/> Searching…</div>:error?<div className="result-state">{error}</div>:results.length?<div className="results-list">{results.map(r=><div className="result-card" key={r.type+r.rel.id}>
+      {searched&&<div className="search-results">{loading?<div className="result-state"><LoaderCircle className="spin" size={20}/> Searching…</div>:error?<div className="result-state">{error}</div>:results.length?<div className="results-list">{results.map(r=><div className="result-card" key={r.type+r.rel.id} onClick={()=>openProfile(r.icon==='company'?'company':'distributor',r.icon==='company'?r.rel.company_id:r.rel.distributor_id)} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')openProfile(r.icon==='company'?'company':'distributor',r.icon==='company'?r.rel.company_id:r.rel.distributor_id)}}>
         <div className={`result-icon ${r.icon==='distributor'?'distributor-icon':''}`}>{r.icon==='company'?<Building2 size={19}/>:<Truck size={19}/>}</div>
         <div className="result-copy">
           <strong>{r.title}</strong>
