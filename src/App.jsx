@@ -203,7 +203,7 @@ export default function App(){
       </div>)}</div>:<div className="result-state">No current distributor relationship found for this search.</div>}</div>}
       {!searched&&<div className="quick-links"><button><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button><button><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button></div>}
     </div></section>
-    <section className="directory-section"><div className="container"><div className="section-heading"><div><p className="section-kicker">DIRECTORY</p><h2>Browse by category</h2></div><p>Find companies and distributors across Kutch.</p></div><div className="category-grid">{categories.map(x=><button className="category-card" key={x}><span>{x}</span><ArrowRight size={17}/></button>)}</div></div></section></main>
+    <section className="directory-section"><div className="container"><div className="section-heading"><div><p className="section-kicker">DIRECTORY</p><h2>Browse by category</h2></div><p>Find companies and distributors across Kutch.</p></div><div className="category-grid">{categories.map(x=><button className="category-card" key={x}><span>{x}</span><ArrowRight size={17}/></button>)}</div></div></section></>}</main>
     <footer><div className="container footer-inner"><span>KutchPharmaConnect</span><span>Companies • Distributors • Divisions • Contact Details</span></div></footer>
   </div>
 }
