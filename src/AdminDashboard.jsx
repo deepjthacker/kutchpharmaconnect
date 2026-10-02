@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Building2, Truck, Link2, ShieldCheck, Clock3, Flag, RefreshCw, LoaderCircle, ArrowRight } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import AdminReports from './AdminReports'
+import AdminCompanies from './AdminCompanies'
 
 export default function AdminDashboard(){
   const [stats,setStats]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[view,setView]=useState('dashboard')
@@ -28,7 +29,8 @@ export default function AdminDashboard(){
 
   useEffect(()=>{load()},[])
 
-  if(view==='reports') return <AdminReports />
+  if(view==='companies') return <AdminCompanies onBack={()=>setView('dashboard')} />
+  if(view==='reports') return <AdminReports onBack={()=>setView('dashboard')} />
 
   const cards=[
     ['Companies',stats?.companies,Building2,'active companies'],
@@ -51,6 +53,7 @@ export default function AdminDashboard(){
       <div className="admin-dashboard-grid">
         <section className="admin-panel">
           <p className="section-kicker">QUICK ACTIONS</p><h2>Administration</h2>
+          <button className="admin-link" onClick={()=>setView('companies')}><Building2 size={16}/><span><strong>Companies</strong><small>Manage company identities and active status</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('reports')}><Flag size={16}/><span><strong>Correction Reports</strong><small>Review public-submitted directory corrections</small></span><ArrowRight size={15}/></button>
         </section>
         <section className="admin-panel">
