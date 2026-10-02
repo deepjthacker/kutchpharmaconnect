@@ -582,11 +582,16 @@ export default function App(){
                             </span>
                             <span className="result-meta">{r.rel.territory || 'Kutch'}</span>
                             {r.rel.verification_status === 'verified' && (
-                              <span className="verified-badge verified-badge-small">
+                              <span className="verified-badge verified-badge-small" title="This current distributor-company relationship has been independently verified.">
                                 <ShieldCheck size={12}/> Verified
                               </span>
                             )}
-                            {r.rel.verification_status === 'needs_review' && <span className="result-meta">Under Review</span>}
+                            {r.rel.verification_status === 'needs_review' && <span className="status-badge status-review">Under Review</span>}
+                            {r.rel.verification_status !== 'verified' && r.rel.verification_status !== 'needs_review' && (
+                              <span className="status-badge status-unverified" title="This relationship is listed from supplied directory data but has not been independently confirmed.">
+                                <span className="status-symbol">!</span> Not Verified
+                              </span>
+                            )}
 
                             {r.target.mobile && (
                               <div className="result-phone">
