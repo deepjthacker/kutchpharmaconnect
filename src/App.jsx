@@ -7,7 +7,7 @@ import AdminDashboard from './AdminDashboard'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authPhone,setAuthPhone]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
 
   useEffect(()=>{
     let mounted=true
@@ -18,10 +18,10 @@ export default function App(){
 
   async function signInAdmin(e){
     e.preventDefault();setAuthBusy(true);setAuthError('')
-    const phone=authPhone.trim().replace(/\s+/g,'')
-    const {data,error}=await supabase.auth.signInWithPassword({phone,password:authPassword})
+    const email=authEmail.trim()
+    const {data,error}=await supabase.auth.signInWithPassword({email,password:authPassword})
     if(error){setAuthError(error.message);setAuthBusy(false);return}
-    const {data:adminRow,error:adminError}=await supabase.from('admin_users').select('id').eq('user_id',data.user.id).eq('active',true).maybeSingle()
+    const {data:adminRow,error:adminError}=await supabase.from('admin_users').select('user_id').eq('user_id',data.user.id).eq('active',true).maybeSingle()
     if(adminError||!adminRow){await supabase.auth.signOut();setAuthError('This account is not authorized as a KutchPharmaConnect admin.');setAuthBusy(false);return}
     setAuthOpen(false);setAdmin(true);setAuthBusy(false)
   }
@@ -47,7 +47,7 @@ export default function App(){
     const {error}=await supabase.auth.updateUser({password:newPassword})
     if(error){setResetError(error.message);setAuthBusy(false);return}
     await supabase.auth.signOut()
-    setPasswordResetOpen(false);setNewPassword('');setNewPasswordConfirm('');setAuthPhone('');setAuthPassword('');setAuthError('Password updated. Please sign in with your new password.');setAuthOpen(true);setAuthBusy(false)
+    setPasswordResetOpen(false);setNewPassword('');setNewPasswordConfirm('');setAuthEmail('');setAuthPassword('');setAuthError('Password updated. Please sign in with your new password.');setAuthOpen(true);setAuthBusy(false)
   }
 
 
@@ -711,7 +711,7 @@ export default function App(){
         <button className="report-close" onClick={()=>setAuthOpen(false)} aria-label="Close"><X size={18}/></button>
         <p className="section-kicker">ADMIN ACCESS</p><h2>Admin Login</h2><p className="report-help">Sign in with the authorized KutchPharmaConnect admin account.</p>
         <form onSubmit={signInAdmin}>
-          <label>Mobile number<input required type="tel" value={authPhone} onChange={e=>setAuthPhone(e.target.value)} placeholder="+91 98765 43210" /></label>
+          <label>Email address<input required type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="admin@example.com" /></label>
           <label>Password<input required type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Password" /></label>
           {authError&&<div className="report-error">{authError}</div>}
           <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Signing in…</>:<><ShieldCheck size={16}/> Sign In</>}</button>
