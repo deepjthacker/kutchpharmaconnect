@@ -1,3 +1,4 @@
+import React from 'react'
 import { useEffect,useState } from 'react'
 import { ArrowLeft,Tags,LoaderCircle,Search,Save,X } from 'lucide-react'
 import { supabase } from './lib/supabase'
