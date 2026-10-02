@@ -742,7 +742,8 @@ export default function App(){
           {resetError&&<div className="report-error">{resetError}</div>}
           <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Updating…</>:<><ShieldCheck size={16}/> Update Password</>}</button>
         </form>
-      </div></div>
+      </div></div>}
+
       {admin && session && <button className="admin-signout" onClick={signOutAdmin}>Sign out</button>}
 
       <footer>
