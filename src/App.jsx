@@ -7,7 +7,27 @@ import AdminReports from './AdminReports'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [admin,setAdmin]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+
+  useEffect(()=>{
+    let mounted=true
+    supabase.auth.getSession().then(({data})=>{if(mounted){setSession(data.session);setAuthLoading(false)}})
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthLoading(false)})
+    return()=>{mounted=false;subscription.unsubscribe()}
+  },[])
+
+  async function signInAdmin(e){
+    e.preventDefault();setAuthBusy(true);setAuthError('')
+    const {data,error}=await supabase.auth.signInWithPassword({email:authEmail,password:authPassword})
+    if(error){setAuthError(error.message);setAuthBusy(false);return}
+    const {data:adminRow,error:adminError}=await supabase.from('admin_users').select('id').eq('user_id',data.user.id).eq('active',true).maybeSingle()
+    if(adminError||!adminRow){await supabase.auth.signOut();setAuthError('This account is not authorized as a KutchPharmaConnect admin.');setAuthBusy(false);return}
+    setAuthOpen(false);setAdmin(true);setAuthBusy(false)
+  }
+
+  async function signOutAdmin(){
+    await supabase.auth.signOut();setAdmin(false)
+  }
 
   useEffect(()=>{
     const t=setTimeout(()=>{
@@ -622,13 +642,13 @@ export default function App(){
             <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
             <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
             <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
-            <button onClick={()=>{setAdmin(true);setProfile(null);setBrowse(null)}}>Admin</button>
+            <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}}>{session?'Admin':'Admin Login'}</button>
           </nav>
         </div>
       </header>
 
       <main>
-        {admin ? <AdminReports /> : profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <AdminReports /> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
       </main>
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
@@ -662,6 +682,18 @@ export default function App(){
           </> : <div className="report-success"><CheckCircle2 size={42}/><h2>Report submitted</h2><p>Thank you. Your correction will be reviewed before directory data is changed.</p><button onClick={()=>setReportOpen(false)}>Close</button></div>}
         </div>
       </div>}
+
+      {authOpen && <div className="report-overlay"><div className="report-modal">
+        <button className="report-close" onClick={()=>setAuthOpen(false)} aria-label="Close"><X size={18}/></button>
+        <p className="section-kicker">ADMIN ACCESS</p><h2>Admin Login</h2><p className="report-help">Sign in with the authorized KutchPharmaConnect admin account.</p>
+        <form onSubmit={signInAdmin}>
+          <label>Email<input required type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="Admin email" /></label>
+          <label>Password<input required type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Password" /></label>
+          {authError&&<div className="report-error">{authError}</div>}
+          <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Signing in…</>:<><ShieldCheck size={16}/> Sign In</>}</button>
+        </form>
+      </div></div>}
+      {admin && session && <button className="admin-signout" onClick={signOutAdmin}>Sign out</button>}
 
       <footer>
         <div className="container footer-inner">
