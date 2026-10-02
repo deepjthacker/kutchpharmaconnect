@@ -302,7 +302,7 @@ export default function App(){
                   </p>
                   <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
                   {profile.entity?.short_name && (
-                    <span className="profile-short">{profile.entity.short_name}</span><span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
+                    <><span className="profile-short">{profile.entity.short_name}</span><span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span></>
                   )}
                 </div>
               </div>
