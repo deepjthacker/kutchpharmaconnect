@@ -150,3 +150,21 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 .featured-card>svg{color:#8a96a8;flex:none}
 @media(max-width:900px){.featured-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.hero-inner{padding:48px 0 54px}.hero-glow-one{left:-150px}.hero-glow-two{right:-150px}.featured-section{padding:32px 0 14px}.featured-heading{display:block}.featured-view-all{margin-top:12px}.featured-grid{grid-template-columns:1fr}.featured-card{padding:12px}}
+
+.admin-contact-section{padding:0 0 64px;background:#f7f9fc}
+.admin-contact-card{display:flex;justify-content:space-between;align-items:center;gap:28px;background:linear-gradient(135deg,#eef4ff 0%,#f8fbff 55%,#ffffff 100%);border:1px solid #dbe4f3;border-radius:18px;padding:26px 28px;box-shadow:0 8px 28px rgba(31,52,88,.05)}
+.admin-contact-card h2{max-width:650px}
+.admin-contact-card p:not(.section-kicker){max-width:650px;color:#69758a;font-size:14px;line-height:1.55;margin:8px 0 0}
+.admin-contact-actions{display:flex;gap:8px;flex-wrap:wrap;flex:none}
+.admin-contact-actions a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;border:1px solid #cbd7e8;border-radius:9px;padding:10px 13px;color:#263a5d;background:#fff;font-size:12px;font-weight:800}
+.admin-contact-actions a:hover{border-color:#9fb3d5;background:#f8fbff}
+.site-footer-inner>div:first-child{display:flex;flex-direction:column;gap:5px}
+.site-footer-contact{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.site-footer-contact>span{font-weight:800;color:#59677d}
+.site-footer-contact a{display:inline-flex;align-items:center;gap:4px;color:#3159a8;text-decoration:none;font-weight:750}
+.site-footer-contact a:hover{text-decoration:underline}
+@media(max-width:760px){.admin-contact-card{display:block;padding:22px}.admin-contact-actions{margin-top:16px}.site-footer-contact{margin-top:10px}}
+
+.browse-contact-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.browse-contact-actions a{display:inline-flex;align-items:center;gap:4px;text-decoration:none;border:1px solid #d2dbe8;border-radius:7px;padding:5px 7px;color:#3159a8;background:#fff;font-size:10px;font-weight:800}
+.browse-contact-actions a:hover{border-color:#9fb3d5;background:#f8fbff}
