@@ -39,6 +39,7 @@ function downloadXlsx(rows,name,sheet='DATA'){
 export default function AdminTools({onBack}){
  const [busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('')
  const [preview,setPreview]=useState(null)
+ const [validation,setValidation]=useState(null)
  const fileRef=useRef(null)
 
  async function getRows(name){
@@ -79,6 +80,20 @@ export default function AdminTools({onBack}){
   setBusy('')
  }
 
+ async function validateImport(){
+  if(!preview?.rows?.length)return
+  setBusy('validate');setError('');setMessage('');setValidation(null)
+  try{
+   const [companies,distributors,categories,locations,distributorships]=await Promise.all(['companies','distributors','categories','locations','distributorships'].map(getRows))
+   const results=validateRows(preview.rows,{companies,distributors,categories,locations,distributorships})
+   const blocking=results.filter(x=>x.issues.length).length
+   const warnings=results.filter(x=>x.warnings.length).length
+   setValidation({results,blocking,warnings,checkedAt:new Date().toISOString()})
+   setMessage(blocking?\`Validation complete: \${blocking} row(s) need correction before import.\`:\`Validation complete: \${results.length} row(s) passed, with \${warnings} warning row(s). No database records were changed.\`)
+  }catch(e){setError(e.message)}
+  setBusy('')
+ }
+
  function downloadImportSample(format){
   const stamp='kutchpharmaconnect-distributorship-import-sample'
   if(format==='csv')downloadCsv(sampleRows,stamp+'.csv')
@@ -98,7 +113,40 @@ export default function AdminTools({onBack}){
   }
  }
 
- async function handleImport(e){
+ async function validateRows(rows,db){
+ const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'')
+ const by=(arr,...fields)=>{const m=new Map();arr.forEach(x=>fields.forEach(f=>{const k=norm(x[f]);if(k)m.set(k,x)}));return m}
+ const companies=by(db.companies,'company_name','legal_name','short_name')
+ const distributors=by(db.distributors,'distributor_name','legal_name')
+ const categories=by(db.categories,'category_name','name')
+ const locations=db.locations||[]
+ const results=[]
+ const seen=new Set()
+ rows.forEach((row,i)=>{
+  const issues=[],warnings=[]
+  const company=companies.get(norm(row.company_name))
+  const distributor=distributors.get(norm(row.distributor_name))
+  const category=categories.get(norm(row.category))
+  if(!norm(row.distributor_name))issues.push('Missing distributor_name')
+  else if(!distributor)warnings.push('New distributor')
+  if(!norm(row.company_name))issues.push('Missing company_name')
+  else if(!company)issues.push('Company not found; identity must be reviewed before import')
+  if(!norm(row.category))issues.push('Missing category')
+  else if(!category)issues.push('Category not found')
+  if(row.relationship_status&&!['active','inactive'].includes(norm(row.relationship_status)))issues.push('Invalid relationship_status')
+  if(row.verification_status&&!['unverified','needs_review','verified'].includes(norm(row.verification_status)))issues.push('Invalid verification_status')
+  if(row.verified_date&&!/^\d{4}-\d{2}-\d{2}$/.test(String(row.verified_date)))issues.push('verified_date must be YYYY-MM-DD')
+  const key=[norm(row.distributor_name),norm(row.company_name),norm(row.division_name)].join('|')
+  if(seen.has(key))issues.push('Duplicate row in import file')
+  seen.add(key)
+  const existing=company&&distributor&&db.distributorships.find(d=>d.company_id===company.id&&d.distributor_id===distributor.id&&(!row.division_name||d.division_id))
+  if(existing)warnings.push('Relationship already exists')
+  results.push({rowNumber:i+2,company,distributor,category,issues,warnings,row})
+ })
+ return results
+}
+
+async function handleImport(e){
   const f=e.target.files?.[0];e.target.value=''
   if(!f)return
   setBusy('import');setError('');setMessage('');setPreview(null)
@@ -114,6 +162,7 @@ export default function AdminTools({onBack}){
    const missing=importHeaders.filter(h=>!headers.includes(h))
    const recognized=Object.keys(rows[0]).filter(h=>importHeaders.includes(h))
    setPreview({file:f.name,format:ext,rows,headers,missing,recognized})
+   setValidation(null)
    setMessage(\`Loaded \${rows.length} row(s) from \${f.name}. No database records were changed.\`)
   }catch(e){setError(e.message)}
   setBusy('')
@@ -170,7 +219,7 @@ export default function AdminTools({onBack}){
   {preview&&<section className="admin-panel" style={{marginTop:16}}>
    <div className="admin-inline-actions" style={{justifyContent:'space-between'}}>
     <div><p className="section-kicker">IMPORT PREVIEW</p><h2>{preview.file}</h2></div>
-    <button className="admin-tool-button" onClick={()=>setPreview(null)}><Eye size={16}/> Close preview</button>
+    <div className="admin-inline-actions"><button className="admin-tool-button" onClick={validateImport} disabled={!!busy}><Eye size={16}/>{busy==='validate'?<><LoaderCircle className="spin" size={16}/> Validating…</>:'Validate import'}</button><button className="admin-tool-button" onClick={()=>{setPreview(null);setValidation(null)}}>Close</button></div>
    </div>
    <p className="admin-help">{preview.rows.length} row(s), {preview.recognized.length} recognized standard column(s). {preview.missing.length?\`Missing expected columns: \${preview.missing.join(', ')}.\`:'All standard import columns are present.'}</p>
    <div style={{overflowX:'auto'}}>
@@ -178,6 +227,12 @@ export default function AdminTools({onBack}){
     <tbody>{preview.rows.slice(0,20).map((row,i)=><tr key={i}>{preview.headers.map(h=><td key={h}>{String(row[h]??'')}</td>)}</tr>)}</tbody></table>
    </div>
    {preview.rows.length>20&&<p className="admin-help">Showing first 20 rows only in the preview.</p>}
+   {validation&&<div style={{marginTop:14}}>
+    <p className="admin-help"><strong>{validation.results.length}</strong> rows checked · <strong>{validation.blocking}</strong> blocking · <strong>{validation.warnings}</strong> warnings</p>
+    <div style={{overflowX:'auto'}}><table className="admin-table"><thead><tr><th>Row</th><th>Distributor</th><th>Company</th><th>Result</th><th>Details</th></tr></thead>
+    <tbody>{validation.results.map(x=><tr key={x.rowNumber}><td>{x.rowNumber}</td><td>{x.row.distributor_name||'—'}</td><td>{x.row.company_name||'—'}</td><td>{x.issues.length?'BLOCKED':x.warnings.length?'WARNING':'READY'}</td><td>{[...x.issues,...x.warnings].join(' · ')||'Passed validation'}</td></tr>)}</tbody></table></div>
+    {validation.blocking===0&&<p className="admin-help" style={{marginTop:10}}>All rows passed structural and identity checks. The actual production write step is intentionally separate and requires an explicit import action.</p>}
+   </div>}
   </section>}
  </div>
 }
