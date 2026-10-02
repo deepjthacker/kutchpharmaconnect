@@ -6,6 +6,10 @@ import BrowseDirectory from './BrowseDirectory'
 import AdminDashboard from './AdminDashboard'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
+const ADMIN_PHONE='918980043357'
+const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
+const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect and would like to enquire about your current distributorships.`
+const waLink=(number,message)=>`https://wa.me/${String(number||'').replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
 
 export default function App(){
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
@@ -680,6 +684,20 @@ export default function App(){
           </div>
         </section>
 
+        <section className="admin-contact-section">
+          <div className="container admin-contact-card">
+            <div>
+              <p className="section-kicker">NEED HELP?</p>
+              <h2>Can't find the company or distributor you're looking for?</h2>
+              <p>Contact the KutchPharmaConnect admin team for help with directory information or a missing listing.</p>
+            </div>
+            <div className="admin-contact-actions">
+              <a href={`tel:+${ADMIN_PHONE}`}><Phone size={16}/> Call Admin</a>
+              <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp Admin</a>
+            </div>
+          </div>
+        </section>
+
         <section className="directory-section">
           <div className="container">
             <div className="section-heading">
@@ -732,8 +750,15 @@ export default function App(){
 
       <footer className="site-footer">
         <div className="container site-footer-inner">
-          <span>KutchPharmaConnect — Find Who Handles What in Kutch</span>
-          <span>Directory information may change. Please contact the distributor directly to confirm current distributorship, territory, availability, and contact details.</span>
+          <div>
+            <span>KutchPharmaConnect — Find Who Handles What in Kutch</span>
+            <span>Directory information may change. Please contact the distributor directly to confirm current distributorship, territory, availability, and contact details.</span>
+          </div>
+          <div className="site-footer-contact">
+            <span>Admin Contact</span>
+            <a href={`tel:+${ADMIN_PHONE}`}><Phone size={13}/> +91 89800 43357</a>
+            <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>
+          </div>
         </div>
       </footer>
 
