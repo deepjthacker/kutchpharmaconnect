@@ -642,7 +642,7 @@ export default function App(){
             <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
             <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
             <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
-            <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}}>{session?'Admin':'Admin Login'}</button>
+            <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
           </nav>
         </div>
       </header>
