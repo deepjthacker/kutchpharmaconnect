@@ -16,10 +16,8 @@ const sampleValues=[
  {distributor_name:'Jethalal Odhavji Thacker',company_name:'Zydus Lifesciences',category:'Pharmaceutical',relationship_status:'active',verification_status:'verified',verified_date:'2026-10-01',verification_note:'Sample verified relationship',source:'Sample data'},
  {distributor_name:'Example Distributor',company_name:'Example Company',category:'Surgical',location_city:'Bhuj',relationship_status:'active',verification_status:'needs_review',source:'Sample data'}
 ]
-const sampleRows=Array.from({length:40},(_,i)=>{
- const row=sampleValues[i]||{}
- return Object.fromEntries(importHeaders.map(h=>[h,row[h]??'']))
-})
+const sampleRows=Array.from({length:40},()=>Object.fromEntries(importHeaders.map(h=>[h,''])))
+const sampleExampleRows=sampleValues.map(row=>Object.fromEntries(importHeaders.map(h=>[h,row[h]??''])))
 
 function downloadBlob(blob,name){
  const url=URL.createObjectURL(blob)
@@ -297,6 +295,51 @@ export default function AdminTools({onBack}){
   }
   setBusy('')
  }
+ function downloadImportSample(format){
+  const stamp='kutchpharmaconnect-distributorship-import-sample'
+  if(format==='csv')downloadCsv(sampleRows,stamp+'.csv')
+  else{
+   const wb=XLSX.utils.book_new()
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleRows,{header:importHeaders}),'DISTRIBUTORSHIPS_IMPORT')
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleExampleRows,{header:importHeaders}),'EXAMPLES')
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+    ['IMPORT INSTRUCTIONS'],
+    ['The DISTRIBUTORSHIPS_IMPORT sheet contains 40 blank rows for your real data.'],
+    ['One row = one distributor ↔ company distributorship relationship.'],
+    ['Use verified company/entity names. Unknown companies are blocked and never created automatically.'],
+    ['Leave division blank if unknown or unverified.'],
+    ['relationship_status: active/inactive'],
+    ['verification_status: unverified/needs_review/verified'],
+    ['verified_date: YYYY-MM-DD for verified relationships.'],
+    ['Existing relationships are detected and skipped rather than overwritten.'],
+    ['New distributors require explicit admin confirmation.'],
+    ['The EXAMPLES sheet is illustrative only and must not be imported as real data.']
+   ]),'IMPORT_INSTRUCTIONS')
+   XLSX.writeFile(wb,stamp+'.xlsx')
+  }
+ }
+
+ async function handleImport(e){
+  const f=e.target.files?.[0];e.target.value=''
+  if(!f)return
+  setBusy('import');setError('');setMessage('');setPreview(null)
+  try{
+   const ext=f.name.toLowerCase().endsWith('.csv')?'csv':'xlsx'
+   if(!f.name.toLowerCase().endsWith('.csv')&&!f.name.toLowerCase().endsWith('.xlsx'))throw new Error('Please select a .csv or .xlsx file.')
+   const data=await f.arrayBuffer()
+   const wb=XLSX.read(data,{type:'array'})
+   const first=wb.Sheets[wb.SheetNames[0]]
+   const rows=XLSX.utils.sheet_to_json(first,{defval:''})
+   if(!rows.length)throw new Error('The selected file contains no data rows.')
+   const headers=Object.keys(rows[0])
+   const missing=importHeaders.filter(h=>!headers.includes(h))
+   const recognized=Object.keys(rows[0]).filter(h=>importHeaders.includes(h))
+   setPreview({file:f.name,format:ext,rows,headers,missing,recognized})
+   setMessage(`Loaded ${rows.length} row(s) from ${f.name}. No database records were changed.`)
+  }catch(e){setError(e.message)}
+  setBusy('')
+ }
+
  return <div className="admin-page">
   <div className="admin-head"><div>
    <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button>
