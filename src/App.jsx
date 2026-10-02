@@ -441,11 +441,18 @@ export default function App(){
                           {rel.location ? [rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ') : (rel.territory || 'Kutch')}
                         </small>
                         {rel.verification_status === 'verified' && (
-                          <span className="verified-badge verified-badge-small">
+                          <span className="verified-badge verified-badge-small" title="This current distributor-company relationship has been independently verified.">
                             <ShieldCheck size={12}/> Verified
                           </span>
                         )}
-                        {rel.verification_status === 'needs_review' && <small>Under Review</small>}
+                        {rel.verification_status === 'needs_review' && (
+                          <span className="status-badge status-review">Under Review</span>
+                        )}
+                        {rel.verification_status !== 'verified' && rel.verification_status !== 'needs_review' && (
+                          <span className="status-badge status-unverified" title="This relationship is listed from supplied directory data but has not been independently confirmed.">
+                            <span className="status-symbol">!</span> Not Verified
+                          </span>
+                        )}
                         {profile.type === 'company' && (
                           <div className="profile-rel-actions">
                             {rel.distributor?.mobile && <a className="profile-rel-action" href={`tel:${rel.distributor.mobile}`}><Phone size={13}/> Call</a>}
