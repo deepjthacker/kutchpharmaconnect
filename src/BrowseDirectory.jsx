@@ -48,7 +48,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         const { data: rels, error: relError } = ids.length
           ? await supabase
               .from('distributorships')
-              .select('company_id,distributor_id,location_id')
+              .select('company_id,distributor_id,location_id,verification_status')
               .eq('status', 'active')
               .in('company_id', ids)
           : { data: [], error: null }
@@ -71,8 +71,10 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         const locationMap = new Map((locations || []).map(x => [x.id, x]))
         const relationshipMap = new Map()
         ;(rels || []).forEach(rel => {
-          const entry = relationshipMap.get(rel.company_id) || { count: 0, locations: new Map() }
+          const entry = relationshipMap.get(rel.company_id) || { count: 0, verifiedCount: 0, reviewCount: 0, locations: new Map() }
           entry.count += 1
+          if (rel.verification_status === 'verified') entry.verifiedCount += 1
+          if (rel.verification_status === 'needs_review') entry.reviewCount += 1
           if (rel.location_id && locationMap.has(rel.location_id)) {
             entry.locations.set(rel.location_id, locationMap.get(rel.location_id))
           }
@@ -82,7 +84,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         if (!cancelled) {
           setItems(companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
-            return { ...x, relationshipCount: info.count, locations: [...info.locations.values()] }
+            return { ...x, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()] }
           }).filter(x => x.relationshipCount > 0))
         }
       } else if (isLocations) {
@@ -128,7 +130,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         const { data: rels, error: relError } = ids.length
           ? await supabase
               .from('distributorships')
-              .select('distributor_id')
+              .select('distributor_id,verification_status')
               .eq('status', 'active')
               .in('distributor_id', ids)
           : { data: [], error: null }
@@ -150,13 +152,21 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
 
         const locationMap = new Map((locations || []).map(x => [x.id, x]))
         const counts = new Map()
-        ;(rels || []).forEach(x => counts.set(x.distributor_id, (counts.get(x.distributor_id) || 0) + 1))
+        ;(rels || []).forEach(x => {
+          const entry = counts.get(x.distributor_id) || { count: 0, verifiedCount: 0, reviewCount: 0 }
+          entry.count += 1
+          if (x.verification_status === 'verified') entry.verifiedCount += 1
+          if (x.verification_status === 'needs_review') entry.reviewCount += 1
+          counts.set(x.distributor_id, entry)
+        })
 
         if (!cancelled) {
           setItems((data || []).map(x => ({
             ...x,
             location: locationMap.get(x.city_id),
-            relationshipCount: counts.get(x.id) || 0
+            relationshipCount: counts.get(x.id)?.count || 0,
+            verifiedCount: counts.get(x.id)?.verifiedCount || 0,
+            reviewCount: counts.get(x.id)?.reviewCount || 0
           })))
         }
       }
@@ -256,6 +266,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
                       {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
                       {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
                       <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
+                      {item.verifiedCount > 0 && <span className="verified-badge verified-badge-small" title="At least one current Kutch distributorship relationship has been independently verified.">✓ Verified</span>}
+                      {item.verifiedCount === 0 && item.reviewCount > 0 && <span className="status-badge status-review">Under Review</span>}
+                      {item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Current relationships are listed from supplied directory data but have not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
                           {item.mobile && <a href={`tel:${item.mobile}`} onClick={e=>e.stopPropagation()}><Phone size={13}/> Call</a>}
