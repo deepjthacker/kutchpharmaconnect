@@ -4,6 +4,7 @@ import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin
 import { supabase } from './lib/supabase'
 import BrowseDirectory from './BrowseDirectory'
 import AdminDashboard from './AdminDashboard'
+import DistributorSubmission from './DistributorSubmission'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE='918980043357'
@@ -760,6 +761,8 @@ export default function App(){
       <main>
         {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <AdminDashboard /> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
       </main>
+
+      <DistributorSubmission />
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
 
