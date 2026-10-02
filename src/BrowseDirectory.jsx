@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile }) {
@@ -79,7 +79,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
           setItems(companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
             return { ...x, relationshipCount: info.count, locations: [...info.locations.values()] }
-          }))
+          }).filter(x => x.relationshipCount > 0))
         }
       } else if (isLocations) {
         const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').order('city')
