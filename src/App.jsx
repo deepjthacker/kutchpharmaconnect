@@ -8,7 +8,7 @@ import AdminDashboard from './AdminDashboard'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
 
   useEffect(()=>{
     let mounted=true
@@ -461,8 +461,8 @@ export default function App(){
   function renderSearch(){
     return (
       <>
-        <section className="hero">
-          <div className="container hero-inner">
+        <section className="hero">\n          <div className="hero-glow hero-glow-one"></div>\n          <div className="hero-glow hero-glow-two"></div>
+          <div className="container hero-inner hero-content">
             <div className="eyebrow">
               <ShieldCheck size={16}/> Kutch pharmaceutical directory
             </div>
@@ -650,7 +650,7 @@ export default function App(){
           </div>
         </section>
 
-        <section className="directory-section">
+        <section className="featured-section">\n          <div className="container">\n            <div className="featured-heading">\n              <div>\n                <p className="section-kicker">KUTCH DISTRIBUTORS</p>\n                <h2>Distributors currently in the directory</h2>\n                <p>Browse the distributor names currently connected to active Kutch distributorship records.</p>\n              </div>\n              <button className="featured-view-all" onClick={()=>{setBrowse('distributors');setBrowseCategory(null);setProfile(null);setSearched(false)}}>View all <ArrowRight size={15}/></button>\n            </div>\n            {homeDistributors.length>0 && (\n              <div className="featured-grid">\n                {homeDistributors.map(d=>(\n                  <button className="featured-card" key={d.id} onClick={()=>openProfile('distributor',d.id)}>\n                    <span className="featured-icon"><Truck size={18}/></span>\n                    <span className="featured-copy">\n                      <strong>{d.distributor_name}</strong>\n                      {d.contact_person && <small>{d.contact_person}</small>}\n                      <span>{d.relationshipCount} active {d.relationshipCount===1?'distributorship':'distributorships'}</span>\n                    </span>\n                    <ArrowRight size={16}/>\n                  </button>\n                ))}\n              </div>\n            )}\n          </div>\n        </section>\n\n        <section className="directory-section">
           <div className="container">
             <div className="section-heading">
               <div>
