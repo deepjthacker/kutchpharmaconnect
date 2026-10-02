@@ -85,9 +85,8 @@ export default function App(){
     const payload={
       entity_type: profile?.type || null,
       entity_id: profile?.entity?.id || null,
-      report_type: report.type,
-      message: report.message.trim(),
-      contact: report.contact.trim() || null
+      issue_type: report.type,
+      description: report.message.trim()
     }
     const { error } = await supabase.from('correction_reports').insert(payload)
     if(error){setReportError(error.message);setReportSubmitting(false);return}
@@ -302,7 +301,10 @@ export default function App(){
                   </p>
                   <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
                   {profile.entity?.short_name && (
-                    <><span className="profile-short">{profile.entity.short_name}</span><span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span></>
+                    <>
+                      <span className="profile-short">{profile.entity.short_name}</span>
+                      <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
+                    </>
                   )}
                 </div>
               </div>
