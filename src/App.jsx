@@ -461,7 +461,9 @@ export default function App(){
   function renderSearch(){
     return (
       <>
-        <section className="hero">\n          <div className="hero-glow hero-glow-one"></div>\n          <div className="hero-glow hero-glow-two"></div>
+        <section className="hero">
+          <div className="hero-glow hero-glow-one"></div>
+          <div className="hero-glow hero-glow-two"></div>
           <div className="container hero-inner hero-content">
             <div className="eyebrow">
               <ShieldCheck size={16}/> Kutch pharmaceutical directory
@@ -650,7 +652,35 @@ export default function App(){
           </div>
         </section>
 
-        <section className="featured-section">\n          <div className="container">\n            <div className="featured-heading">\n              <div>\n                <p className="section-kicker">KUTCH DISTRIBUTORS</p>\n                <h2>Distributors currently in the directory</h2>\n                <p>Browse the distributor names currently connected to active Kutch distributorship records.</p>\n              </div>\n              <button className="featured-view-all" onClick={()=>{setBrowse('distributors');setBrowseCategory(null);setProfile(null);setSearched(false)}}>View all <ArrowRight size={15}/></button>\n            </div>\n            {homeDistributors.length>0 && (\n              <div className="featured-grid">\n                {homeDistributors.map(d=>(\n                  <button className="featured-card" key={d.id} onClick={()=>openProfile('distributor',d.id)}>\n                    <span className="featured-icon"><Truck size={18}/></span>\n                    <span className="featured-copy">\n                      <strong>{d.distributor_name}</strong>\n                      {d.contact_person && <small>{d.contact_person}</small>}\n                      <span>{d.relationshipCount} active {d.relationshipCount===1?'distributorship':'distributorships'}</span>\n                    </span>\n                    <ArrowRight size={16}/>\n                  </button>\n                ))}\n              </div>\n            )}\n          </div>\n        </section>\n\n        <section className="directory-section">
+        <section className="featured-section">
+          <div className="container">
+            <div className="featured-heading">
+              <div>
+                <p className="section-kicker">KUTCH DISTRIBUTORS</p>
+                <h2>Distributors currently in the directory</h2>
+                <p>Browse the distributor names currently connected to active Kutch distributorship records.</p>
+              </div>
+              <button className="featured-view-all" onClick={()=>{setBrowse('distributors');setBrowseCategory(null);setProfile(null);setSearched(false)}}>View all <ArrowRight size={15}/></button>
+            </div>
+            {homeDistributors.length>0 && (
+              <div className="featured-grid">
+                {homeDistributors.map(d=>(
+                  <button className="featured-card" key={d.id} onClick={()=>openProfile('distributor',d.id)}>
+                    <span className="featured-icon"><Truck size={18}/></span>
+                    <span className="featured-copy">
+                      <strong>{d.distributor_name}</strong>
+                      {d.contact_person && <small>{d.contact_person}</small>}
+                      <span>{d.relationshipCount} active {d.relationshipCount===1?'distributorship':'distributorships'}</span>
+                    </span>
+                    <ArrowRight size={16}/>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="directory-section">
           <div className="container">
             <div className="section-heading">
               <div>
