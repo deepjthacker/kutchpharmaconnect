@@ -742,12 +742,8 @@ export default function App(){
     <div className="app">
       <header className="header">
         <div className="container header-inner">
-          <a className="brand" href="/">
-            <div className="brand-mark">KP</div>
-            <div>
-              <div className="brand-name">KutchPharmaConnect</div>
-              <div className="brand-tagline">Find Who Handles What in Kutch</div>
-            </div>
+          <a className="brand" href="/" aria-label="KutchPharmaConnect home">
+            <img src="/kutchpharma-connect-logo.png" alt="KutchPharmaConnect" className="brand-logo" />
           </a>
           <nav className="header-nav">
             <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
