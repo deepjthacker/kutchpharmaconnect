@@ -357,7 +357,24 @@ export default function AdminTools({onBack}){
     <p className="admin-help"><strong>{validation.results.length}</strong> rows checked · <strong>{validation.blocking}</strong> blocking · <strong>{validation.warnings}</strong> warnings</p>
     <div style={{overflowX:'auto'}}><table className="admin-table"><thead><tr><th>Row</th><th>Distributor</th><th>Company</th><th>Result</th><th>Details</th></tr></thead>
     <tbody>{validation.results.map(x=><tr key={x.rowNumber}><td>{x.rowNumber}</td><td>{x.row.distributor_name||'—'}</td><td>{x.row.company_name||'—'}</td><td>{x.issues.length?'BLOCKED':x.warnings.length?'WARNING':'READY'}</td><td>{[...x.issues,...x.warnings].join(' · ')||'Passed validation'}</td></tr>)}</tbody></table></div>
-    {validation.blocking===0&&<p className="admin-help" style={{marginTop:10}}>All rows passed structural and identity checks. The actual production write step is intentionally separate and requires an explicit import action.</p>}
+    {validation.blocking===0&&(()=>{
+      const plan=buildImportPlan()
+      if(!plan)return null
+      return <div style={{marginTop:14}}>
+       <div className="admin-note">
+        <strong>Production change plan</strong><br/>
+        {plan.newRelationships} new relationship(s) will be created · {plan.newDistributors.length} new distributor(s) will be created · {plan.existing.length} existing relationship(s) will be skipped.
+        <br/><span className="admin-help">Company identities are never created automatically. Existing relationships are not overwritten by import.</span>
+       </div>
+       {!validation.approved&&<button className="report-submit" style={{marginTop:12}} onClick={executeImport} disabled={!!busy}>
+        {busy==='import-approved'?<><LoaderCircle className="spin" size={16}/> Importing…</>:<>Confirm & Import Approved Data</>}
+       </button>}
+       {validation.approved&&<div className="admin-message" style={{marginTop:12}}>
+        Import completed at {new Date(validation.importedAt).toLocaleString()}.
+        <br/>{validation.importResult.createdRelationships} relationship(s) created · {validation.importResult.createdDistributors} distributor(s) created · {validation.importResult.skippedExisting} existing relationship(s) skipped.
+       </div>}
+      </div>
+    })()}
    </div>}
   </section>}
  </div>
