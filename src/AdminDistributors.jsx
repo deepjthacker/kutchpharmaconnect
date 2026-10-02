@@ -1,3 +1,4 @@
+import React from 'react'
 import { useEffect,useMemo,useState } from 'react'
 import { ArrowLeft,Truck,Edit3,LoaderCircle,Search,Save,X,Phone,MessageCircle,MapPin,Mail } from 'lucide-react'
 import { supabase } from './lib/supabase'
