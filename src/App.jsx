@@ -355,6 +355,11 @@ export default function App(){
                     <span className="profile-short">{profile.entity.short_name}</span>
                   )}
                   <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
+                  {profile.relationships.some(rel=>rel.verification_status==='verified') && (
+                    <span className="verified-badge" title="At least one current Kutch distributorship relationship has been verified.">
+                      <ShieldCheck size={14}/> Verified
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -433,14 +438,14 @@ export default function App(){
                       </div>
                       <div className="profile-rel-right">
                         <small>
-                          {rel.location ? [rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ') : (rel.territory || 'Kutch')} • {
-                            rel.verification_status === 'verified'
-                              ? '✓ Verified'
-                              : rel.verification_status === 'needs_review'
-                                ? 'Under Review'
-                                : '! Not Verified'
-                          }
+                          {rel.location ? [rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ') : (rel.territory || 'Kutch')}
                         </small>
+                        {rel.verification_status === 'verified' && (
+                          <span className="verified-badge verified-badge-small">
+                            <ShieldCheck size={12}/> Verified
+                          </span>
+                        )}
+                        {rel.verification_status === 'needs_review' && <small>Under Review</small>}
                         {profile.type === 'company' && (
                           <div className="profile-rel-actions">
                             {rel.distributor?.mobile && <a className="profile-rel-action" href={`tel:${rel.distributor.mobile}`}><Phone size={13}/> Call</a>}
@@ -568,15 +573,13 @@ export default function App(){
                             <span className="result-target">
                               {r.target.company_name || r.target.distributor_name}
                             </span>
-                            <span className="result-meta">
-                              {r.rel.territory || 'Kutch'} • {
-                                r.rel.verification_status === 'verified'
-                                  ? '✓ Verified'
-                                  : r.rel.verification_status === 'needs_review'
-                                    ? 'Under Review'
-                                    : '! Not Verified'
-                              }
-                            </span>
+                            <span className="result-meta">{r.rel.territory || 'Kutch'}</span>
+                            {r.rel.verification_status === 'verified' && (
+                              <span className="verified-badge verified-badge-small">
+                                <ShieldCheck size={12}/> Verified
+                              </span>
+                            )}
+                            {r.rel.verification_status === 'needs_review' && <span className="result-meta">Under Review</span>}
 
                             {r.target.mobile && (
                               <div className="result-phone">
