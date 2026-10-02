@@ -11,8 +11,32 @@ export default function App(){
 
   useEffect(()=>{
     let mounted=true
-    supabase.auth.getSession().then(({data})=>{if(mounted){setSession(data.session);setAuthLoading(false)}})
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((event,next)=>{setSession(next);setAuthLoading(false);if(event==='PASSWORD_RECOVERY'){setPasswordResetOpen(true);setAuthOpen(false);setResetOpen(false)}})
+    async function syncSession(nextSession){
+      if(!mounted)return
+      setSession(nextSession)
+      if(!nextSession){
+        setAdmin(false)
+        setAuthLoading(false)
+        return
+      }
+      const {data:adminRow,error:adminError}=await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('user_id',nextSession.user.id)
+        .eq('active',true)
+        .maybeSingle()
+      if(mounted){
+        setAdmin(!adminError&&!!adminRow)
+        setAuthLoading(false)
+      }
+    }
+    supabase.auth.getSession().then(({data})=>syncSession(data.session))
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((event,next)=>{
+      syncSession(next)
+      if(event==='PASSWORD_RECOVERY'){
+        setPasswordResetOpen(true);setAuthOpen(false);setResetOpen(false)
+      }
+    })
     return()=>{mounted=false;subscription.unsubscribe()}
   },[])
 
