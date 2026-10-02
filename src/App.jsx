@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import BrowseDirectory from './BrowseDirectory'
-import AdminReports from './AdminReports'
+import AdminDashboard from './AdminDashboard'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
@@ -648,7 +648,7 @@ export default function App(){
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <AdminReports /> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <AdminDashboard /> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
       </main>
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
