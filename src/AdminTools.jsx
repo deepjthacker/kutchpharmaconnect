@@ -11,11 +11,12 @@ const importHeaders=[
  'relationship_status','verification_status','verified_date','verification_note','source','notes'
 ]
 
-const sampleRows=[
+const sampleValues=[
  {distributor_name:'Aakash Medical Agencies',company_name:'Sun Pharmaceutical Industries',category:'Pharmaceutical',relationship_status:'active',verification_status:'unverified',source:'Sample data'},
  {distributor_name:'Jethalal Odhavji Thacker',company_name:'Zydus Lifesciences',category:'Pharmaceutical',relationship_status:'active',verification_status:'verified',verified_date:'2026-10-01',verification_note:'Sample verified relationship',source:'Sample data'},
  {distributor_name:'Example Distributor',company_name:'Example Company',category:'Surgical',location_city:'Bhuj',relationship_status:'active',verification_status:'needs_review',source:'Sample data'}
 ]
+const sampleRows=sampleValues.map(row=>Object.fromEntries(importHeaders.map(h=>[h,row[h]??''])))
 
 function downloadBlob(blob,name){
  const url=URL.createObjectURL(blob)
@@ -83,7 +84,7 @@ export default function AdminTools({onBack}){
   if(format==='csv')downloadCsv(sampleRows,stamp+'.csv')
   else{
    const wb=XLSX.utils.book_new()
-   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleRows),'DISTRIBUTORSHIPS_IMPORT')
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleRows,{header:importHeaders}),'DISTRIBUTORSHIPS_IMPORT')
    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
     ['IMPORT INSTRUCTIONS'],
     ['One row = one distributor ↔ company distributorship relationship.'],
