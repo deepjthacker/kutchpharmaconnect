@@ -84,90 +84,216 @@ export default function AdminTools({onBack}){
   if(!preview?.rows?.length)return
   setBusy('validate');setError('');setMessage('');setValidation(null)
   try{
-   const [companies,distributors,categories,locations,distributorships]=await Promise.all(['companies','distributors','categories','locations','distributorships'].map(getRows))
-   const results=validateRows(preview.rows,{companies,distributors,categories,locations,distributorships})
+   const [companies,distributors,categories,locations,distributorships,divisions]=await Promise.all(
+    ['companies','distributors','categories','locations','distributorships','divisions'].map(getRows)
+   )
+   const results=validateRows(preview.rows,{companies,distributors,categories,locations,distributorships,divisions})
    const blocking=results.filter(x=>x.issues.length).length
    const warnings=results.filter(x=>x.warnings.length).length
-   setValidation({results,blocking,warnings,checkedAt:new Date().toISOString()})
-   setMessage(blocking?\`Validation complete: \${blocking} row(s) need correction before import.\`:\`Validation complete: \${results.length} row(s) passed, with \${warnings} warning row(s). No database records were changed.\`)
+   const ready=results.filter(x=>!x.issues.length)
+   setValidation({results,blocking,warnings,ready,checkedAt:new Date().toISOString(),approved:false})
+   setMessage(blocking
+    ? `Validation complete: ${blocking} row(s) need correction before import.`
+    : `Validation complete: ${results.length} row(s) passed. Review the change plan before production import.`)
   }catch(e){setError(e.message)}
   setBusy('')
  }
 
- function downloadImportSample(format){
-  const stamp='kutchpharmaconnect-distributorship-import-sample'
-  if(format==='csv')downloadCsv(sampleRows,stamp+'.csv')
-  else{
-   const wb=XLSX.utils.book_new()
-   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleRows,{header:importHeaders}),'DISTRIBUTORSHIPS_IMPORT')
-   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ['IMPORT INSTRUCTIONS'],
-    ['One row = one distributor ↔ company distributorship relationship.'],
-    ['Use verified company/entity names. Leave division blank if unknown or unverified.'],
-    ['relationship_status: active/inactive'],
-    ['verification_status: unverified/needs_review/verified'],
-    ['verified_date: YYYY-MM-DD'],
-    ['This sample is illustrative only. Review before importing.']
-   ]),'IMPORT_INSTRUCTIONS')
-   XLSX.writeFile(wb,stamp+'.xlsx')
+ function normalizeImportDate(value){
+  if(!value)return null
+  if(value instanceof Date&&!Number.isNaN(value.getTime()))return value.toISOString().slice(0,10)
+  const s=String(value).trim()
+  if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s
+  return null
+ }
+
+ function validateRows(rows,db){
+  const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'')
+  const by=(arr,...fields)=>{
+   const m=new Map()
+   ;(arr||[]).forEach(x=>fields.forEach(f=>{
+    const k=norm(x[f]);if(k&&!m.has(k))m.set(k,x)
+   }))
+   return m
+  }
+  const companies=by(db.companies,'company_name','legal_name','short_name')
+  const distributors=by(db.distributors,'distributor_name','legal_name')
+  const categories=by(db.categories,'category_name','name')
+  const locations=db.locations||[]
+  const divisions=db.divisions||[]
+  const results=[]
+  const seen=new Set()
+
+  rows.forEach((row,i)=>{
+   const issues=[],warnings=[]
+   const company=companies.get(norm(row.company_name))
+   const distributor=distributors.get(norm(row.distributor_name))
+   const category=categories.get(norm(row.category))
+
+   const companyDivisions=company?divisions.filter(d=>d.company_id===company.id):[]
+   const division=row.division_name
+    ? companyDivisions.find(d=>norm(d.division_name)===norm(row.division_name)||norm(d.division_code)===norm(row.division_name))
+    : null
+
+   const findLocation=(city,district,state)=>{
+    const c=norm(city),d=norm(district),s=norm(state)
+    return locations.find(x=>
+      c&&norm(x.city)===c &&
+      (!d||norm(x.district)===d) &&
+      (!s||norm(x.state)===s)
+    )||null
+   }
+
+   const relationshipLocation=findLocation(row.location_city,row.location_district,row.state)
+   const distributorLocation=findLocation(row.city,row.district,row.state)
+
+   if(!norm(row.distributor_name))issues.push('Missing distributor_name')
+   else if(!distributor)warnings.push('New distributor will be created')
+
+   if(!norm(row.company_name))issues.push('Missing company_name')
+   else if(!company)issues.push('Company not found; identity must be reviewed before import')
+
+   if(!norm(row.category))issues.push('Missing category')
+   else if(!category)issues.push('Category not found')
+
+   if(row.division_name&&!division)issues.push('Division not found under the matched company')
+
+   if((row.location_city||row.location_district)&&!relationshipLocation){
+    issues.push('Relationship location not found; create/verify the location before import')
+   }
+
+   const relationshipStatus=norm(row.relationship_status||'active')
+   const verificationStatus=norm(row.verification_status||'unverified')
+   if(!['active','inactive'].includes(relationshipStatus))issues.push('Invalid relationship_status')
+   if(!['unverified','needs_review','verified'].includes(verificationStatus))issues.push('Invalid verification_status')
+
+   const verifiedDate=normalizeImportDate(row.verified_date)
+   if(row.verified_date&&!verifiedDate)issues.push('verified_date must be YYYY-MM-DD')
+   if(verificationStatus==='verified'&&!verifiedDate)issues.push('Verified relationships require verified_date')
+   if(verificationStatus==='verified'&&!String(row.verification_note||'').trim())warnings.push('Verified relationship has no verification_note')
+
+   const key=[norm(row.distributor_name),norm(row.company_name),norm(row.division_name)].join('|')
+   if(seen.has(key))issues.push('Duplicate row in import file')
+   seen.add(key)
+
+   let existing=null
+   if(company&&distributor){
+    existing=db.distributorships.find(d=>
+      d.company_id===company.id &&
+      d.distributor_id===distributor.id &&
+      (division?d.division_id===division.id:!d.division_id)
+    )
+    if(existing)warnings.push('Relationship already exists and will be skipped')
+   }
+
+   results.push({
+    rowNumber:i+2,row,company,distributor,category,division,
+    relationshipLocation,distributorLocation,existing,
+    relationshipStatus,verificationStatus,verifiedDate,
+    issues,warnings
+   })
+  })
+  return results
+ }
+
+ function buildImportPlan(){
+  if(!validation||validation.blocking>0)return null
+  const ready=validation.ready.filter(x=>!x.existing)
+  const existing=validation.ready.filter(x=>x.existing)
+  const newDistributors=[]
+  const newDistributorKeys=new Set()
+
+  ready.forEach(x=>{
+   if(!x.distributor){
+    const key=String(x.row.distributor_name||'').trim().toLowerCase()
+    if(!newDistributorKeys.has(key)){
+     newDistributorKeys.add(key)
+     newDistributors.push(x)
+    }
+   }
+  })
+
+  return {
+   ready,
+   existing,
+   newDistributors,
+   newRelationships:ready.length
   }
  }
 
- async function validateRows(rows,db){
- const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'')
- const by=(arr,...fields)=>{const m=new Map();arr.forEach(x=>fields.forEach(f=>{const k=norm(x[f]);if(k)m.set(k,x)}));return m}
- const companies=by(db.companies,'company_name','legal_name','short_name')
- const distributors=by(db.distributors,'distributor_name','legal_name')
- const categories=by(db.categories,'category_name','name')
- const locations=db.locations||[]
- const results=[]
- const seen=new Set()
- rows.forEach((row,i)=>{
-  const issues=[],warnings=[]
-  const company=companies.get(norm(row.company_name))
-  const distributor=distributors.get(norm(row.distributor_name))
-  const category=categories.get(norm(row.category))
-  if(!norm(row.distributor_name))issues.push('Missing distributor_name')
-  else if(!distributor)warnings.push('New distributor')
-  if(!norm(row.company_name))issues.push('Missing company_name')
-  else if(!company)issues.push('Company not found; identity must be reviewed before import')
-  if(!norm(row.category))issues.push('Missing category')
-  else if(!category)issues.push('Category not found')
-  if(row.relationship_status&&!['active','inactive'].includes(norm(row.relationship_status)))issues.push('Invalid relationship_status')
-  if(row.verification_status&&!['unverified','needs_review','verified'].includes(norm(row.verification_status)))issues.push('Invalid verification_status')
-  if(row.verified_date&&!/^\d{4}-\d{2}-\d{2}$/.test(String(row.verified_date)))issues.push('verified_date must be YYYY-MM-DD')
-  const key=[norm(row.distributor_name),norm(row.company_name),norm(row.division_name)].join('|')
-  if(seen.has(key))issues.push('Duplicate row in import file')
-  seen.add(key)
-  const existing=company&&distributor&&db.distributorships.find(d=>d.company_id===company.id&&d.distributor_id===distributor.id&&(!row.division_name||d.division_id))
-  if(existing)warnings.push('Relationship already exists')
-  results.push({rowNumber:i+2,company,distributor,category,issues,warnings,row})
- })
- return results
-}
-
-async function handleImport(e){
-  const f=e.target.files?.[0];e.target.value=''
-  if(!f)return
-  setBusy('import');setError('');setMessage('');setPreview(null)
+ async function executeImport(){
+  const plan=buildImportPlan()
+  if(!plan)return
+  setBusy('import-approved');setError('');setMessage('')
   try{
-   const ext=f.name.toLowerCase().endsWith('.csv')?'csv':'xlsx'
-   if(!f.name.toLowerCase().endsWith('.csv')&&!f.name.toLowerCase().endsWith('.xlsx'))throw new Error('Please select a .csv or .xlsx file.')
-   const data=await f.arrayBuffer()
-   const wb=XLSX.read(data,{type:'array'})
-   const first=wb.Sheets[wb.SheetNames[0]]
-   const rows=XLSX.utils.sheet_to_json(first,{defval:''})
-   if(!rows.length)throw new Error('The selected file contains no data rows.')
-   const headers=Object.keys(rows[0])
-   const missing=importHeaders.filter(h=>!headers.includes(h))
-   const recognized=Object.keys(rows[0]).filter(h=>importHeaders.includes(h))
-   setPreview({file:f.name,format:ext,rows,headers,missing,recognized})
-   setValidation(null)
-   setMessage(\`Loaded \${rows.length} row(s) from \${f.name}. No database records were changed.\`)
-  }catch(e){setError(e.message)}
+   const createdDistributorIds=[]
+   const distributorIdByKey=new Map()
+
+   // Create only distributors that are genuinely new. Company identities are never created by import.
+   if(plan.newDistributors.length){
+    const payload=plan.newDistributors.map(x=>({
+     distributor_name:String(x.row.distributor_name).trim(),
+     legal_name:String(x.row.distributor_legal_name||'').trim()||null,
+     contact_person:String(x.row.contact_person||'').trim()||null,
+     mobile:String(x.row.mobile||'').trim()||null,
+     whatsapp:String(x.row.whatsapp||'').trim()||null,
+     email:String(x.row.email||'').trim()||null,
+     address:String(x.row.address||'').trim()||null,
+     city_id:x.distributorLocation?.id||null,
+     maps_url:String(x.row.maps_url||'').trim()||null,
+     website:String(x.row.website||'').trim()||null,
+     notes:String(x.row.notes||'').trim()||null,
+     status:'active'
+    }))
+    const r=await supabase.from('distributors').insert(payload).select('id,distributor_name')
+    if(r.error)throw new Error('Distributor creation failed: '+r.error.message)
+    ;(r.data||[]).forEach(d=>{
+     createdDistributorIds.push(d.id)
+     distributorIdByKey.set(String(d.distributor_name).trim().toLowerCase(),d.id)
+    })
+   }
+
+   const relationshipPayload=plan.ready.map(x=>{
+    const distributorId=x.distributor?.id||distributorIdByKey.get(String(x.row.distributor_name).trim().toLowerCase())
+    if(!distributorId)throw new Error(`Could not resolve distributor for import row ${x.rowNumber}.`)
+    return {
+     company_id:x.company.id,
+     division_id:x.division?.id||null,
+     distributor_id:distributorId,
+     category_id:x.category.id,
+     location_id:x.relationshipLocation?.id||null,
+     territory:String(x.row.territory||'').trim()||null,
+     status:x.relationshipStatus,
+     verification_status:x.verificationStatus,
+     verified_date:x.verifiedDate,
+     verification_note:String(x.row.verification_note||'').trim()||null,
+     verification_notes:String(x.row.verification_note||'').trim()||null,
+     source:String(x.row.source||'').trim()||null
+    }
+   })
+
+   if(relationshipPayload.length){
+    const r=await supabase.from('distributorships').insert(relationshipPayload).select('id')
+    if(r.error){
+     // Best-effort cleanup of distributors created by this import if the relationship batch fails.
+     if(createdDistributorIds.length){
+      await supabase.from('distributors').delete().in('id',createdDistributorIds)
+     }
+     throw new Error('Relationship creation failed. No relationship rows were kept. Newly created distributors were rolled back where permitted. '+r.error.message)
+    }
+   }
+
+   setValidation(v=>({...v,approved:true,importedAt:new Date().toISOString(),importResult:{
+    createdDistributors:plan.newDistributors.length,
+    createdRelationships:plan.newRelationships,
+    skippedExisting:plan.existing.length
+   }}))
+   setMessage(`Import completed: ${plan.newRelationships} relationship(s) created, ${plan.newDistributors.length} distributor(s) created, ${plan.existing.length} existing relationship(s) skipped.`)
+  }catch(e){
+   setError(e.message)
+  }
   setBusy('')
  }
-
  return <div className="admin-page">
   <div className="admin-head"><div>
    <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button>
