@@ -10,6 +10,7 @@ import AdminVerification from './AdminVerification'
 import AdminLocations from './AdminLocations'
 import AdminCategories from './AdminCategories'
 import AdminTools from './AdminTools'
+import AdminAliases from './AdminAliases'
 
 export default function AdminDashboard(){
   const [stats,setStats]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[view,setView]=useState('dashboard')
@@ -44,6 +45,7 @@ export default function AdminDashboard(){
   if(view==='locations') return <AdminLocations onBack={()=>setView('dashboard')} />
   if(view==='categories') return <AdminCategories onBack={()=>setView('dashboard')} />
   if(view==='tools') return <AdminTools onBack={()=>setView('dashboard')} />
+  if(view==='aliases') return <AdminAliases onBack={()=>setView('dashboard')} />
   if(view==='reports') return <AdminReports onBack={()=>setView('dashboard')} />
 
   const cards=[
@@ -75,6 +77,7 @@ export default function AdminDashboard(){
           <button className="admin-link" onClick={()=>setView('locations')}><Flag size={16}/><span><strong>Locations</strong><small>Manage directory locations</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('categories')}><Building2 size={16}/><span><strong>Categories</strong><small>Manage directory categories</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('reports')}><Flag size={16}/><span><strong>Correction Reports</strong><small>Review public-submitted directory corrections</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('aliases')}><Flag size={16}/><span><strong>Search Aliases</strong><small>Manage alternate company and distributor names</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('tools')}><RefreshCw size={16}/><span><strong>Import, Export & Backup</strong><small>Controlled data export and backup tools</small></span><ArrowRight size={15}/></button>
         </section>
         <section className="admin-panel">
