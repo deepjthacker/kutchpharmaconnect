@@ -1,7 +1,10 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle } from 'lucide-react'
 import { supabase } from './lib/supabase'
+
+const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect and would like to enquire about your current distributorships.`
+const waLink=(number,message)=>`https://wa.me/${String(number||'').replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
 
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile }) {
   const isCompanies = type === 'companies'
@@ -253,6 +256,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
                       {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
                       {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
                       <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
+                      {!isCompanies && (
+                        <div className="browse-contact-actions">
+                          {item.mobile && <a href={`tel:${item.mobile}`} onClick={e=>e.stopPropagation()}><Phone size={13}/> Call</a>}
+                          {item.mobile && <a href={waLink(item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={13}/> WhatsApp</a>}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
