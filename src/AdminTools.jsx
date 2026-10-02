@@ -16,7 +16,10 @@ const sampleValues=[
  {distributor_name:'Jethalal Odhavji Thacker',company_name:'Zydus Lifesciences',category:'Pharmaceutical',relationship_status:'active',verification_status:'verified',verified_date:'2026-10-01',verification_note:'Sample verified relationship',source:'Sample data'},
  {distributor_name:'Example Distributor',company_name:'Example Company',category:'Surgical',location_city:'Bhuj',relationship_status:'active',verification_status:'needs_review',source:'Sample data'}
 ]
-const sampleRows=sampleValues.map(row=>Object.fromEntries(importHeaders.map(h=>[h,row[h]??''])))
+const sampleRows=Array.from({length:40},(_,i)=>{
+ const row=sampleValues[i]||{}
+ return Object.fromEntries(importHeaders.map(h=>[h,row[h]??'']))
+})
 
 function downloadBlob(blob,name){
  const url=URL.createObjectURL(blob)
