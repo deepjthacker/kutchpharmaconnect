@@ -7,12 +7,12 @@ import AdminDashboard from './AdminDashboard'
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 
 export default function App(){
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
 
   useEffect(()=>{
     let mounted=true
     supabase.auth.getSession().then(({data})=>{if(mounted){setSession(data.session);setAuthLoading(false)}})
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthLoading(false)})
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((event,next)=>{setSession(next);setAuthLoading(false);if(event==='PASSWORD_RECOVERY'){setPasswordResetOpen(true);setAuthOpen(false);setResetOpen(false)}})
     return()=>{mounted=false;subscription.unsubscribe()}
   },[])
 
@@ -28,6 +28,27 @@ export default function App(){
   async function signOutAdmin(){
     await supabase.auth.signOut();setAdmin(false)
   }
+
+  async function requestPasswordReset(e){
+    e.preventDefault();setResetError('');setResetSent(false);setAuthBusy(true)
+    const email=resetEmail.trim()
+    if(!email){setResetError('Enter your admin email address.');setAuthBusy(false);return}
+    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/'})
+    if(error){setResetError(error.message);setAuthBusy(false);return}
+    setResetSent(true);setAuthBusy(false)
+  }
+
+  async function updateAdminPassword(e){
+    e.preventDefault();setResetError('')
+    if(newPassword.length<6){setResetError('Password must be at least 6 characters.');return}
+    if(newPassword!==newPasswordConfirm){setResetError('The passwords do not match.');return}
+    setAuthBusy(true)
+    const {error}=await supabase.auth.updateUser({password:newPassword})
+    if(error){setResetError(error.message);setAuthBusy(false);return}
+    await supabase.auth.signOut()
+    setPasswordResetOpen(false);setNewPassword('');setNewPasswordConfirm('');setAuthEmail(resetEmail);setAuthPassword('');setAuthError('Password updated. Please sign in with your new password.');setAuthOpen(true);setAuthBusy(false)
+  }
+
 
   useEffect(()=>{
     const t=setTimeout(()=>{
@@ -694,7 +715,34 @@ export default function App(){
           {authError&&<div className="report-error">{authError}</div>}
           <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Signing in…</>:<><ShieldCheck size={16}/> Sign In</>}</button>
         </form>
+        <button className="profile-link-button" style={{marginTop:'12px'}} onClick={()=>{setResetEmail(authEmail);setResetError('');setResetSent(false);setAuthOpen(false);setResetOpen(true)}}>Forgot password?</button>
       </div></div>}
+
+      {resetOpen && <div className="report-overlay"><div className="report-modal">
+        <button className="report-close" onClick={()=>setResetOpen(false)} aria-label="Close"><X size={18}/></button>
+        <p className="section-kicker">ADMIN ACCESS</p><h2>Reset Password</h2>
+        {!resetSent ? <>
+          <p className="report-help">Enter your Supabase admin email. We will send a secure password-reset link.</p>
+          <form onSubmit={requestPasswordReset}>
+            <label>Email<input required type="email" value={resetEmail} onChange={e=>setResetEmail(e.target.value)} placeholder="Admin email" /></label>
+            {resetError&&<div className="report-error">{resetError}</div>}
+            <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Sending…</>:<>Send Reset Link</>}</button>
+          </form>
+        </> : <>
+          <p className="report-help">Check your email and open the newest reset link. Keep this app running while you open the link.</p>
+          <div className="report-success"><CheckCircle2 size={42}/><h2>Reset email sent</h2><p>If the account exists, Supabase has sent a password-reset email to <strong>{resetEmail}</strong>.</p><button onClick={()=>setResetOpen(false)}>Close</button></div>
+        </>}
+      </div></div>}
+
+      {passwordResetOpen && <div className="report-overlay"><div className="report-modal">
+        <p className="section-kicker">ADMIN ACCESS</p><h2>Set New Password</h2><p className="report-help">Your reset link is valid. Choose a new password for the admin account.</p>
+        <form onSubmit={updateAdminPassword}>
+          <label>New password<input required type="password" minLength="6" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="New password" /></label>
+          <label>Confirm password<input required type="password" minLength="6" value={newPasswordConfirm} onChange={e=>setNewPasswordConfirm(e.target.value)} placeholder="Confirm new password" /></label>
+          {resetError&&<div className="report-error">{resetError}</div>}
+          <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Updating…</>:<><ShieldCheck size={16}/> Update Password</>}</button>
+        </form>
+      </div></div>
       {admin && session && <button className="admin-signout" onClick={signOutAdmin}>Sign out</button>}
 
       <footer>
