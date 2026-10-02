@@ -348,11 +348,9 @@ export default function App(){
                   </p>
                   <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
                   {profile.entity?.short_name && (
-                    <>
-                      <span className="profile-short">{profile.entity.short_name}</span>
-                      <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
-                    </>
+                    <span className="profile-short">{profile.entity.short_name}</span>
                   )}
+                  <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
                 </div>
               </div>
 
@@ -701,6 +699,13 @@ export default function App(){
       </main>
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
+
+      <footer className="site-footer">
+        <div className="container site-footer-inner">
+          <span>KutchPharmaConnect — Find Who Handles What in Kutch</span>
+          <span>Directory information may change. Please contact the distributor directly to confirm current distributorship, territory, availability, and contact details.</span>
+        </div>
+      </footer>
 
       {reportOpen && <div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&setReportOpen(false)}>
         <div className="report-modal">
