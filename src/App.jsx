@@ -129,7 +129,7 @@ export default function App(){
     if(!report.message.trim()) return
     setReportSubmitting(true);setReportError('')
     const payload={
-      entity_type: profile?.type || null,
+      entity_type: profile?.type || 'directory',
       entity_id: profile?.entity?.id || null,
       issue_type: report.type,
       description: report.message.trim()
@@ -720,9 +720,6 @@ export default function App(){
               </label>
               <label>Details <span className="required">*</span>
                 <textarea required value={report.message} onChange={e=>setReport({...report,message:e.target.value})} placeholder="Tell us what should be corrected..." rows="5" />
-              </label>
-              <label>Contact (optional)
-                <input value={report.contact} onChange={e=>setReport({...report,contact:e.target.value})} placeholder="Phone or email" />
               </label>
               {reportError && <div className="report-error">{reportError}</div>}
               <button className="report-submit" disabled={reportSubmitting}>{reportSubmitting ? <><LoaderCircle className="spin" size={16}/> Sending…</> : <><Flag size={16}/> Submit Report</>}</button>
