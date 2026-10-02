@@ -3,6 +3,13 @@ import { Building2, Truck, Link2, ShieldCheck, Clock3, Flag, RefreshCw, LoaderCi
 import { supabase } from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminCompanies from './AdminCompanies'
+import AdminDistributors from './AdminDistributors'
+import AdminDivisions from './AdminDivisions'
+import AdminDistributorships from './AdminDistributorships'
+import AdminVerification from './AdminVerification'
+import AdminLocations from './AdminLocations'
+import AdminCategories from './AdminCategories'
+import AdminTools from './AdminTools'
 
 export default function AdminDashboard(){
   const [stats,setStats]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[view,setView]=useState('dashboard')
@@ -30,6 +37,13 @@ export default function AdminDashboard(){
   useEffect(()=>{load()},[])
 
   if(view==='companies') return <AdminCompanies onBack={()=>setView('dashboard')} />
+  if(view==='distributors') return <AdminDistributors onBack={()=>setView('dashboard')} />
+  if(view==='divisions') return <AdminDivisions onBack={()=>setView('dashboard')} />
+  if(view==='distributorships') return <AdminDistributorships onBack={()=>setView('dashboard')} />
+  if(view==='verification') return <AdminVerification onBack={()=>setView('dashboard')} />
+  if(view==='locations') return <AdminLocations onBack={()=>setView('dashboard')} />
+  if(view==='categories') return <AdminCategories onBack={()=>setView('dashboard')} />
+  if(view==='tools') return <AdminTools onBack={()=>setView('dashboard')} />
   if(view==='reports') return <AdminReports onBack={()=>setView('dashboard')} />
 
   const cards=[
@@ -54,7 +68,14 @@ export default function AdminDashboard(){
         <section className="admin-panel">
           <p className="section-kicker">QUICK ACTIONS</p><h2>Administration</h2>
           <button className="admin-link" onClick={()=>setView('companies')}><Building2 size={16}/><span><strong>Companies</strong><small>Manage company identities and active status</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('distributors')}><Truck size={16}/><span><strong>Distributors</strong><small>Manage distributor records and contacts</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('distributorships')}><Link2 size={16}/><span><strong>Distributorships</strong><small>Manage company–distributor relationships</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('verification')}><ShieldCheck size={16}/><span><strong>Verification</strong><small>Review and verify relationship records</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('divisions')}><Building2 size={16}/><span><strong>Divisions</strong><small>Manage company divisions</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('locations')}><Flag size={16}/><span><strong>Locations</strong><small>Manage directory locations</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('categories')}><Building2 size={16}/><span><strong>Categories</strong><small>Manage directory categories</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('reports')}><Flag size={16}/><span><strong>Correction Reports</strong><small>Review public-submitted directory corrections</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('tools')}><RefreshCw size={16}/><span><strong>Import, Export & Backup</strong><small>Controlled data export and backup tools</small></span><ArrowRight size={15}/></button>
         </section>
         <section className="admin-panel">
           <p className="section-kicker">DATA STATUS</p><h2>Verification</h2>
