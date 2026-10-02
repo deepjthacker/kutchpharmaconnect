@@ -54,9 +54,9 @@ export default function AdminTools({onBack}){
   try{
    const rows=await getRows(name)
    const stamp=new Date().toISOString().slice(0,10)
-   if(format==='csv')downloadCsv(rows,\`kutchpharmaconnect-\${name}-\${stamp}.csv\`)
-   else downloadXlsx(rows,\`kutchpharmaconnect-\${name}-\${stamp}.xlsx\`,name)
-   setMessage(\`Exported \${name} as \${format.toUpperCase()}.\`)
+   if(format==='csv')downloadCsv(rows,`kutchpharmaconnect-${name}-${stamp}.csv`)
+   else downloadXlsx(rows,`kutchpharmaconnect-${name}-${stamp}.xlsx`,name)
+   setMessage(`Exported ${name} as ${format.toUpperCase()}.`)
   }catch(e){setError(e.message)}
   setBusy('')
  }
@@ -74,8 +74,8 @@ export default function AdminTools({onBack}){
     }
    }
    const stamp=new Date().toISOString().slice(0,10)
-   if(format==='xlsx')XLSX.writeFile(wb,\`kutchpharmaconnect-backup-\${stamp}.xlsx\`)
-   else downloadBlob(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}),\`kutchpharmaconnect-backup-\${stamp}.json\`)
+   if(format==='xlsx')XLSX.writeFile(wb,`kutchpharmaconnect-backup-${stamp}.xlsx`)
+   else downloadBlob(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}),`kutchpharmaconnect-backup-${stamp}.json`)
    setMessage(format==='xlsx'?'Full Excel workbook exported with separate sheets.':'Full JSON backup exported.')
   }catch(e){setError(e.message)}
   setBusy('')
@@ -393,7 +393,7 @@ export default function AdminTools({onBack}){
     <div><p className="section-kicker">IMPORT PREVIEW</p><h2>{preview.file}</h2></div>
     <div className="admin-inline-actions"><button className="admin-tool-button" onClick={validateImport} disabled={!!busy}><Eye size={16}/>{busy==='validate'?<><LoaderCircle className="spin" size={16}/> Validating…</>:'Validate import'}</button><button className="admin-tool-button" onClick={()=>{setPreview(null);setValidation(null)}}>Close</button></div>
    </div>
-   <p className="admin-help">{preview.rows.length} row(s), {preview.recognized.length} recognized standard column(s). {preview.missing.length?\`Missing expected columns: \${preview.missing.join(', ')}.\`:'All standard import columns are present.'}</p>
+   <p className="admin-help">{preview.rows.length} row(s), {preview.recognized.length} recognized standard column(s). {preview.missing.length?`Missing expected columns: ${preview.missing.join(', ')}.`:'All standard import columns are present.'}</p>
    <div style={{overflowX:'auto'}}>
     <table className="admin-table"><thead><tr>{preview.headers.map(h=><th key={h}>{h}</th>)}</tr></thead>
     <tbody>{preview.rows.slice(0,20).map((row,i)=><tr key={i}>{preview.headers.map(h=><td key={h}>{String(row[h]??'')}</td>)}</tr>)}</tbody></table>
