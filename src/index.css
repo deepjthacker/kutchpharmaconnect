@@ -168,3 +168,12 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 .browse-contact-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 .browse-contact-actions a{display:inline-flex;align-items:center;gap:4px;text-decoration:none;border:1px solid #d2dbe8;border-radius:7px;padding:5px 7px;color:#3159a8;background:#fff;font-size:10px;font-weight:800}
 .browse-contact-actions a:hover{border-color:#9fb3d5;background:#f8fbff}
+
+.verified-badge{display:inline-flex;align-items:center;gap:5px;width:max-content;margin-top:8px;padding:5px 9px;border:1px solid #b8e0c2;border-radius:7px;background:#ecf9ef;color:#18733a;font-size:11px;font-weight:800;line-height:1}
+.verified-badge svg{color:#188044;flex:none}
+.verified-badge-small{margin-top:0;padding:4px 7px;font-size:10px}
+.profile-rel-right .verified-badge-small{align-self:flex-end}
+.status-badge{display:inline-flex;align-items:center;gap:4px;width:max-content;margin-top:6px;padding:4px 7px;border-radius:7px;font-size:10px;font-weight:800;line-height:1}
+.status-review{border:1px solid #ead7a4;background:#fff8e5;color:#8a6810}
+.status-unverified{border:1px solid #efc4c4;background:#fff2f2;color:#9a3030}
+.status-symbol{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#d94a4a;color:#fff;font-size:9px;font-weight:900}
