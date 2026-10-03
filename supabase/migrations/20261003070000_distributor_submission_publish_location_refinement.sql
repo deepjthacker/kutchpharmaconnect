@@ -188,7 +188,7 @@ begin
       and category_id = cat_id
       and location_id = loc_id
       and status = 'active'
-      and coalesce(territory,'') = coalesce(nullif(m->>'territory'),'','');
+      and coalesce(territory,'') = coalesce(nullif(trim(m->>'territory'),''),'');
 
     if rel_id is null then
       insert into public.distributorships(
