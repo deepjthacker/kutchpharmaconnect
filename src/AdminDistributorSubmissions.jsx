@@ -11,7 +11,7 @@ function entriesOf(row){
 export default function AdminDistributorSubmissions({onBack}){
   const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[selected,setSelected]=useState(null)
   const [companies,setCompanies]=useState([]),[distributors,setDistributors]=useState([]),[aliases,setAliases]=useState([]),[divisions,setDivisions]=useState([]),[categories,setCategories]=useState([]),[locations,setLocations]=useState([])
-  const [matchQuery,setMatchQuery]=useState(''),[mappings,setMappings]=useState({}),[selectedDistributor,setSelectedDistributor]=useState(''),[adminNotes,setAdminNotes]=useState('')
+  const [mappings,setMappings]=useState({}),[selectedDistributor,setSelectedDistributor]=useState(''),[selectedLocation,setSelectedLocation]=useState(''),[companySearches,setCompanySearches]=useState({}),[adminNotes,setAdminNotes]=useState('')
 
   async function load(){
     setLoading(true);setError('')
@@ -46,7 +46,7 @@ export default function AdminDistributorSubmissions({onBack}){
     const exact=companies.find(c=>norm(c.company_name)===q)
     if(exact)return {kind:'matched',label:exact.company_name,company:exact,method:'Exact'}
     const alias=aliases.find(a=>norm(a.normalized_alias||a.alias)===q)
-    if(alias){const c=companies.find(x=>x.id===alias.entity_id);if(c)return {kind:'matched',label:c.company_name,company:c,method:'Alias'}}
+    if(alias){const c=companies.find(x=>x.id===alias.entity_id);if(c)return {kind:'matched',label:c.company_name,company:c,method:'Alias',aliasUsed:alias.alias}}
     const candidates=companies.filter(c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean).some(v=>{const n=norm(v);return n.includes(q)||q.includes(n)})).slice(0,5)
     if(candidates.length===1)return {kind:'suggested',label:candidates[0].company_name,company:candidates[0],candidates,method:'Possible match'}
     if(candidates.length>1)return {kind:'review',label:candidates.map(c=>c.company_name).join(' / '),candidates,method:'Multiple matches'}
@@ -82,7 +82,7 @@ export default function AdminDistributorSubmissions({onBack}){
       }
     })
     const exactDist=distributorForSubmission(row)
-    setSelected(row);setMappings(next);setSelectedDistributor(exactDist?.id||'');setAdminNotes('');setMatchQuery('')
+    setSelected(row);setMappings(next);setSelectedDistributor(exactDist?.id||'');setSelectedLocation('');setCompanySearches({});setAdminNotes('')
   }
 
   function closeReview(){if(!saving)setSelected(null)}
@@ -93,6 +93,17 @@ export default function AdminDistributorSubmissions({onBack}){
     const entry=entriesOf(selected)[i]
     const div=divisionFor(entry,companyId)
     updateMap(i,{action:'match',company_id:companyId,division_id:div?.id||''})
+    setCompanySearches(x=>{const n={...x};delete n[i];return n})
+  }
+
+  function setCompanySearch(i,value){setCompanySearches(x=>({...x,[i]:value}))}
+
+  function companyOptions(i,auto){
+    const q=norm(companySearches[i]||'')
+    const base=q?companies.filter(c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean).some(v=>norm(v).includes(q))).slice(0,12):(auto.candidates||((auto.company)?[auto.company]:[]))
+    const unique=[];const seen=new Set()
+    base.forEach(c=>{if(c&&!seen.has(c.id)){seen.add(c.id);unique.push(c)}})
+    return unique
   }
 
   const reviewEntries=selected?entriesOf(selected):[]
@@ -103,25 +114,21 @@ export default function AdminDistributorSubmissions({onBack}){
   },[selected,mappings])
 
   const locationDefault=selected?locationForSubmission(selected):null
-  const companySearch=useMemo(()=>{
-    const q=norm(matchQuery);if(!q)return []
-    return companies.filter(c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean).some(v=>norm(v).includes(q))).slice(0,10)
-  },[companies,matchQuery])
 
   async function publish(){
     if(!selected)return
     setSaving(selected.id);setError('')
     const unresolved=reviewEntries.some((e,i)=>!mappings[i]?.action||!mappings[i]?.category)
     if(unresolved){setError('Resolve every company row before publishing.');setSaving('');return}
-    if(!selectedDistributor && !selected.city){setError('A distributor or submission city is required.');setSaving('');return}
+    if(!selectedDistributor && !selected.city){setError('A distributor or submitted distributor location is required.');setSaving('');return}
     const categoryMap=new Map(categories.map(c=>[norm(c.name),c.id]))
     const payload=reviewEntries.map((e,i)=>{
       const m=mappings[i]
-      return {...m,category_id:m.category_id||categoryMap.get(norm(m.category))||'',location_id:m.location_id||locationDefault?.id||''}
+      return {...m,category_id:m.category_id||categoryMap.get(norm(m.category))||''}
     })
     if(payload.some(x=>!x.category_id)){setError('One or more categories could not be matched.');setSaving('');return}
-    if(payload.some(x=>!x.location_id)){setError('One or more rows have no Kutch location. Add the location before publishing.');setSaving('');return}
-    const {data,error}=await supabase.rpc('publish_distributor_submission',{p_submission_id:selected.id,p_mappings:payload,p_admin_notes:adminNotes||null,p_distributor_id:selectedDistributor||null})
+    if(!selectedLocation && !locationDefault && !selected.city){setError('Select a distributor location or provide a submitted city.');setSaving('');return}
+    const {data,error}=await supabase.rpc('publish_distributor_submission',{p_submission_id:selected.id,p_mappings:payload,p_admin_notes:adminNotes||null,p_distributor_id:selectedDistributor||null,p_location_id:selectedLocation||null})
     if(error){setError(error.message);setSaving('');return}
     setRows(x=>x.map(r=>r.id===selected.id?{...r,status:'approved',reviewed_at:new Date().toISOString()}:r))
     setSelected(null);setSaving('')
@@ -159,23 +166,33 @@ export default function AdminDistributorSubmissions({onBack}){
         <button className="report-close" onClick={closeReview} aria-label="Close"><X size={18}/></button>
         <p className="section-kicker">SUBMISSION REVIEW</p>
         <h2>{selected.distributor_name}</h2>
-        <p className="report-help">Nothing is published until you confirm the distributor, company, division, category and location mappings.</p>
+        <p className="report-help">Nothing is published until you confirm the distributor, company, division, category and distributor location.</p>
 
         <div className="admin-publish-summary">
           <span><Check size={13}/> {summary.matched} matched</span><span><Building2 size={13}/> {summary.create} new</span><span><AlertTriangle size={13}/> {summary.review} unresolved</span>
         </div>
 
         <section className="admin-publish-section">
-          <div className="admin-publish-section-head"><h3>1. Distributor</h3><span>Select an existing record or leave blank to create from this submission.</span></div>
+          <div className="admin-publish-section-head"><h3>1. Distributor & location</h3><span>Confirm the distributor record and its location once. This location applies to every company relationship below.</span></div>
           <select value={selectedDistributor} onChange={e=>setSelectedDistributor(e.target.value)}>
             <option value="">Create / use submitted distributor details</option>
             {distributors.map(d=><option key={d.id} value={d.id}>{d.distributor_name} — {d.mobile||'no mobile'}</option>)}
           </select>
-          <div className="admin-publish-meta">{selected.mobile||'No mobile'} · {[selected.city,selected.district,selected.state].filter(Boolean).join(', ')||'No location'} · {selected.address||'No address'}</div>
+          <div className="admin-publish-meta">{selected.mobile||'No mobile'} · {selected.address||'No address'}</div>
+          <label className="admin-publish-location-label">Distributor location</label>
+          <select value={selectedLocation} onChange={e=>setSelectedLocation(e.target.value)}>
+            <option value="">Use submitted location — {[selected.city,selected.district,selected.state].filter(Boolean).join(', ')||'No submitted location'} {locationDefault?'':'(created if needed)'}</option>
+            {locations.map(l=><option key={l.id} value={l.id}>{l.city}, {l.district}, {l.state}{l.pincode?' — '+l.pincode:''}</option>)}
+          </select>
+          <div className="admin-publish-location-note">
+            Submitted distributor location: <strong>{[selected.city,selected.district,selected.state].filter(Boolean).join(', ')||'Not provided'}</strong>
+            {locationDefault&&<> · Existing directory location found</>}
+            {!locationDefault&&selected.city&&<> · This location will be created in the directory when you publish.</>}
+          </div>
         </section>
 
         <section className="admin-publish-section">
-          <div className="admin-publish-section-head"><h3>2. Company & relationship matching</h3><span>Resolve every row before publishing.</span></div>
+          <div className="admin-publish-section-head"><h3>2. Company matching & relationships</h3><span>Confirm the company match first, then confirm division and category. Do not assign a location here.</span></div>
           <div className="admin-company-publish-list">
             {reviewEntries.map((e,i)=>{
               const auto=matchCompany(e), m=mappings[i]||{}
@@ -185,29 +202,47 @@ export default function AdminDistributorSubmissions({onBack}){
                   <div><strong>{e.company_name||'Company missing'}</strong><small>{e.division||'No division'} · {e.category||'Pharmaceutical'}</small></div>
                   <span className={'admin-status '+(m.action==='match'?'approved':m.action==='create'?'open':'under_review')}>{m.action==='match'?'Matched':m.action==='create'?'New company':'Needs decision'}</span>
                 </div>
-                <div className="admin-company-publish-controls">
-                  <select value={m.action||''} onChange={ev=>updateMap(i,{action:ev.target.value,company_id:ev.target.value==='match'?(auto.company?.id||''):''})}>
-                    <option value="">Choose action…</option><option value="match">Match existing company</option><option value="create">Create new company</option>
-                  </select>
-                  {m.action==='match'&&<select value={m.company_id||''} onChange={ev=>chooseCompany(i,ev.target.value)}>
-                    <option value="">Select company…</option>
-                    {candidates.map(c=><option key={c.id} value={c.id}>{c.company_name}</option>)}
-                    {companySearch.filter(c=>!candidates.some(x=>x.id===c.id)).map(c=><option key={c.id} value={c.id}>{c.company_name}</option>)}
-                  </select>}
+                <div className="admin-company-publish-controls admin-company-match-controls">
+                  <div className="admin-company-match-card">
+                    <div className="admin-company-match-line"><span>Submitted company</span><strong>{e.company_name||'Company missing'}</strong></div>
+                    {auto.company&&<div className="admin-company-match-line"><span>{auto.kind==='matched'?'Matched company':'Suggested company'}</span><strong>{auto.company.company_name}</strong><small>Match source: {auto.method}{auto.aliasUsed?<> · Alias used: <b>{auto.aliasUsed}</b></>:''}</small></div>}
+                    {!auto.company&&auto.kind==='review'&&<div className="admin-company-match-line"><span>Possible matches</span><strong>{auto.label}</strong><small>Choose the correct company manually.</small></div>}
+                    {!auto.company&&auto.kind==='new'&&<div className="admin-company-match-line"><span>Match result</span><strong>No existing company found</strong><small>Create a new company only after checking the submitted name.</small></div>}
+                  </div>
+                  {m.action==='match' ? (
+                    <div className="admin-company-selected">
+                      <span>Accepted: <strong>{companies.find(c=>c.id===m.company_id)?.company_name||'Selected company'}</strong></span>
+                      <button type="button" onClick={()=>setCompanySearch(i,'')}>Change company</button>
+                    </div>
+                  ) : (
+                    <div className="admin-company-match-actions">
+                      {auto.company&&<button type="button" className="primary" onClick={()=>chooseCompany(i,auto.company.id)}>Accept match</button>}
+                      <button type="button" onClick={()=>setCompanySearch(i,'')}>Choose different company</button>
+                      <button type="button" onClick={()=>updateMap(i,{action:'create',company_id:''})}>Create new company</button>
+                    </div>
+                  )}
+                  {companySearches[i]!==undefined&&<div className="admin-company-search-box">
+                    <input value={companySearches[i]} onChange={ev=>setCompanySearch(i,ev.target.value)} placeholder="Search existing company by name, legal name or short name…"/>
+                    <select value={m.action==='match'?m.company_id:''} onChange={ev=>chooseCompany(i,ev.target.value)}>
+                      <option value="">Select a company…</option>
+                      {companyOptions(i,auto).map(c=><option key={c.id} value={c.id}>{c.company_name}{c.legal_name&&c.legal_name!==c.company_name?' — '+c.legal_name:''}</option>)}
+                    </select>
+                  </div>}
                   {m.action==='create'&&<input value={m.company_name||e.company_name||''} onChange={ev=>updateMap(i,{company_name:ev.target.value})} placeholder="New company name"/>}
-                  <select value={m.category||'Pharmaceutical'} onChange={ev=>updateMap(i,{category:ev.target.value})}>
-                    {categories.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                  {m.action==='match'&&<select value={m.division_id||''} onChange={ev=>updateMap(i,{division_id:ev.target.value})}>
-                    <option value="">No division / select if applicable</option>
-                    {divisions.filter(d=>d.company_id===m.company_id).map(d=><option key={d.id} value={d.id}>{d.division_name}</option>)}
-                  </select>}
-                  <select value={m.location_id||locationDefault?.id||''} onChange={ev=>updateMap(i,{location_id:ev.target.value})}>
-                    <option value="">Select location…</option>
-                    {locations.map(l=><option key={l.id} value={l.id}>{l.city}, {l.district}, {l.state}</option>)}
-                  </select>
+                  <div className="admin-company-relationship-fields">
+                    <label>Category<select value={m.category||'Pharmaceutical'} onChange={ev=>updateMap(i,{category:ev.target.value})}>
+                      {categories.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select></label>
+                    {m.action==='match'&&<label>Division<select value={m.division_id||''} onChange={ev=>updateMap(i,{division_id:ev.target.value})}>
+                      <option value="">No division / select if applicable</option>
+                      {divisions.filter(d=>d.company_id===m.company_id).map(d=><option key={d.id} value={d.id}>{d.division_name}</option>)}
+                    </select></label>}
+                  </div>
                 </div>
-                {auto.kind!=='matched'&&<div className="admin-company-publish-hint">{auto.kind==='suggested'?'Possible match: '+auto.label:auto.kind==='review'?'Multiple possible matches: '+auto.label:auto.kind==='new'?'No existing company found.': 'Company name is missing.'}</div>}
+                {auto.kind==='matched'&&<div className="admin-company-publish-hint admin-match-success">Company matched by {auto.method}{auto.aliasUsed?' using alias "'+auto.aliasUsed+'". Review and accept the match above.':'. Review and accept the match above.'}</div>}
+                {auto.kind==='suggested'&&<div className="admin-company-publish-hint">Suggested match: {auto.label}. Accept it only after confirming the company identity.</div>}
+                {auto.kind==='review'&&<div className="admin-company-publish-hint">Multiple possible matches: {auto.label}. Use “Choose different company” to select the correct record.</div>}
+                {auto.kind==='new'&&<div className="admin-company-publish-hint">No existing company found. Create a new company only after checking the submitted name.</div>}
               </div>
             })}
           </div>
@@ -222,7 +257,7 @@ export default function AdminDistributorSubmissions({onBack}){
         <div className="admin-actions admin-publish-actions">
           <button onClick={closeReview}>Cancel</button>
           <button className="primary" onClick={publish} disabled={saving===selected.id||summary.review>0||!reviewEntries.length}>
-            {saving===selected.id?<><LoaderCircle className="spin" size={15}/> Publishing…</>:<><Send size={15}/> Review complete — Publish</>}
+            {saving===selected.id?<><LoaderCircle className="spin" size={15}/> Publishing…</>:<><Send size={15}/> Approve & Publish to Directory</>}
           </button>
         </div>
       </div>
