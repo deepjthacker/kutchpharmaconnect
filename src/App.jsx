@@ -29,9 +29,18 @@ const mapsLink=entity=>{
   return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:null
 }
 const mapsLabel=entity=>entity?.maps_url?'Directions':'Find on Maps'
+const trackEvent=(name,params={})=>{
+  if(typeof window!=='undefined'&&typeof window.gtag==='function'){
+    window.gtag('event',name,params)
+  }
+}
 
 export default function App(){
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+
+  useEffect(()=>{
+    trackEvent('page_view',{page_title:document.title,page_location:window.location.href})
+  },[])
 
   useEffect(()=>{
     document.documentElement.dataset.theme=theme
@@ -168,6 +177,7 @@ export default function App(){
     }
     const { error } = await supabase.from('correction_reports').insert(payload)
     if(error){setReportError(error.message);setReportSubmitting(false);return}
+    trackEvent('correction_submit',{entity_type:payload.entity_type,issue_type:payload.issue_type})
     setReportSent(true);setReportSubmitting(false)
   }
 
@@ -188,6 +198,7 @@ export default function App(){
 
   async function search(term){
     setLoading(true);setSearched(true);setError('')
+    trackEvent('search',{search_term:term.trim()})
 
     const cleanTerm=term.trim().replace(/[%_]/g,'')
     const p='%'+cleanTerm+'%'
@@ -301,6 +312,7 @@ export default function App(){
 
   async function openProfile(type,id){
     setProfileLoading(true);setError('')
+    trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name').eq('id',id).eq('status','active').maybeSingle(),
@@ -625,7 +637,7 @@ export default function App(){
                                 <Phone size={13}/>
                                 <a
                                   href={phoneLink(r.target.mobile)}
-                                  onClick={e => e.stopPropagation()}
+                                  onClick={e => {e.stopPropagation();trackEvent('phone_click',{entity_type:profileType})}}
                                 >
                                   {r.target.mobile}
                                 </a>
@@ -646,7 +658,7 @@ export default function App(){
                                   href={waLink(r.target.whatsapp || r.target.mobile,distributorWhatsAppMessage(r.target.distributor_name))}
                                   target="_blank"
                                   rel="noreferrer"
-                                  onClick={e => e.stopPropagation()}
+                                  onClick={e => {e.stopPropagation();trackEvent('whatsapp_click',{entity_type:profileType})}}
                                 >
                                   <MessageCircle size={14}/> WhatsApp
                                 </a>
@@ -656,7 +668,7 @@ export default function App(){
                                   href={mapsLink(r.target)}
                                   target="_blank"
                                   rel="noreferrer"
-                                  onClick={e => e.stopPropagation()}
+                                  onClick={e => {e.stopPropagation();trackEvent('maps_click',{entity_type:profileType})}}
                                 >
                                   <MapPin size={14}/> {mapsLabel(r.target)}
                                 </a>
