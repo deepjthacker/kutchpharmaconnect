@@ -827,3 +827,61 @@ html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1
   .final-review-grid{grid-template-columns:1fr}
   .company-review-actions button{padding:6px 9px}
 }
+
+
+.report-reporter-box{
+  margin-top:13px;padding:13px;border:1px solid #dce4ef;border-radius:11px;background:#f8fafc;
+}
+.report-reporter-box>strong{display:block;font-size:11px;color:#273a55}
+.report-reporter-box>span{display:block;font-size:9px;color:#7a8798;margin:3px 0 10px;line-height:1.45}
+.report-reporter-box label{background:transparent!important;border:0!important;padding:0!important;margin:0!important}
+.report-reporter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.admin-reporter-box{
+  display:grid;gap:3px;margin:9px 0;padding:10px 11px;border:1px solid #dce4ef;border-radius:9px;background:#f8fafc;
+}
+.admin-reporter-box>div{display:flex;align-items:center;gap:6px;color:#344a68;font-size:10px;margin-bottom:2px}
+.admin-reporter-box>span{font-size:9px;color:#68778c}
+.distributor-admin-review-modal{max-width:1050px!important;max-height:92vh;overflow:auto}
+.admin-publish-summary{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.admin-publish-summary span{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:6px 9px;background:#f2f6fc;color:#526176;font-size:9px;font-weight:850}
+.admin-publish-section{border:1px solid #dfe6ef;border-radius:12px;padding:14px;margin-top:11px;background:#fff}
+.admin-publish-section-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:10px}
+.admin-publish-section-head h3{margin:0;font-size:12px;color:#263a55}
+.admin-publish-section-head span{font-size:9px;color:#7a8798}
+.admin-publish-section select,.admin-publish-section input,.admin-publish-section textarea{
+  width:100%;box-sizing:border-box;border:1px solid #d5deeb;border-radius:8px;background:#fff;color:#263a55;padding:8px 9px;font:inherit;font-size:10px;
+}
+.admin-publish-meta{font-size:9px;color:#7a8798;margin-top:7px}
+.admin-company-publish-list{display:grid;gap:8px}
+.admin-company-publish-row{border:1px solid #e1e7ef;border-radius:10px;padding:10px;background:#fbfcfe}
+.admin-company-publish-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
+.admin-company-publish-top strong{display:block;font-size:11px;color:#263a55}
+.admin-company-publish-top small{display:block;font-size:8px;color:#7a8798;margin-top:2px}
+.admin-company-publish-controls{display:grid;grid-template-columns:1.1fr 1.6fr 1fr 1.2fr 1.2fr;gap:7px}
+.admin-company-publish-hint{margin-top:6px;font-size:9px;color:#8a5a16;background:#fff8e8;border-radius:6px;padding:5px 7px}
+.admin-publish-actions{justify-content:flex-end;margin-top:14px}
+html[data-theme="dark"] .report-reporter-box,
+html[data-theme="dark"] .admin-reporter-box,
+html[data-theme="dark"] .admin-publish-section,
+html[data-theme="dark"] .admin-company-publish-row{
+  background:#111c2e;border-color:#2d3b50;color:#e5e7eb
+}
+html[data-theme="dark"] .report-reporter-box>strong,
+html[data-theme="dark"] .admin-reporter-box>div,
+html[data-theme="dark"] .admin-publish-section-head h3,
+html[data-theme="dark"] .admin-company-publish-top strong{color:#f1f5f9}
+html[data-theme="dark"] .report-reporter-box>span,
+html[data-theme="dark"] .admin-reporter-box>span,
+html[data-theme="dark"] .admin-publish-section-head span,
+html[data-theme="dark"] .admin-publish-meta,
+html[data-theme="dark"] .admin-company-publish-top small{color:#94a3b8}
+html[data-theme="dark"] .admin-publish-section select,
+html[data-theme="dark"] .admin-publish-section input,
+html[data-theme="dark"] .admin-publish-section textarea{background:#0f172a;color:#f1f5f9;border-color:#334155}
+@media(max-width:760px){
+  .report-reporter-grid{grid-template-columns:1fr}
+  .admin-company-publish-controls{grid-template-columns:1fr}
+  .admin-publish-section-head{display:block}
+  .admin-publish-section-head span{display:block;margin-top:3px}
+  .admin-publish-actions{display:grid}
+}
