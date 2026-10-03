@@ -21,9 +21,12 @@ export default function AdminReports({onBack}){
   }
   useEffect(()=>{load()},[])
   async function updateStatus(id,status){
-    setSaving(id)
-    const {error}=await supabase.from('correction_reports').update({status,resolved_at:status==='resolved'?new Date().toISOString():null}).eq('id',id)
-    if(error)setError(error.message);else setReports(x=>x.map(r=>r.id===id?{...r,status,resolved_at:status==='resolved'?new Date().toISOString():null}:r))
+    setSaving(id);setError('')
+    const {data:{user}}=await supabase.auth.getUser()
+    const now=status==='resolved'?new Date().toISOString():null
+    const patch={status,resolved_at:now,resolved_by:status==='resolved'?(user?.id||null):null}
+    const {error}=await supabase.from('correction_reports').update(patch).eq('id',id)
+    if(error)setError(error.message);else setReports(x=>x.map(r=>r.id===id?{...r,...patch}:r))
     setSaving('')
   }
   return <div className="admin-page">
