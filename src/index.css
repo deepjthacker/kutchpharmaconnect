@@ -879,6 +879,19 @@ html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1
 .admin-company-publish-controls{display:grid;grid-template-columns:1.1fr 1.6fr 1fr 1.2fr 1.2fr;gap:7px}
 .admin-company-publish-hint{margin-top:6px;font-size:9px;color:#8a5a16;background:#fff8e8;border-radius:6px;padding:5px 7px}
 .admin-publish-actions{justify-content:flex-end;margin-top:14px}
+html[data-theme="dark"] .admin-company-match-card,
+html[data-theme="dark"] .admin-company-selected,
+html[data-theme="dark"] .admin-company-search-box{background:#0f172a;border-color:#334155}
+html[data-theme="dark"] .admin-company-match-line strong,
+html[data-theme="dark"] .admin-company-relationship-fields label,
+html[data-theme="dark"] .admin-publish-location-label{color:#f1f5f9}
+html[data-theme="dark"] .admin-company-match-line span,
+html[data-theme="dark"] .admin-company-match-line small,
+html[data-theme="dark"] .admin-publish-location-note{color:#94a3b8}
+html[data-theme="dark"] .admin-company-match-actions button,
+html[data-theme="dark"] .admin-company-selected button{background:#111c2e;color:#e5e7eb;border-color:#334155}
+html[data-theme="dark"] .admin-company-selected{background:#14261a;border-color:#2e5d3a;color:#b9e3c1}
+
 html[data-theme="dark"] .report-reporter-box,
 html[data-theme="dark"] .admin-reporter-box,
 html[data-theme="dark"] .admin-publish-section,
@@ -900,6 +913,8 @@ html[data-theme="dark"] .admin-publish-section textarea{background:#0f172a;color
 @media(max-width:760px){
   .report-reporter-grid{grid-template-columns:1fr}
   .admin-company-publish-controls{grid-template-columns:1fr}
+  .admin-company-match-card{grid-template-columns:1fr}
+  .admin-company-search-box,.admin-company-relationship-fields{grid-template-columns:1fr}
   .admin-publish-section-head{display:block}
   .admin-publish-section-head span{display:block;margin-top:3px}
   .admin-publish-actions{display:grid}
