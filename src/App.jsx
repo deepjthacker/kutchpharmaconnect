@@ -769,7 +769,7 @@ export default function App(){
       <header className="header">
         <div className="container header-inner">
           <a className="brand" href="/" aria-label="KutchPharmaConnect home">
-            <img src="/kutchpharma-connect-logo.svg" alt="KutchPharmaConnect" className="brand-logo" />
+            <span className="brand-text">KutchPharmaConnect</span>
           </a>
           <nav className="header-nav">
             <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
@@ -801,8 +801,8 @@ export default function App(){
       <footer className="site-footer">
         <div className="container site-footer-inner">
           <div className="site-footer-brand">
-            <img src="/kutchpharma-connect-logo.svg" alt="KutchPharmaConnect" className="footer-logo" />
             <div className="site-footer-copy">
+              <span className="footer-brand-text">KutchPharmaConnect</span>
               <span>KutchPharmaConnect — Find Who Handles What in Kutch</span>
               <span>Directory information may change. Please contact the distributor directly to confirm current distributorship, territory, availability, and contact details.</span>
             </div>
