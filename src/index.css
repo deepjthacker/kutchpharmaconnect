@@ -180,3 +180,123 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 
 
 .distributor-submit-cta{position:fixed;left:20px;bottom:20px;z-index:40;display:flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid #cbd5e1;border-radius:14px;background:#fff;color:#123b63;box-shadow:0 8px 24px rgba(15,23,42,.12);cursor:pointer;text-align:left}.distributor-submit-cta span{display:flex;flex-direction:column}.distributor-submit-cta small{font-size:11px;color:#64748b;margin-top:2px}.distributor-submit-modal{max-width:820px;max-height:90vh;overflow:auto}.submission-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.submission-form-grid label{display:flex;flex-direction:column;gap:6px}.submission-wide{grid-column:1/-1}.submission-companies{margin:12px 0;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.submission-companies pre{white-space:pre-wrap;font:inherit;margin:8px 0 0;color:#334155}.admin-status.open{background:#fff7ed;color:#9a3412}.admin-status.under_review{background:#eff6ff;color:#1d4ed8}.admin-status.approved{background:#ecfdf5;color:#047857}.admin-status.rejected{background:#fef2f2;color:#b91c1c}@media(max-width:700px){.submission-form-grid{grid-template-columns:1fr}.submission-wide{grid-column:auto}.distributor-submit-cta{left:12px;right:12px;bottom:12px;justify-content:center}.report-floating{bottom:82px!important}}
+
+
+/* Refined visual polish — intentionally light, not a redesign */
+.header{
+  position:sticky;
+  top:0;
+  z-index:35;
+  box-shadow:0 2px 14px rgba(31,52,88,.045);
+  backdrop-filter:blur(10px);
+}
+.header-nav button{
+  transition:background .15s ease,color .15s ease,transform .15s ease;
+}
+.header-nav button:hover{
+  background:#f0f4fb;
+  color:#173a8f;
+}
+.header-nav .admin-nav-button{
+  border:1px solid #d5dfef;
+  background:#f8faff;
+  margin-left:4px;
+}
+.header-nav .admin-nav-button:hover{
+  background:#eef3ff;
+  border-color:#b9c9e5;
+}
+.hero{
+  background:
+    radial-gradient(circle at 12% 18%,rgba(49,89,168,.07),transparent 27%),
+    radial-gradient(circle at 88% 16%,rgba(99,102,241,.055),transparent 24%),
+    linear-gradient(180deg,#fbfdff 0%,#f7f9fd 100%);
+}
+.hero-inner{
+  padding-top:82px;
+  padding-bottom:88px;
+}
+.hero h1{
+  text-shadow:0 2px 18px rgba(31,52,88,.035);
+}
+.hero-copy{
+  color:#617087;
+}
+.search-box{
+  position:relative;
+  transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease;
+}
+.search-box:focus-within{
+  border-color:#9eb3d7;
+  box-shadow:0 16px 46px rgba(31,52,88,.13),0 0 0 4px rgba(49,89,168,.055);
+}
+.search-box button{
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.search-box button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 7px 17px rgba(23,58,143,.22);
+}
+.quick-links{
+  margin-top:4px;
+}
+.quick-links button{
+  transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+.quick-links button:hover{
+  transform:translateY(-1px);
+  border-color:#bdcbe1;
+  box-shadow:0 7px 18px rgba(31,52,88,.07);
+}
+.directory-section{
+  background:#fff;
+  border-top:1px solid #edf0f5;
+}
+.category-card{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(145deg,#fff 0%,#fbfcff 100%);
+  box-shadow:0 5px 18px rgba(31,52,88,.035);
+}
+.category-card:before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:#3159a8;
+  opacity:0;
+  transition:opacity .15s ease;
+}
+.category-card:hover{
+  box-shadow:0 9px 24px rgba(31,52,88,.075);
+  transform:translateY(-2px);
+}
+.category-card:hover:before{
+  opacity:1;
+}
+.featured-section{
+  border-top:1px solid #e9edf3;
+}
+.featured-heading h2,
+.section-heading h2{
+  color:#172033;
+}
+.site-footer{
+  background:#fbfcfe;
+}
+@media(max-width:760px){
+  .header-inner{height:64px}
+  .brand-logo{width:176px}
+  .header-nav{gap:1px}
+  .header-nav button{padding:7px 7px;font-size:11px}
+  .header-nav button:nth-child(3){display:none}
+  .header-nav .admin-nav-button{margin-left:2px}
+  .hero-inner{padding-top:58px;padding-bottom:64px}
+}
+@media(max-width:500px){
+  .brand-logo{width:155px}
+  .header-nav button:first-child,.header-nav button:nth-child(2){display:none}
+  .header-nav .admin-nav-button{display:inline-flex}
+}
