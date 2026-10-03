@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect,useMemo,useState } from 'react'
-import { ArrowLeft,Truck,Edit3,LoaderCircle,Search,Save,X,Phone,MessageCircle,MapPin,Mail } from 'lucide-react'
+import { ArrowLeft,Truck,Edit3,LoaderCircle,Search,Save,X,Phone,Trash2,MessageCircle,MapPin,Mail } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 export default function AdminDistributors({onBack}){
@@ -20,6 +20,16 @@ export default function AdminDistributors({onBack}){
  useEffect(()=>{load()},[])
  const filtered=useMemo(()=>rows.filter(x=>(status==='all'||x.status===status)&&(!q.trim()||[x.distributor_name,x.legal_name,x.contact_person,x.mobile,x.email,x.address].filter(Boolean).some(v=>v.toLowerCase().includes(q.toLowerCase())))),[rows,q,status])
  function edit(x){setSelected(x);setForm({...x})}
+ async function removeDistributor(){
+  if(!selected||busy)return
+  const ok=window.confirm('Permanently delete this distributor and all of its distributor-company relationships? This is for test, duplicate, or incorrect records only. This cannot be undone.')
+  if(!ok)return
+  setBusy(true);setError('')
+  const r=await supabase.rpc('admin_delete_distributor',{p_distributor_id:selected.id})
+  if(r.error){setError(r.error.message);setBusy(false);return}
+  setRows(prev=>prev.filter(x=>x.id!==selected.id))
+  setSelected(null);setBusy(false)
+ }
  async function save(e){e.preventDefault();setBusy(true);setError('')
   const payload={distributor_name:form.distributor_name.trim(),legal_name:form.legal_name?.trim()||null,contact_person:form.contact_person?.trim()||null,mobile:form.mobile?.trim()||null,whatsapp:form.whatsapp?.trim()||null,email:form.email?.trim()||null,address:form.address?.trim()||null,maps_url:form.maps_url?.trim()||null,website:form.website?.trim()||null,notes:form.notes?.trim()||null,status:form.status}
   const r=await supabase.from('distributors').update(payload).eq('id',selected.id).select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city_id,maps_url,website,notes,status').single()
@@ -30,5 +40,5 @@ export default function AdminDistributors({onBack}){
  <div className="admin-list-head"><strong>{filtered.length}</strong> distributors shown</div>{loading?<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading distributors…</div>:<div className="admin-company-list">{filtered.map(x=><button className="admin-company-card" key={x.id} onClick={()=>edit(x)}><span className="admin-company-icon"><Truck size={18}/></span><span className="admin-company-copy"><strong>{x.distributor_name}</strong>{x.contact_person&&<span>{x.contact_person}</span>}<small>{x.relationship_count} active {x.relationship_count===1?'relationship':'relationships'}{x.mobile?' • '+x.mobile:''}</small></span><span className={`admin-company-status ${x.status}`}>{x.status}</span><Edit3 size={15}/></button>)}</div>}
  {selected&&<div className="report-overlay"><div className="report-modal admin-edit-modal"><button className="report-close" onClick={()=>!busy&&setSelected(null)}><X size={18}/></button><p className="section-kicker">DISTRIBUTOR RECORD</p><h2>Edit Distributor</h2><form onSubmit={save}>
  {['distributor_name','legal_name','contact_person','mobile','whatsapp','email','address','maps_url','website'].map(k=><label key={k}>{k.replaceAll('_',' ')}{k==='distributor_name'&&<span className="required"> *</span>}<input required={k==='distributor_name'} value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})}/></label>)}
- <label>Notes<textarea rows="3" value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})}/></label><label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label><button className="report-submit" disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Saving…</>:<><Save size={16}/> Save Changes</>}</button></form></div></div>}</div>
+ <label>Notes<textarea rows="3" value={form.notes||''} onChange={e=>setForm({...form,notes:e.target.value})}/></label><label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="active">Active</option><option value="inactive">Inactive</option></select></label><button className="report-submit" disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Saving…</>:<><Save size={16}/> Save Changes</>}</button></form><div className="admin-danger-zone"><strong>Permanent deletion</strong><p>Use only for test, duplicate, or incorrect distributor records. Real closed distributors should be set to Inactive.</p><button type="button" className="admin-delete-btn" onClick={removeDistributor} disabled={busy}><Trash2 size={15}/> Delete Distributor Permanently</button></div></div></div>}</div>
 }
