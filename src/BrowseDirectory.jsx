@@ -72,7 +72,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
 
         const locationIds = [...new Set((rels || []).map(x => x.location_id).filter(Boolean))]
         const { data: locations, error: locationError } = locationIds.length
-          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
+          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds).eq('status','active')
           : { data: [], error: null }
 
         if (locationError) {
@@ -100,7 +100,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
           }).filter(x => x.relationshipCount > 0))
         }
       } else if (isLocations) {
-        const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').order('city')
+        const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').eq('status','active').order('city')
         if (locationError) { if (!cancelled) { setError(locationError.message); setLoading(false) }; return }
         const ids = (locations || []).map(x => x.id)
         const { data: rels, error: relError } = ids.length
@@ -129,7 +129,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
       } else {
         const { data, error: distributorError } = await supabase
           .from('distributors')
-          .select('id,distributor_name,contact_person,mobile,city_id')
+          .select('id,distributor_name,contact_person,mobile,whatsapp,city_id')
           .eq('status', 'active')
           .order('distributor_name')
 
@@ -284,7 +284,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
                       {!isCompanies && (
                         <div className="browse-contact-actions">
                           {item.mobile && <a href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={13}/> Call</a>}
-                          {item.mobile && <a href={waLink(item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={13}/> WhatsApp</a>}
+                          {item.mobile && <a href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={13}/> WhatsApp</a>}
                         </div>
                       )}
                     </>
