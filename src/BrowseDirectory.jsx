@@ -36,7 +36,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
       if (isCompanies) {
         let categoryCompanyIds = null
         if (category) {
-          const { data: categoryRow, error: categoryError } = await supabase.from('categories').select('id,category_name').ilike('category_name', category).eq('status', 'active').maybeSingle()
+          const { data: categoryRow, error: categoryError } = await supabase.from('categories').select('id,name').ilike('name', category).eq('status', 'active').maybeSingle()
           if (categoryError) { if (!cancelled) { setError(categoryError.message); setLoading(false) }; return }
           if (!categoryRow) { if (!cancelled) { setError('Category not found.'); setLoading(false) }; return }
           const { data: categoryLinks, error: categoryLinkError } = await supabase.from('company_categories').select('company_id').eq('category_id', categoryRow.id)
