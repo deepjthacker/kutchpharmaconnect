@@ -76,9 +76,9 @@ export default function AdminDistributorSubmissions({onBack}){
       const m=matchCompany(e)
       if(m.company){
         const div=divisionFor(e,m.company.id)
-        next[i]={action:'match',company_id:m.company.id,division_id:div?.id||'',category:(e.category||'Pharmaceutical'),category_id:'',location_id:locationForSubmission(row)?.id||'',territory:'',company_name:e.company_name}
+        next[i]={action:'',company_id:m.company.id,division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
       }else{
-        next[i]={action:'',company_id:'',division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',location_id:locationForSubmission(row)?.id||'',territory:'',company_name:e.company_name}
+        next[i]={action:'',company_id:'',division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
       }
     })
     const exactDist=distributorForSubmission(row)
@@ -196,7 +196,6 @@ export default function AdminDistributorSubmissions({onBack}){
           <div className="admin-company-publish-list">
             {reviewEntries.map((e,i)=>{
               const auto=matchCompany(e), m=mappings[i]||{}
-              const candidates=auto.candidates||((auto.company)?[auto.company]:[])
               return <div className="admin-company-publish-row" key={i}>
                 <div className="admin-company-publish-top">
                   <div><strong>{e.company_name||'Company missing'}</strong><small>{e.division||'No division'} · {e.category||'Pharmaceutical'}</small></div>
