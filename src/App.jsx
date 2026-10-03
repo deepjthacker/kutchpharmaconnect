@@ -5,7 +5,6 @@ import { supabase } from './lib/supabase'
 import BrowseDirectory from './BrowseDirectory'
 import AdminDashboard from './AdminDashboard'
 import DistributorSubmission from './DistributorSubmission'
-import ProductSubmission from './ProductSubmission'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE='918980043357'
@@ -760,7 +759,6 @@ export default function App(){
       </main>
 
       <DistributorSubmission />
-      <ProductSubmission />
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
 
