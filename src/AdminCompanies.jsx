@@ -73,17 +73,6 @@ export default function AdminCompanies({ onBack }){
     setSelected(null);setBusy(false)
   }
 
-  async function removeCompany(){
-    if(!selected||busy)return
-    const ok=window.confirm('Permanently delete this company and its distributorship relationships, divisions, aliases, and product records? This is for test, duplicate, or incorrect records only. This cannot be undone.')
-    if(!ok)return
-    setBusy(true);setError('')
-    const r=await supabase.rpc('admin_delete_company',{p_company_id:selected.id})
-    if(r.error){setError(r.error.message);setBusy(false);return}
-    setCompanies(prev=>prev.filter(x=>x.id!==selected.id))
-    setSelected(null);setBusy(false)
-  }
-
   async function saveCompany(e){
     e.preventDefault()
     if(!form.company_name.trim())return
