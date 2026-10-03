@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-const KPC_WEBSITE='https://kutchpharmaconnect.netlify.app/'
+const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+'/':''
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect. I found your contact details through the KutchPharmaConnect directory and would like to enquire about your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
 const normalizePhone=number=>{
   const raw=String(number||'').trim()
