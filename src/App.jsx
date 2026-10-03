@@ -31,7 +31,7 @@ const mapsLink=entity=>{
 const mapsLabel=entity=>entity?.maps_url?'Directions':'Find on Maps'
 
 export default function App(){
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     document.documentElement.dataset.theme=theme
@@ -161,7 +161,10 @@ export default function App(){
       entity_type: profile?.type || 'directory',
       entity_id: profile?.entity?.id || null,
       issue_type: report.type,
-      description: report.message.trim()
+      description: report.message.trim(),
+      reporter_name: report.reporter_name.trim() || null,
+      reporter_mobile: report.reporter_mobile.trim() || null,
+      reporter_email: report.reporter_email.trim() || null
     }
     const { error } = await supabase.from('correction_reports').insert(payload)
     if(error){setReportError(error.message);setReportSubmitting(false);return}
@@ -169,7 +172,7 @@ export default function App(){
   }
 
   function openReport(){
-    setReport({type:'incorrect_relationship',message:'',contact:''})
+    setReport({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
     setReportError('');setReportSent(false);setReportOpen(true)
   }
 
@@ -826,9 +829,18 @@ export default function App(){
                   <option value="other">Other directory information</option>
                 </select>
               </label>
-              <label>Details <span className="required">*</span>
-                <textarea required value={report.message} onChange={e=>setReport({...report,message:e.target.value})} placeholder="Tell us what should be corrected..." rows="5" />
+              <label>What should be corrected? <span className="required">*</span>
+                <textarea required value={report.message} onChange={e=>setReport({...report,message:e.target.value})} placeholder="Example: This distributor no longer handles Cipla in Bhuj. Please remove or update the relationship." rows="5" />
               </label>
+              <div className="report-reporter-box">
+                <strong>About you</strong>
+                <span>Please provide your details so our admin team can verify the information if necessary. We will use them only for directory review.</span>
+                <label>Name <span className="required">*</span><input required value={report.reporter_name} onChange={e=>setReport({...report,reporter_name:e.target.value})} placeholder="Your name"/></label>
+                <div className="report-reporter-grid">
+                  <label>Mobile / WhatsApp <span className="required">*</span><input required value={report.reporter_mobile} onChange={e=>setReport({...report,reporter_mobile:e.target.value})} placeholder="+91 98765 43210"/></label>
+                  <label>Email <span className="optional-label">optional</span><input type="email" value={report.reporter_email} onChange={e=>setReport({...report,reporter_email:e.target.value})} placeholder="you@example.com"/></label>
+                </div>
+              </div>
               {reportError && <div className="report-error">{reportError}</div>}
               <button className="report-submit" disabled={reportSubmitting}>{reportSubmitting ? <><LoaderCircle className="spin" size={16}/> Sending…</> : <><Flag size={16}/> Submit Report</>}</button>
             </form>
