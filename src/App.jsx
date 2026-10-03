@@ -768,7 +768,7 @@ export default function App(){
     <div className={`app app-theme-${theme}`}>
       <header className="header">
         <div className="container header-inner">
-          <a className="brand" href="/" aria-label="KutchPharmaConnect home">
+          <a className="brand" href={import.meta.env.BASE_URL} aria-label="KutchPharmaConnect home">
             <span className="brand-text">KutchPharmaConnect</span>
           </a>
           <nav className="header-nav">
