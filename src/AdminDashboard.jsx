@@ -1,9 +1,10 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { Building2, Truck, Link2, ShieldCheck, Clock3, Flag, RefreshCw, LoaderCircle, ArrowRight, FilePlus2 } from 'lucide-react'
+import { Building2, Truck, Link2, ShieldCheck, Clock3, Flag, RefreshCw, LoaderCircle, ArrowRight, FilePlus2, Package } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
+import AdminProductSubmissions from './AdminProductSubmissions'
 import AdminCompanies from './AdminCompanies'
 import AdminDistributors from './AdminDistributors'
 import AdminDivisions from './AdminDivisions'
@@ -26,15 +27,17 @@ export default function AdminDashboard(){
       supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active').eq('verification_status','needs_review'),
       supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active').eq('verification_status','unverified'),
       supabase.from('correction_reports').select('id',{count:'exact',head:true}).eq('status','open'),
-      supabase.from('distributor_submissions').select('id',{count:'exact',head:true}).in('status',['open','under_review'])
+      supabase.from('distributor_submissions').select('id',{count:'exact',head:true}).in('status',['open','under_review']),
+      supabase.from('product_submissions').select('id',{count:'exact',head:true}).in('status',['open','under_review'])
     ])
     const bad=queries.find(x=>x.error)
     if(bad){setError(bad.error.message);setStats(null)}
-    else setStats({companies:queries[0].count||0,distributors:queries[1].count||0,relationships:queries[2].count||0,verified:queries[3].count||0,review:queries[4].count||0,unverified:queries[5].count||0,reports:queries[6].count||0,submissions:queries[7].count||0})
+    else setStats({companies:queries[0].count||0,distributors:queries[1].count||0,relationships:queries[2].count||0,verified:queries[3].count||0,review:queries[4].count||0,unverified:queries[5].count||0,reports:queries[6].count||0,submissions:queries[7].count||0,productSubmissions:queries[8].count||0})
     setLoading(false)
   }
   useEffect(()=>{load()},[])
   if(view==='submissions') return <AdminDistributorSubmissions onBack={()=>setView('dashboard')} />
+  if(view==='product-submissions') return <AdminProductSubmissions onBack={()=>setView('dashboard')} />
   if(view==='companies') return <AdminCompanies onBack={()=>setView('dashboard')} />
   if(view==='distributors') return <AdminDistributors onBack={()=>setView('dashboard')} />
   if(view==='divisions') return <AdminDivisions onBack={()=>setView('dashboard')} />
@@ -53,7 +56,8 @@ export default function AdminDashboard(){
     ['Under Review',stats?.review,Clock3,'relationships needing review'],
     ['Not Verified',stats?.unverified,Clock3,'unverified relationships'],
     ['Open Reports',stats?.reports,Flag,'public correction reports'],
-    ['New Submissions',stats?.submissions,FilePlus2,'distributor submissions awaiting review']
+    ['New Submissions',stats?.submissions,FilePlus2,'distributor submissions awaiting review'],
+    ['Product Uploads',stats?.productSubmissions,Package,'product lists awaiting review']
   ]
   return <div className="admin-page">
     <div className="admin-head"><div><p className="section-kicker">ADMIN</p><h1>Dashboard</h1><p>Live directory overview and administration.</p></div><button className="admin-refresh" onClick={load} disabled={loading}><RefreshCw size={15}/> Refresh</button></div>
@@ -64,6 +68,7 @@ export default function AdminDashboard(){
         <section className="admin-panel">
           <p className="section-kicker">QUICK ACTIONS</p><h2>Administration</h2>
           <button className="admin-link" onClick={()=>setView('submissions')}><FilePlus2 size={16}/><span><strong>Distributor Submissions</strong><small>Review new distributor information submitted publicly</small></span><ArrowRight size={15}/></button>
+          <button className="admin-link" onClick={()=>setView('product-submissions')}><Package size={16}/><span><strong>Product Submissions</strong><small>Review bulk product lists and matching exceptions</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('companies')}><Building2 size={16}/><span><strong>Companies</strong><small>Manage company identities and active status</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('distributors')}><Truck size={16}/><span><strong>Distributors</strong><small>Manage distributor records and contacts</small></span><ArrowRight size={15}/></button>
           <button className="admin-link" onClick={()=>setView('distributorships')}><Link2 size={16}/><span><strong>Distributorships</strong><small>Manage company–distributor relationships</small></span><ArrowRight size={15}/></button>
