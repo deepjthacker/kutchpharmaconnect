@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2 } from 'lucide-react'
+import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import BrowseDirectory from './BrowseDirectory'
 import AdminDashboard from './AdminDashboard'
@@ -8,12 +8,35 @@ import DistributorSubmission from './DistributorSubmission'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE='918980043357'
+const KPC_WEBSITE='https://kutchpharmaconnect.netlify.app/'
 const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
-const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect and would like to enquire about your current distributorships.`
-const waLink=(number,message)=>`https://wa.me/${String(number||'').replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
+const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect. I found your contact details through the KutchPharmaConnect directory and would like to enquire about your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
+const normalizePhone=number=>{
+  const raw=String(number||'').trim()
+  if(!raw)return ''
+  if(raw.startsWith('+'))return '+'+raw.slice(1).replace(/\\D/g,'')
+  const digits=raw.replace(/\\D/g,'')
+  if(digits.length===10)return '+91'+digits
+  if(digits.length===11&&digits.startsWith('0'))return '+91'+digits.slice(1)
+  if(digits.startsWith('91')&&digits.length===12)return '+'+digits
+  return digits
+}
+const phoneLink=number=>`tel:${normalizePhone(number)}`
+const waLink=(number,message)=>`https://wa.me/${normalizePhone(number).replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
+const mapsLink=entity=>{
+  if(entity?.maps_url)return entity.maps_url
+  const query=[entity?.distributor_name,entity?.address,'Kutch','Gujarat'].filter(Boolean).join(', ')
+  return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:null
+}
+const mapsLabel=entity=>entity?.maps_url?'Directions':'Find on Maps'
 
 export default function App(){
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',contact:''})
+
+  useEffect(()=>{
+    document.documentElement.dataset.theme=theme
+    try{localStorage.setItem('kpc-theme',theme)}catch{}
+  },[theme])
 
   useEffect(()=>{
     let mounted=true
@@ -372,13 +395,13 @@ export default function App(){
                   {profile.entity.mobile && (
                     <div>
                       <Phone size={15}/>
-                      <a href={`tel:${profile.entity.mobile}`}>{profile.entity.mobile}</a>
+                      <a href={phoneLink(profile.entity.mobile)}>{profile.entity.mobile}</a>
                     </div>
                   )}
                   {profile.entity.whatsapp && (
                     <div>
                       <MessageCircle size={15}/>
-                      <a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">
+                      <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer">
                         {profile.entity.whatsapp}
                       </a>
                     </div>
@@ -395,16 +418,16 @@ export default function App(){
 
                   <div className="profile-actions">
                     {profile.entity.mobile && (
-                      <a href={`tel:${profile.entity.mobile}`}><Phone size={15}/> Call</a>
+                      <a href={phoneLink(profile.entity.mobile)}><Phone size={15}/> Call</a>
                     )}
                     {profile.entity.whatsapp && (
-                      <a href={`https://wa.me/${profile.entity.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">
+                      <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer">
                         <MessageCircle size={15}/> WhatsApp
                       </a>
                     )}
-                    {profile.entity.maps_url && (
-                      <a href={profile.entity.maps_url} target="_blank" rel="noreferrer">
-                        <MapPin size={15}/> Maps
+                    {mapsLink(profile.entity) && (
+                      <a href={mapsLink(profile.entity)} target="_blank" rel="noreferrer">
+                        <MapPin size={15}/> {mapsLabel(profile.entity)}
                       </a>
                     )}
                   </div>
@@ -433,7 +456,7 @@ export default function App(){
                         {profile.type === 'company' && rel.distributor?.mobile && (
                           <div className="profile-rel-phone">
                             <Phone size={13}/>
-                            <a href={`tel:${rel.distributor.mobile}`}>{rel.distributor.mobile}</a>
+                            <a href={phoneLink(rel.distributor.mobile)}>{rel.distributor.mobile}</a>
                           </div>
                         )}
                       </div>
@@ -456,9 +479,9 @@ export default function App(){
                         )}
                         {profile.type === 'company' && (
                           <div className="profile-rel-actions">
-                            {rel.distributor?.mobile && <a className="profile-rel-action" href={`tel:${rel.distributor.mobile}`}><Phone size={13}/> Call</a>}
-                            {rel.distributor?.whatsapp && <a className="profile-rel-action" href={`https://wa.me/${rel.distributor.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>}
-                            {rel.distributor?.maps_url && <a className="profile-rel-action" href={rel.distributor.maps_url} target="_blank" rel="noreferrer"><MapPin size={13}/> Maps</a>}
+                            {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)}><Phone size={13}/> Call</a>}
+                            {rel.distributor?.whatsapp && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,distributorWhatsAppMessage(rel.distributor.distributor_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>}
+                            {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer"><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
                           </div>
                         )}
                       </div>
@@ -598,7 +621,7 @@ export default function App(){
                               <div className="result-phone">
                                 <Phone size={13}/>
                                 <a
-                                  href={`tel:${r.target.mobile}`}
+                                  href={phoneLink(r.target.mobile)}
                                   onClick={e => e.stopPropagation()}
                                 >
                                   {r.target.mobile}
@@ -609,7 +632,7 @@ export default function App(){
                             <div className="result-actions">
                               {r.target.mobile && (
                                 <a
-                                  href={`tel:${r.target.mobile}`}
+                                  href={phoneLink(r.target.mobile)}
                                   onClick={e => e.stopPropagation()}
                                 >
                                   <Phone size={14}/> Call
@@ -617,7 +640,7 @@ export default function App(){
                               )}
                               {r.target.whatsapp && (
                                 <a
-                                  href={`https://wa.me/${r.target.whatsapp.replace(/\D/g, '')}`}
+                                  href={waLink(r.target.whatsapp || r.target.mobile,distributorWhatsAppMessage(r.target.distributor_name))}
                                   target="_blank"
                                   rel="noreferrer"
                                   onClick={e => e.stopPropagation()}
@@ -625,14 +648,14 @@ export default function App(){
                                   <MessageCircle size={14}/> WhatsApp
                                 </a>
                               )}
-                              {r.target.maps_url && (
+                              {mapsLink(r.target) && (
                                 <a
-                                  href={r.target.maps_url}
+                                  href={mapsLink(r.target)}
                                   target="_blank"
                                   rel="noreferrer"
                                   onClick={e => e.stopPropagation()}
                                 >
-                                  <MapPin size={14}/> Maps
+                                  <MapPin size={14}/> {mapsLabel(r.target)}
                                 </a>
                               )}
                             </div>
@@ -708,7 +731,7 @@ export default function App(){
               <p>Contact the KutchPharmaConnect admin team for help with directory information or a missing listing.</p>
             </div>
             <div className="admin-contact-actions">
-              <a href={`tel:+${ADMIN_PHONE}`}><Phone size={16}/> Call Admin</a>
+              <a href={phoneLink(ADMIN_PHONE)}><Phone size={16}/> Call Admin</a>
               <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp Admin</a>
             </div>
           </div>
@@ -739,7 +762,7 @@ export default function App(){
   }
 
   return (
-    <div className="app">
+    <div className={`app app-theme-${theme}`}>
       <header className="header">
         <div className="container header-inner">
           <a className="brand" href="/" aria-label="KutchPharmaConnect home">
@@ -749,6 +772,16 @@ export default function App(){
             <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
             <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
             <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
+            <button
+              className="theme-toggle"
+              type="button"
+              onClick={()=>setTheme(current=>current==='dark'?'light':'dark')}
+              aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
+              title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
+            >
+              {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
+              <span>{theme==='dark'?'Light':'Dark'}</span>
+            </button>
             <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
           </nav>
         </div>
@@ -770,7 +803,7 @@ export default function App(){
           </div>
           <div className="site-footer-contact">
             <span>Admin Contact</span>
-            <a href={`tel:+${ADMIN_PHONE}`}><Phone size={13}/> +91 89800 43357</a>
+            <a href={phoneLink(ADMIN_PHONE)}><Phone size={13}/> +91 89800 43357</a>
             <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>
           </div>
         </div>
