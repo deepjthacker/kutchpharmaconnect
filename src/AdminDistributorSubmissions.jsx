@@ -121,7 +121,7 @@ export default function AdminDistributorSubmissions({onBack}){
     })
     if(payload.some(x=>!x.category_id)){setError('One or more categories could not be matched.');setSaving('');return}
     if(payload.some(x=>!x.location_id)){setError('One or more rows have no Kutch location. Add the location before publishing.');setSaving('');return}
-    const {data,error}=await supabase.rpc('publish_distributor_submission',{p_submission_id:selected.id,p_mappings:payload,p_admin_notes:adminNotes||null})
+    const {data,error}=await supabase.rpc('publish_distributor_submission',{p_submission_id:selected.id,p_mappings:payload,p_admin_notes:adminNotes||null,p_distributor_id:selectedDistributor||null})
     if(error){setError(error.message);setSaving('');return}
     setRows(x=>x.map(r=>r.id===selected.id?{...r,status:'approved',reviewed_at:new Date().toISOString()}:r))
     setSelected(null);setSaving('')
