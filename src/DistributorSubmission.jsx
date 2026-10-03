@@ -17,7 +17,7 @@ function rowsFromSheet(rows){
 }
 function downloadSample(){
   const a=document.createElement('a')
-  a.href='/distributor-company-upload-sample.csv'
+  a.href=`${import.meta.env.BASE_URL}distributor-company-upload-sample.csv`
   a.download='KutchPharmaConnect_Distributor_Company_Upload_Sample.csv'
   a.click()
 }
