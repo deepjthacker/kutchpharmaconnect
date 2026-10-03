@@ -8,7 +8,7 @@ import DistributorSubmission from './DistributorSubmission'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE='918980043357'
-const KPC_WEBSITE='https://kutchpharmaconnect.netlify.app/'
+const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+'/':''
 const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect. I found your contact details through the KutchPharmaConnect directory and would like to enquire about your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
 const normalizePhone=number=>{
