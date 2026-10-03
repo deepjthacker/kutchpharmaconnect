@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, 
 import { supabase } from './lib/supabase'
 
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+'/':''
-const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect. I found your contact details through the KutchPharmaConnect directory and would like to enquire about your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
+const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
 const normalizePhone=number=>{
   const raw=String(number||'').trim()
   if(!raw)return ''
