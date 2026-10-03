@@ -841,7 +841,7 @@ html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1
 }
 .admin-reporter-box>div{display:flex;align-items:center;gap:6px;color:#344a68;font-size:10px;margin-bottom:2px}
 .admin-reporter-box>span{font-size:9px;color:#68778c}
-.distributor-admin-review-modal{max-width:1050px!important;max-height:92vh;overflow:auto}
+.distributor-admin-review-modal{max-width:820px!important;width:min(820px,calc(100vw - 28px));max-height:92vh;overflow:auto}
 .admin-publish-summary{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
 .admin-publish-summary span{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:6px 9px;background:#f2f6fc;color:#526176;font-size:9px;font-weight:850}
 .admin-publish-section{border:1px solid #dfe6ef;border-radius:12px;padding:14px;margin-top:11px;background:#fff}
@@ -855,18 +855,18 @@ html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1
 .admin-publish-location-label{display:block;font-size:10px;font-weight:800;color:#344a68;margin-top:11px;margin-bottom:5px}
 .admin-publish-location-note{font-size:9px;color:#68778c;margin-top:6px;line-height:1.45}
 .admin-company-match-controls{display:block}
-.admin-company-match-card{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;border:1px solid #e0e7f0;border-radius:9px;background:#fff;margin-bottom:8px}
+.admin-company-match-card{display:grid;grid-template-columns:1fr;gap:9px;padding:11px;border:1px solid #e0e7f0;border-radius:9px;background:#fff;margin-bottom:9px}
 .admin-company-match-line{display:flex;flex-direction:column;gap:2px}
 .admin-company-match-line span{font-size:8px;text-transform:uppercase;letter-spacing:.04em;font-weight:800;color:#8793a4}
 .admin-company-match-line strong{font-size:10px;color:#263a55}
 .admin-company-match-line small{font-size:8px;color:#68778c;line-height:1.35}
-.admin-company-match-actions,.admin-company-selected{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.admin-company-match-actions button,.admin-company-selected button{font-size:9px;padding:7px 9px;border:1px solid #d5deeb;border-radius:7px;background:#fff;color:#344a68;font-weight:800;cursor:pointer}
+.admin-company-match-actions,.admin-company-selected{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.admin-company-match-actions button,.admin-company-selected button{width:100%;font-size:10px;padding:9px 10px;border:1px solid #d5deeb;border-radius:7px;background:#fff;color:#344a68;font-weight:800;cursor:pointer}
 .admin-company-match-actions button.primary{background:#244f86;color:#fff;border-color:#244f86}
-.admin-company-selected{justify-content:space-between;padding:8px 9px;border-radius:8px;background:#eef7f0;border:1px solid #cfe6d5;color:#315c3a;font-size:9px}
+.admin-company-selected{justify-content:flex-start;padding:10px;border-radius:8px;background:#eef7f0;border:1px solid #cfe6d5;color:#315c3a;font-size:10px}
 .admin-company-selected button{background:#fff}
-.admin-company-search-box{display:grid;grid-template-columns:1.5fr 1fr;gap:7px;margin-top:8px;padding:8px;border-radius:8px;background:#f6f8fb;border:1px dashed #ccd7e5}
-.admin-company-relationship-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.admin-company-search-box{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px;padding:9px;border-radius:8px;background:#f6f8fb;border:1px dashed #ccd7e5}
+.admin-company-relationship-fields{display:grid;grid-template-columns:1fr;gap:9px;margin-top:9px}
 .admin-company-relationship-fields label{font-size:8px;font-weight:800;color:#68778c}
 .admin-company-relationship-fields select{margin-top:4px}
 .admin-match-success{background:#eef7f0;color:#315c3a}
@@ -876,7 +876,7 @@ html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1
 .admin-company-publish-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
 .admin-company-publish-top strong{display:block;font-size:11px;color:#263a55}
 .admin-company-publish-top small{display:block;font-size:8px;color:#7a8798;margin-top:2px}
-.admin-company-publish-controls{display:grid;grid-template-columns:1.1fr 1.6fr 1fr 1.2fr 1.2fr;gap:7px}
+.admin-company-publish-controls{display:grid;grid-template-columns:1fr;gap:9px}
 .admin-company-publish-hint{margin-top:6px;font-size:9px;color:#8a5a16;background:#fff8e8;border-radius:6px;padding:5px 7px}
 .admin-publish-actions{justify-content:flex-end;margin-top:14px}
 html[data-theme="dark"] .admin-company-match-card,
