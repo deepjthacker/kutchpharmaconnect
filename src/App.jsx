@@ -94,7 +94,7 @@ export default function App(){
 
   async function updateAdminPassword(e){
     e.preventDefault();setResetError('')
-    if(newPassword.length<6){setResetError('Password must be at least 6 characters.');return}
+    if(newPassword.length<8){setResetError('Password must be at least 8 characters.');return}
     if(newPassword!==newPasswordConfirm){setResetError('The passwords do not match.');return}
     setAuthBusy(true)
     const {error}=await supabase.auth.updateUser({password:newPassword})
@@ -879,8 +879,8 @@ export default function App(){
       {passwordResetOpen && <div className="report-overlay"><div className="report-modal">
         <p className="section-kicker">ADMIN ACCESS</p><h2>Set New Password</h2><p className="report-help">Your reset link is valid. Choose a new password for the admin account.</p>
         <form onSubmit={updateAdminPassword}>
-          <label>New password<input required type="password" minLength="6" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="New password" /></label>
-          <label>Confirm password<input required type="password" minLength="6" value={newPasswordConfirm} onChange={e=>setNewPasswordConfirm(e.target.value)} placeholder="Confirm new password" /></label>
+          <label>New password<input required type="password" minLength="8" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="New password" /></label>
+          <label>Confirm password<input required type="password" minLength="8" value={newPasswordConfirm} onChange={e=>setNewPasswordConfirm(e.target.value)} placeholder="Confirm new password" /></label>
           {resetError&&<div className="report-error">{resetError}</div>}
           <button className="report-submit" disabled={authBusy}>{authBusy?<><LoaderCircle className="spin" size={16}/> Updating…</>:<><ShieldCheck size={16}/> Update Password</>}</button>
         </form>
