@@ -73,6 +73,17 @@ export default function AdminCompanies({ onBack }){
     setSelected(null);setBusy(false)
   }
 
+  async function removeCompany(){
+    if(!selected||busy)return
+    const ok=window.confirm('Permanently delete this company and its distributorship relationships, divisions, aliases, and product records? This is for test, duplicate, or incorrect records only. This cannot be undone.')
+    if(!ok)return
+    setBusy(true);setError('')
+    const r=await supabase.rpc('admin_delete_company',{p_company_id:selected.id})
+    if(r.error){setError(r.error.message);setBusy(false);return}
+    setCompanies(prev=>prev.filter(x=>x.id!==selected.id))
+    setSelected(null);setBusy(false)
+  }
+
   async function saveCompany(e){
     e.preventDefault()
     if(!form.company_name.trim())return
@@ -170,6 +181,11 @@ export default function AdminCompanies({ onBack }){
             </label>
             <button className="report-submit" disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Saving…</>:<><Save size={16}/> Save Changes</>}</button>
           </form>
+          <div className="admin-danger-zone">
+            <strong>Permanent deletion</strong>
+            <p>Use only for test, duplicate, or incorrect company records. If the company is still part of your real directory, set it to Inactive instead.</p>
+            <button type="button" className="admin-delete-btn" onClick={removeCompany} disabled={busy}><Trash2 size={15}/> Delete Company Permanently</button>
+          </div>
         </div>
       </div>}
     </div>
