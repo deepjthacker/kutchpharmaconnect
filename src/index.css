@@ -642,3 +642,188 @@ html[data-theme="dark"] .admin-page td{
   border-color:#2d3b50;
   color:#cbd5e1;
 }
+
+
+/* Distributor submission — polished review-first workflow */
+.distributor-form-modal{
+  width:min(940px,calc(100vw - 32px));
+  max-height:92vh;
+  overflow:auto;
+  padding:28px;
+}
+.submission-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+  margin-bottom:22px;
+  padding-right:28px;
+}
+.submission-top h2{margin:4px 0 7px}
+.submission-step-indicator{display:flex;align-items:center;gap:7px;flex:none;margin-top:4px}
+.submission-step-indicator span{
+  width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid #d7dfeb;background:#f5f7fa;color:#7a879a;font-size:11px;font-weight:900
+}
+.submission-step-indicator span.active{background:#3159a8;border-color:#3159a8;color:#fff}
+.submission-step-indicator span.complete{background:#ecf9ef;border-color:#b8e0c2;color:#18733a}
+.submission-step-indicator i{width:34px;height:1px;background:#d9e1ec}
+.submission-section{
+  border:1px solid #e0e7f0;border-radius:15px;background:#fff;padding:18px;margin-top:14px
+}
+.submission-section-heading{display:flex;align-items:flex-start;gap:11px;margin-bottom:16px}
+.submission-section-number{
+  width:28px;height:28px;border-radius:9px;background:#eef3ff;color:#3159a8;
+  display:grid;place-items:center;font-size:11px;font-weight:900;flex:none
+}
+.submission-section-heading h3{margin:1px 0 3px;font-size:15px;color:#172033}
+.submission-section-heading p{margin:0;color:#718096;font-size:11px;line-height:1.45}
+.optional-label{font-size:9px;color:#8b97a8;font-weight:700;margin-left:3px}
+.company-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.submission-tool-button{
+  display:inline-flex;align-items:center;gap:6px;border:1px solid #d5deeb;border-radius:9px;
+  background:#f9fbfe;color:#3159a8;padding:8px 10px;font-size:10px;font-weight:850;cursor:pointer
+}
+.submission-tool-button:hover{background:#eef3ff;border-color:#b9c9e5}
+.bulk-loaded{
+  display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:10px;
+  border:1px solid #cfe5d5;border-radius:9px;background:#f3fbf5;color:#21683a;font-size:10px
+}
+.company-review-list{display:grid;gap:7px;margin-bottom:10px}
+.company-review-card{
+  display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;
+  border:1px solid #e1e7ef;border-radius:11px;padding:10px 11px;background:#fbfcfe
+}
+.company-review-index{
+  width:27px;height:27px;border-radius:8px;background:#eef3ff;color:#3159a8;display:grid;place-items:center;
+  font-size:9px;font-weight:900
+}
+.company-review-main{min-width:0}
+.company-review-main strong{display:block;font-size:12px;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.company-review-main div{display:flex;gap:7px;flex-wrap:wrap;margin-top:3px}
+.company-review-main span{font-size:9px;color:#7a8798}
+.company-review-main em{font-style:normal;font-size:8px;font-weight:800;color:#3159a8;background:#eef3ff;border-radius:5px;padding:2px 5px}
+.company-review-actions{display:flex;gap:5px}
+.company-review-actions button{
+  display:inline-flex;align-items:center;gap:4px;border:1px solid #d5deeb;border-radius:7px;
+  background:#fff;color:#3159a8;padding:6px 8px;font-size:9px;font-weight:850;cursor:pointer
+}
+.company-review-actions button:hover{background:#eef3ff}
+.company-review-actions button.danger{color:#b33b3b;border-color:#ebcccc}
+.company-review-actions button.danger:hover{background:#fff3f3}
+.add-company-toggle{
+  display:flex!important;flex-direction:row!important;align-items:center!important;gap:9px!important;
+  border:1px dashed #b9c9e5;border-radius:11px;padding:10px 12px;background:#f8fbff;cursor:pointer
+}
+.add-company-toggle input{position:absolute;opacity:0;pointer-events:none}
+.fake-check{
+  width:22px;height:22px;border-radius:6px;border:1px solid #b9c9e5;background:#fff;
+  display:grid;place-items:center;color:#3159a8;font-size:13px;font-weight:900;flex:none
+}
+.add-company-toggle>span:last-child{display:flex;flex-direction:column;gap:2px}
+.add-company-toggle strong{font-size:10px;color:#29466f}
+.add-company-toggle small{font-size:9px;color:#7a8798}
+.company-editor-card{
+  margin-top:9px;border:1px solid #cfdbea;border-radius:12px;padding:13px;background:#f8faff
+}
+.company-editor-heading{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:11px}
+.company-editor-heading strong{display:block;font-size:11px;color:#233b5e}
+.company-editor-heading span{display:block;font-size:9px;color:#7a8798;margin-top:2px}
+.company-editor-heading button{border:0;background:transparent;color:#6b7280;font-size:9px;font-weight:800;cursor:pointer}
+.company-editor-grid{display:grid;grid-template-columns:2fr 1.5fr 1fr;gap:9px}
+.company-editor-grid label{display:flex;flex-direction:column;gap:5px;font-size:9px;font-weight:800;color:#536176}
+.save-company-button{
+  display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:0;border-radius:8px;
+  background:#3159a8;color:#fff;padding:8px 11px;font-size:10px;font-weight:850;cursor:pointer
+}
+.save-company-button:hover{background:#264b96}
+.company-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:22px;border:1px dashed #d5deeb;border-radius:11px;color:#7a8798;gap:4px;margin-bottom:9px
+}
+.company-empty strong{font-size:11px;color:#40516a}
+.company-empty span{font-size:9px}
+.company-empty-icon{
+  width:38px;height:38px;border-radius:11px;background:#eef3ff;color:#3159a8;display:grid;place-items:center;margin-bottom:3px
+}
+.submission-footer-action{
+  display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:15px;
+  padding:12px 2px 2px
+}
+.submission-footer-action>div{display:flex;flex-direction:column;gap:3px}
+.submission-footer-action strong{font-size:10px;color:#31445f}
+.submission-footer-action span{font-size:9px;color:#7a8798}
+.submission-footer-action .report-submit{margin:0;width:auto;padding:10px 15px}
+.final-review{display:grid;gap:12px}
+.final-review-section{border:1px solid #e0e7f0;border-radius:14px;background:#fff;padding:16px}
+.final-review-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.final-review-heading h3{margin:0;font-size:13px;color:#263a55}
+.final-review-heading span{font-size:9px;color:#7a8798}
+.final-review-heading button{
+  display:inline-flex;align-items:center;gap:4px;border:1px solid #d5deeb;border-radius:7px;
+  background:#fff;color:#3159a8;padding:6px 8px;font-size:9px;font-weight:850;cursor:pointer
+}
+.final-review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.final-review-grid>div{padding:8px 9px;background:#f8fafc;border-radius:8px;min-width:0}
+.final-review-grid small{display:block;color:#8792a3;font-size:8px;margin-bottom:3px}
+.final-review-grid strong{display:block;color:#25344b;font-size:10px;word-break:break-word}
+.final-review-company-list{display:grid;gap:6px}
+.final-review-company-list>div{display:flex;align-items:center;gap:9px;padding:8px 9px;background:#f8fafc;border-radius:8px}
+.final-review-company-list>div>span{width:23px;height:23px;border-radius:6px;background:#eef3ff;color:#3159a8;display:grid;place-items:center;font-size:8px;font-weight:900}
+.final-review-company-list strong{display:block;font-size:10px;color:#263a55}
+.final-review-company-list small{display:block;font-size:8px;color:#8792a3;margin-top:2px}
+.final-review-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.submission-secondary{
+  display:inline-flex;align-items:center;gap:6px;border:1px solid #d5deeb;border-radius:8px;background:#fff;
+  color:#526176;padding:9px 12px;font-size:10px;font-weight:850;cursor:pointer
+}
+.submission-secondary:hover{background:#f7f9fc}
+html[data-theme="dark"] .submission-section,
+html[data-theme="dark"] .company-review-card,
+html[data-theme="dark"] .company-editor-card,
+html[data-theme="dark"] .final-review-section,
+html[data-theme="dark"] .final-review-grid>div,
+html[data-theme="dark"] .final-review-company-list>div{
+  background:#111c2e;border-color:#2d3b50;color:#e5e7eb
+}
+html[data-theme="dark"] .submission-section-heading h3,
+html[data-theme="dark"] .company-review-main strong,
+html[data-theme="dark"] .company-editor-heading strong,
+html[data-theme="dark"] .submission-footer-action strong,
+html[data-theme="dark"] .final-review-heading h3,
+html[data-theme="dark"] .final-review-grid strong,
+html[data-theme="dark"] .final-review-company-list strong{color:#f1f5f9}
+html[data-theme="dark"] .submission-section-heading p,
+html[data-theme="dark"] .company-review-main span,
+html[data-theme="dark"] .company-editor-heading span,
+html[data-theme="dark"] .add-company-toggle small,
+html[data-theme="dark"] .submission-footer-action span,
+html[data-theme="dark"] .final-review-grid small,
+html[data-theme="dark"] .final-review-company-list small{color:#94a3b8}
+html[data-theme="dark"] .submission-tool-button,
+html[data-theme="dark"] .company-review-actions button,
+html[data-theme="dark"] .final-review-heading button,
+html[data-theme="dark"] .submission-secondary{background:#162236;border-color:#3a4a61;color:#cbd5e1}
+html[data-theme="dark"] .add-company-toggle{background:#162236;border-color:#465a78}
+html[data-theme="dark"] .fake-check{background:#111c2e;border-color:#465a78}
+html[data-theme="dark"] .company-editor-grid input,
+html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1f5f9;border-color:#334155}
+@media(max-width:760px){
+  .distributor-form-modal{width:calc(100vw - 20px);max-height:94vh;padding:18px}
+  .submission-top{padding-right:22px}
+  .submission-step-indicator{display:none}
+  .company-editor-grid{grid-template-columns:1fr}
+  .company-review-card{grid-template-columns:27px 1fr}
+  .company-review-actions{grid-column:2;justify-content:flex-start}
+  .submission-footer-action{display:block}
+  .submission-footer-action .report-submit{margin-top:10px;width:100%;justify-content:center}
+  .final-review-grid{grid-template-columns:1fr 1fr}
+  .final-review-actions{display:grid;grid-template-columns:1fr}
+  .final-review-actions button{justify-content:center}
+}
+@media(max-width:480px){
+  .distributor-form-modal{padding:15px}
+  .submission-section{padding:13px}
+  .final-review-grid{grid-template-columns:1fr}
+  .company-review-actions button{padding:6px 9px}
+}
