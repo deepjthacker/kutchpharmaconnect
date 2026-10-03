@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { CheckCircle2, LoaderCircle, RefreshCw, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, LoaderCircle, RefreshCw, ShieldAlert, UserRound } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const labels={
@@ -35,7 +35,13 @@ export default function AdminReports({onBack}){
           <div className="admin-report-top"><span className={'admin-status '+r.status}>{r.status.replace('_',' ')}</span><small>{new Date(r.submitted_at).toLocaleString()}</small></div>
           <strong>{labels[r.issue_type]||r.issue_type}</strong>
           <p>{r.description}</p>
-          {r.contact&&<span className="admin-contact">Contact: {r.contact}</span>}
+          <div className="admin-reporter-box">
+  <div><UserRound size={14}/><strong>Reported by</strong></div>
+  <span>{r.reporter_name||'Name not provided'}</span>
+  {r.reporter_mobile&&<span>Mobile / WhatsApp: {r.reporter_mobile}</span>}
+  {r.reporter_email&&<span>Email: {r.reporter_email}</span>}
+</div>
+{r.admin_notes&&<div className="admin-note"><strong>Admin notes:</strong> {r.admin_notes}</div>}
           <div className="admin-actions">
             {r.status!=='under_review'&&r.status!=='resolved'&&<button onClick={()=>updateStatus(r.id,'under_review')} disabled={saving===r.id}>Mark Under Review</button>}
             {r.status!=='resolved'&&<button className="primary" onClick={()=>updateStatus(r.id,'resolved')} disabled={saving===r.id}>{saving===r.id?<LoaderCircle className="spin" size={14}/>:<CheckCircle2 size={14}/>} Resolve</button>}
