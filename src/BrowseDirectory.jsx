@@ -271,7 +271,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
                       {item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Current relationships are listed from supplied directory data but have not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
-                          {item.mobile && <a href={`tel:${item.mobile}`} onClick={e=>e.stopPropagation()}><Phone size={13}/> Call</a>}
+                          {item.mobile && <a href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={13}/> Call</a>}
                           {item.mobile && <a href={waLink(item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={13}/> WhatsApp</a>}
                         </div>
                       )}
