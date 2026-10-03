@@ -596,3 +596,49 @@ html[data-theme="dark"] .distributor-submit-cta small{
     padding:12px;
   }
 }
+
+
+/* Admin dark-mode support */
+html[data-theme="dark"] .admin-page,
+html[data-theme="dark"] .admin-panel,
+html[data-theme="dark"] .admin-stat,
+html[data-theme="dark"] .admin-link,
+html[data-theme="dark"] .admin-refresh,
+html[data-theme="dark"] .admin-modal,
+html[data-theme="dark"] .admin-table-wrap{
+  background:#111c2e;
+  border-color:#2d3b50;
+  color:#e5e7eb;
+}
+html[data-theme="dark"] .admin-page h1,
+html[data-theme="dark"] .admin-page h2,
+html[data-theme="dark"] .admin-panel h2,
+html[data-theme="dark"] .admin-stat strong,
+html[data-theme="dark"] .admin-link strong{
+  color:#f8fafc;
+}
+html[data-theme="dark"] .admin-page p,
+html[data-theme="dark"] .admin-stat span,
+html[data-theme="dark"] .admin-stat small,
+html[data-theme="dark"] .admin-link small,
+html[data-theme="dark"] .admin-note,
+html[data-theme="dark"] .admin-progress-row span{
+  color:#94a3b8;
+}
+html[data-theme="dark"] .admin-link:hover,
+html[data-theme="dark"] .admin-refresh:hover{
+  background:#1b2b42;
+  border-color:#465a78;
+}
+html[data-theme="dark"] .admin-page input,
+html[data-theme="dark"] .admin-page select,
+html[data-theme="dark"] .admin-page textarea{
+  background:#0f172a;
+  color:#f1f5f9;
+  border-color:#334155;
+}
+html[data-theme="dark"] .admin-page th,
+html[data-theme="dark"] .admin-page td{
+  border-color:#2d3b50;
+  color:#cbd5e1;
+}
