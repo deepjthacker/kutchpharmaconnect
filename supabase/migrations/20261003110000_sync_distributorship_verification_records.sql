@@ -44,3 +44,4 @@ for each row
 execute function public.sync_distributorship_verification_record();
 
 alter function public.sync_distributorship_verification_record() set search_path=public;
+revoke execute on function public.sync_distributorship_verification_record() from public, anon, authenticated;
