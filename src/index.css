@@ -852,6 +852,25 @@ html[data-theme="dark"] .company-editor-grid select{background:#0f172a;color:#f1
   width:100%;box-sizing:border-box;border:1px solid #d5deeb;border-radius:8px;background:#fff;color:#263a55;padding:8px 9px;font:inherit;font-size:10px;
 }
 .admin-publish-meta{font-size:9px;color:#7a8798;margin-top:7px}
+.admin-publish-location-label{display:block;font-size:10px;font-weight:800;color:#344a68;margin-top:11px;margin-bottom:5px}
+.admin-publish-location-note{font-size:9px;color:#68778c;margin-top:6px;line-height:1.45}
+.admin-company-match-controls{display:block}
+.admin-company-match-card{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px;border:1px solid #e0e7f0;border-radius:9px;background:#fff;margin-bottom:8px}
+.admin-company-match-line{display:flex;flex-direction:column;gap:2px}
+.admin-company-match-line span{font-size:8px;text-transform:uppercase;letter-spacing:.04em;font-weight:800;color:#8793a4}
+.admin-company-match-line strong{font-size:10px;color:#263a55}
+.admin-company-match-line small{font-size:8px;color:#68778c;line-height:1.35}
+.admin-company-match-actions,.admin-company-selected{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.admin-company-match-actions button,.admin-company-selected button{font-size:9px;padding:7px 9px;border:1px solid #d5deeb;border-radius:7px;background:#fff;color:#344a68;font-weight:800;cursor:pointer}
+.admin-company-match-actions button.primary{background:#244f86;color:#fff;border-color:#244f86}
+.admin-company-selected{justify-content:space-between;padding:8px 9px;border-radius:8px;background:#eef7f0;border:1px solid #cfe6d5;color:#315c3a;font-size:9px}
+.admin-company-selected button{background:#fff}
+.admin-company-search-box{display:grid;grid-template-columns:1.5fr 1fr;gap:7px;margin-top:8px;padding:8px;border-radius:8px;background:#f6f8fb;border:1px dashed #ccd7e5}
+.admin-company-relationship-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.admin-company-relationship-fields label{font-size:8px;font-weight:800;color:#68778c}
+.admin-company-relationship-fields select{margin-top:4px}
+.admin-match-success{background:#eef7f0;color:#315c3a}
+
 .admin-company-publish-list{display:grid;gap:8px}
 .admin-company-publish-row{border:1px solid #e1e7ef;border-radius:10px;padding:10px;background:#fbfcfe}
 .admin-company-publish-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
