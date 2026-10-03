@@ -248,7 +248,7 @@ export default function App(){
     const allDivisionIds=[...new Set(relationships.map(x=>x.division_id).filter(Boolean))]
 
     const [rc,rd,rv]=await Promise.all([
-      allCompanyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',allCompanyIds):Promise.resolve({data:[],error:null}),
+      allCompanyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',allCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       allDistributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').in('id',allDistributorIds):Promise.resolve({data:[],error:null}),
       allDivisionIds.length?supabase.from('divisions').select('id,division_name,company_id').in('id',allDivisionIds):Promise.resolve({data:[],error:null})
     ])
@@ -303,7 +303,7 @@ export default function App(){
     setProfileLoading(true);setError('')
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
-        supabase.from('companies').select('id,company_name,short_name').eq('id',id).maybeSingle(),
+        supabase.from('companies').select('id,company_name,short_name').eq('id',id).eq('status','active').maybeSingle(),
         supabase.from('distributorships').select('id,distributor_id,division_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
@@ -332,7 +332,7 @@ export default function App(){
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
       const [cRes,vRes,lRes]=await Promise.all([
-        companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds):Promise.resolve({data:[],error:null}),
+        companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
         locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null})
       ])
