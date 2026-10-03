@@ -3,8 +3,20 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect and would like to enquire about your current distributorships.`
-const waLink=(number,message)=>`https://wa.me/${String(number||'').replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
+const KPC_WEBSITE='https://kutchpharmaconnect.netlify.app/'
+const distributorWhatsAppMessage=name=>`Hello, I found ${name} on KutchPharmaConnect. I found your contact details through the KutchPharmaConnect directory and would like to enquire about your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
+const normalizePhone=number=>{
+  const raw=String(number||'').trim()
+  if(!raw)return ''
+  if(raw.startsWith('+'))return '+'+raw.slice(1).replace(/\D/g,'')
+  const digits=raw.replace(/\D/g,'')
+  if(digits.length===10)return '+91'+digits
+  if(digits.length===11&&digits.startsWith('0'))return '+91'+digits.slice(1)
+  if(digits.startsWith('91')&&digits.length===12)return '+'+digits
+  return digits
+}
+const phoneLink=number=>`tel:${normalizePhone(number)}`
+const waLink=(number,message)=>`https://wa.me/${normalizePhone(number).replace(/\D/g,'')}?text=${encodeURIComponent(message)}`
 
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile }) {
   const isCompanies = type === 'companies'
