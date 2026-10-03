@@ -300,3 +300,299 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
   .header-nav button:first-child,.header-nav button:nth-child(2){display:none}
   .header-nav .admin-nav-button{display:inline-flex}
 }
+
+
+/* Theme switch + dark mode */
+.theme-toggle{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:7px 10px;
+  border:1px solid #d5dfef;
+  border-radius:10px;
+  background:#fff;
+  color:#334155;
+  cursor:pointer;
+  transition:background .15s ease,color .15s ease,border-color .15s ease;
+}
+.theme-toggle:hover{
+  background:#f0f4fb;
+  border-color:#b9c9e5;
+}
+html[data-theme="dark"]{
+  color-scheme:dark;
+}
+html[data-theme="dark"] body{
+  background:#0f172a;
+  color:#e5e7eb;
+}
+html[data-theme="dark"] .app{
+  background:#0f172a;
+  color:#e5e7eb;
+}
+html[data-theme="dark"] .header{
+  background:rgba(15,23,42,.92);
+  border-bottom:1px solid #263449;
+  box-shadow:0 2px 18px rgba(0,0,0,.22);
+}
+html[data-theme="dark"] .header-nav button{
+  color:#cbd5e1;
+}
+html[data-theme="dark"] .header-nav button:hover,
+html[data-theme="dark"] .theme-toggle:hover{
+  background:#1e293b;
+  color:#fff;
+}
+html[data-theme="dark"] .header-nav .admin-nav-button,
+html[data-theme="dark"] .theme-toggle{
+  background:#172235;
+  border-color:#334155;
+  color:#e2e8f0;
+}
+html[data-theme="dark"] .hero{
+  background:
+    radial-gradient(circle at 12% 18%,rgba(76,111,180,.16),transparent 27%),
+    radial-gradient(circle at 88% 16%,rgba(99,102,241,.12),transparent 24%),
+    linear-gradient(180deg,#111c2e 0%,#0f172a 100%);
+}
+html[data-theme="dark"] .hero h1,
+html[data-theme="dark"] .featured-heading h2,
+html[data-theme="dark"] .section-heading h2,
+html[data-theme="dark"] .admin-contact-card h2,
+html[data-theme="dark"] .browse-header h2,
+html[data-theme="dark"] .profile-heading h2{
+  color:#f8fafc;
+}
+html[data-theme="dark"] .hero-copy,
+html[data-theme="dark"] .featured-heading p,
+html[data-theme="dark"] .section-heading p,
+html[data-theme="dark"] .admin-contact-card p,
+html[data-theme="dark"] .browse-header p{
+  color:#94a3b8;
+}
+html[data-theme="dark"] .search-box,
+html[data-theme="dark"] .browse-search{
+  background:#111c2e;
+  border-color:#334155;
+  color:#e2e8f0;
+}
+html[data-theme="dark"] .search-box input,
+html[data-theme="dark"] .browse-search input{
+  color:#f8fafc;
+}
+html[data-theme="dark"] .search-box input::placeholder,
+html[data-theme="dark"] .browse-search input::placeholder{
+  color:#64748b;
+}
+html[data-theme="dark"] .search-suggestions,
+html[data-theme="dark"] .search-results,
+html[data-theme="dark"] .result-card,
+html[data-theme="dark"] .profile-card,
+html[data-theme="dark"] .browse-card,
+html[data-theme="dark"] .featured-card,
+html[data-theme="dark"] .admin-contact-card,
+html[data-theme="dark"] .submission-form,
+html[data-theme="dark"] .modal-card{
+  background:#111c2e;
+  border-color:#2d3b50;
+  color:#e5e7eb;
+}
+html[data-theme="dark"] .suggestion-item,
+html[data-theme="dark"] .quick-links button,
+html[data-theme="dark"] .category-card,
+html[data-theme="dark"] .profile-rel,
+html[data-theme="dark"] .contact-panel{
+  background:#162236;
+  border-color:#2d3b50;
+  color:#e5e7eb;
+}
+html[data-theme="dark"] .suggestion-item:hover,
+html[data-theme="dark"] .quick-links button:hover{
+  background:#1e2d44;
+}
+html[data-theme="dark"] .result-card:hover,
+html[data-theme="dark"] .browse-card:hover,
+html[data-theme="dark"] .featured-card:hover,
+html[data-theme="dark"] .category-card:hover{
+  border-color:#465a78;
+}
+html[data-theme="dark"] .result-copy strong,
+html[data-theme="dark"] .browse-card-copy strong,
+html[data-theme="dark"] .featured-copy strong,
+html[data-theme="dark"] .profile-list-title{
+  color:#f1f5f9;
+}
+html[data-theme="dark"] .result-relation,
+html[data-theme="dark"] .result-meta,
+html[data-theme="dark"] .result-division,
+html[data-theme="dark"] .browse-card-copy span,
+html[data-theme="dark"] .browse-card-copy small,
+html[data-theme="dark"] .profile-summary,
+html[data-theme="dark"] .profile-short,
+html[data-theme="dark"] .profile-rel-right small{
+  color:#94a3b8;
+}
+html[data-theme="dark"] .result-actions a,
+html[data-theme="dark"] .profile-actions a,
+html[data-theme="dark"] .profile-rel-action,
+html[data-theme="dark"] .browse-contact-actions a{
+  background:#1b2b42;
+  border-color:#3a4a61;
+  color:#cbd5e1;
+}
+html[data-theme="dark"] .result-actions a:hover,
+html[data-theme="dark"] .profile-actions a:hover,
+html[data-theme="dark"] .profile-rel-action:hover,
+html[data-theme="dark"] .browse-contact-actions a:hover{
+  background:#263952;
+  color:#fff;
+}
+html[data-theme="dark"] .profile-link-button,
+html[data-theme="dark"] .browse-location-links button{
+  color:#8fb3ff;
+}
+html[data-theme="dark"] .directory-section,
+html[data-theme="dark"] .featured-section{
+  background:#0f172a;
+  border-color:#263449;
+}
+html[data-theme="dark"] .site-footer{
+  background:#0b1220;
+  color:#94a3b8;
+}
+html[data-theme="dark"] .back-button{
+  color:#a8c2f3;
+}
+html[data-theme="dark"] .result-state{
+  color:#94a3b8;
+}
+html[data-theme="dark"] .distributor-submit-cta{
+  background:#162236;
+  border-color:#334155;
+  color:#dbeafe;
+}
+html[data-theme="dark"] .distributor-submit-cta small{
+  color:#94a3b8;
+}
+
+/* Mobile layout refinement */
+@media(max-width:760px){
+  .header-inner{
+    min-width:0;
+    gap:8px;
+  }
+  .brand{
+    flex:0 0 auto;
+  }
+  .brand-logo{
+    max-width:160px;
+  }
+  .header-nav{
+    min-width:0;
+    flex:1 1 auto;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:none;
+    justify-content:flex-start;
+    white-space:nowrap;
+  }
+  .header-nav::-webkit-scrollbar{display:none}
+  .header-nav button{
+    flex:0 0 auto;
+  }
+  .header-nav button:nth-child(3){
+    display:inline-flex;
+  }
+  .theme-toggle span{
+    display:none;
+  }
+  .hero-inner{
+    padding-left:16px;
+    padding-right:16px;
+  }
+  .search-box{
+    width:100%;
+  }
+  .search-box input{
+    min-width:0;
+  }
+  .search-box button{
+    padding-left:14px;
+    padding-right:14px;
+  }
+  .results-list,
+  .browse-grid,
+  .featured-grid{
+    grid-template-columns:1fr;
+  }
+  .result-card{
+    grid-template-columns:auto 1fr auto;
+    gap:10px;
+  }
+  .result-actions,
+  .profile-actions,
+  .profile-rel-actions,
+  .browse-contact-actions{
+    flex-wrap:wrap;
+  }
+  .profile-card{
+    padding:18px;
+  }
+  .profile-rel{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .profile-rel-right{
+    align-items:flex-start;
+  }
+  .admin-contact-card{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:500px){
+  .header-inner{
+    height:58px;
+  }
+  .brand-logo{
+    width:128px;
+  }
+  .header-nav{
+    gap:3px;
+  }
+  .header-nav button{
+    padding:6px 7px;
+    font-size:10px;
+  }
+  .header-nav .admin-nav-button{
+    max-width:92px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .hero h1{
+    font-size:clamp(34px,10vw,46px);
+    line-height:1.02;
+  }
+  .hero-copy{
+    font-size:15px;
+  }
+  .search-box{
+    min-height:52px;
+  }
+  .search-box button{
+    padding-left:11px;
+    padding-right:11px;
+  }
+  .result-card{
+    padding:14px;
+  }
+  .result-open{
+    align-self:start;
+  }
+  .profile-heading{
+    align-items:flex-start;
+  }
+  .contact-panel{
+    padding:12px;
+  }
+}
