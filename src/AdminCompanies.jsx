@@ -4,7 +4,7 @@ import { ArrowLeft, Building2, Edit3, LoaderCircle, Plus, Search, Save, X, Trash
 import { supabase } from './lib/supabase'
 
 export default function AdminCompanies({ onBack }){
-  const [companies,setCompanies]=useState([])
+  const [companies,setCompanies]=useState([]),[categories,setCategories]=useState([]),[companyCategoryIds,setCompanyCategoryIds]=useState([])
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
   const [query,setQuery]=useState('')
@@ -25,15 +25,17 @@ export default function AdminCompanies({ onBack }){
     const ids=rows.map(x=>x.id)
     if(!ids.length){setCompanies([]);setLoading(false);return}
 
-    const [divRes,relRes]=await Promise.all([
+    const [divRes,relRes,catRes]=await Promise.all([
       supabase.from('divisions').select('company_id').in('company_id',ids).eq('status','active'),
-      supabase.from('distributorships').select('company_id').in('company_id',ids).eq('status','active')
+      supabase.from('distributorships').select('company_id').in('company_id',ids).eq('status','active'),
+      supabase.from('categories').select('id,name').eq('status','active').order('name')
     ])
-    if(divRes.error||relRes.error){setError((divRes.error||relRes.error).message);setCompanies([]);setLoading(false);return}
+    if(divRes.error||relRes.error||catRes.error){setError((divRes.error||relRes.error||catRes.error).message);setCompanies([]);setLoading(false);return}
 
     const divCounts={},relCounts={}
     ;(divRes.data||[]).forEach(x=>{divCounts[x.company_id]=(divCounts[x.company_id]||0)+1})
     ;(relRes.data||[]).forEach(x=>{relCounts[x.company_id]=(relCounts[x.company_id]||0)+1})
+    setCategories(catRes.data||[])
     setCompanies(rows.map(x=>({...x,division_count:divCounts[x.id]||0,relationship_count:relCounts[x.id]||0})))
     setLoading(false)
   }
@@ -58,6 +60,7 @@ export default function AdminCompanies({ onBack }){
       description:company.description||'',
       status:company.status||'active'
     })
+    supabase.from('company_categories').select('category_id').eq('company_id',company.id).then(({data})=>setCompanyCategoryIds((data||[]).map(x=>x.category_id)))
   }
 
   function closeEdit(){if(!busy){setSelected(null)}}
@@ -91,6 +94,14 @@ export default function AdminCompanies({ onBack }){
       .single()
 
     if(error){setError(error.message);setBusy(false);return}
+    const desired=new Set(companyCategoryIds)
+    const current=await supabase.from('company_categories').select('category_id').eq('company_id',selected.id)
+    if(current.error){setError(current.error.message);setBusy(false);return}
+    const currentIds=new Set((current.data||[]).map(x=>x.category_id))
+    const add=[...desired].filter(id=>!currentIds.has(id)).map(category_id=>({company_id:selected.id,category_id}))
+    const remove=[...currentIds].filter(id=>!desired.has(id))
+    if(add.length){const ar=await supabase.from('company_categories').insert(add);if(ar.error){setError(ar.error.message);setBusy(false);return}}
+    if(remove.length){const rr=await supabase.from('company_categories').delete().eq('company_id',selected.id).in('category_id',remove);if(rr.error){setError(rr.error.message);setBusy(false);return}}
     setCompanies(prev=>prev.map(x=>x.id===data.id?{...x,...data}:x))
     setSelected(null);setBusy(false)
   }
