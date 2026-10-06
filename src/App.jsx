@@ -128,13 +128,14 @@ export default function App(){
   async function loadSuggestions(term){
     setSuggestionLoading(true)
     const p='%'+term.replace(/[%_]/g,'')+'%'
-    const [co,di,dv,al]=await Promise.all([
+    const [co,di,dv,br,al]=await Promise.all([
       supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(5),
       supabase.from('distributors').select('id,distributor_name,contact_person').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(5),
       supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(5),
+      supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(5),
       supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(8)
     ])
-    if(co.error||di.error||dv.error||al.error){setSuggestions([]);setSuggestionLoading(false);return}
+    if(co.error||di.error||dv.error||br.error||al.error){setSuggestions([]);setSuggestionLoading(false);return}
 
     const companyAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
     const distributorAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='distributor').map(x=>x.entity_id))]
@@ -153,6 +154,9 @@ export default function App(){
     })
     ;(dv.data||[]).forEach(x=>{
       if(!seen.has('division-'+x.id)){seen.add('division-'+x.id);next.push({type:'division',id:x.id,companyId:x.company_id,label:x.division_name,meta:'Division'})}
+    })
+    ;(br.data||[]).forEach(x=>{
+      if(!seen.has('brand-'+x.id)){seen.add('brand-'+x.id);next.push({type:'brand',id:x.id,companyId:x.company_id,label:x.brand_name,meta:'Brand'})}
     })
     setSuggestions(next.slice(0,10))
     setSuggestionLoading(false)
@@ -199,15 +203,16 @@ export default function App(){
     const cleanTerm=term.trim().replace(/[%_]/g,'')
     const p='%'+cleanTerm+'%'
 
-    const [co,di,dv,al,loc] = await Promise.all([
+    const [co,di,dv,br,al,loc] = await Promise.all([
       supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
       supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(12),
       supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(12),
+      supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(12),
       supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(24),
       supabase.from('locations').select('id,city,district,state,pincode').or('city.ilike.'+p+',district.ilike.'+p+',state.ilike.'+p+',pincode.ilike.'+p).limit(12)
     ])
 
-    const err=co.error||di.error||dv.error||al.error||loc.error
+    const err=co.error||di.error||dv.error||br.error||al.error||loc.error
     if(err){setError(err.message);setResults([]);setLoading(false);return}
 
     const aliasCompanyIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
@@ -236,14 +241,16 @@ export default function App(){
     const companyIds=[...new Set(companies.map(x=>x.id))]
     const divisionIds=divisionRows.map(x=>x.id)
     const distributorIds=[...new Set(distributors.map(x=>x.id))]
-    const relatedCompanyIds=[...new Set([...companyIds,...divisionRows.map(x=>x.company_id)])]
+    const brandRows=br.data||[]
+    const brandIds=brandRows.map(x=>x.id)
+    const relatedCompanyIds=[...new Set([...companyIds,...divisionRows.map(x=>x.company_id),...brandRows.map(x=>x.company_id)])]
 
     const relQuery=relatedCompanyIds.length
-      ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('company_id',relatedCompanyIds)
+      ? supabase.from('distributorships').select('id,company_id,division_id,brand_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('company_id',relatedCompanyIds)
       : Promise.resolve({data:[],error:null})
 
     const distributorRelQuery=distributorIds.length
-      ? supabase.from('distributorships').select('id,company_id,division_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('distributor_id',distributorIds)
+      ? supabase.from('distributorships').select('id,company_id,division_id,brand_id,distributor_id,territory,status,verification_status,verification_note,category_id,location_id').eq('status','active').in('distributor_id',distributorIds)
       : Promise.resolve({data:[],error:null})
 
     const [rr,dr]=await Promise.all([relQuery,distributorRelQuery])
@@ -269,6 +276,7 @@ export default function App(){
     const searchedCompanyIds=new Set(companyIds)
     const searchedDistributorIds=new Set(distributorIds)
     const searchedDivisionIds=new Set(divisionIds)
+    const searchedBrandIds=new Set(brandIds)
     const searchedLocationIds=new Set(locationIds)
 
     const cards=[]
@@ -278,18 +286,20 @@ export default function App(){
       const company=companyMap.get(rel.company_id)
       const distributor=distributorMap.get(rel.distributor_id)
       const division=rel.division_id?divisionMap.get(rel.division_id):null
+      const brand=rel.brand_id?brandRows.find(x=>x.id===rel.brand_id):null
       if(!company||!distributor)return
 
       const companyMatch=searchedCompanyIds.has(rel.company_id)
       const distributorMatch=searchedDistributorIds.has(rel.distributor_id)
       const divisionMatch=searchedDivisionIds.has(rel.division_id)
+      const brandMatch=searchedBrandIds.has(rel.brand_id)
       const locationMatch=searchedLocationIds.has(rel.location_id)
 
-      if(companyMatch||divisionMatch||locationMatch){
+      if(companyMatch||divisionMatch||brandMatch||locationMatch){
         const key='company-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
-          cards.push({type:'relationship',icon:'company',title:company.company_name,subtitle:division?division.division_name:null,relation:'Currently handled by',target:distributor,rel})
+          cards.push({type:'relationship',icon:'company',title:company.company_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handled by',target:distributor,rel})
         }
       }
 
@@ -297,7 +307,7 @@ export default function App(){
         const key='distributor-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
-          cards.push({type:'relationship',icon:'distributor',title:distributor.distributor_name,subtitle:division?division.division_name:null,relation:'Currently handles',target:company,rel})
+          cards.push({type:'relationship',icon:'distributor',title:distributor.distributor_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handles',target:company,rel})
         }
       }
     })
@@ -312,21 +322,24 @@ export default function App(){
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name').eq('id',id).eq('status','active').maybeSingle(),
-        supabase.from('distributorships').select('id,distributor_id,division_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
+        supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
       const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
+      const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
-      const [dRes,vRes,lRes]=await Promise.all([
+      const [dRes,vRes,bRes,lRes]=await Promise.all([
         distributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').in('id',distributorIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+        brandIds.length?supabase.from('brands').select('id,brand_name').in('id',brandIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds).eq('status','active'):Promise.resolve({data:[],error:null})
       ])
-      if(dRes.error||vRes.error||lRes.error){setError((dRes.error||vRes.error).message);setProfileLoading(false);return}
+      if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error).message);setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
+      const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
       setProfile({type:'company',entity:companyRes.data,relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
