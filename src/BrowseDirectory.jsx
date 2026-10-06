@@ -62,7 +62,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         const { data: rels, error: relError } = ids.length
           ? await supabase
               .from('distributorships')
-              .select('company_id,distributor_id,location_id,verification_status')
+              .select('company_id,distributor_id,location_id,category_id,verification_status')
               .eq('status', 'active')
               .in('company_id', ids)
           : { data: [], error: null }
@@ -77,8 +77,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
           ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds).eq('status','active')
           : { data: [], error: null }
 
-        if (locationError || relationshipCategoryRows.error || categoryRows.error) {
-          if (!cancelled) { setError((locationError||relationshipCategoryRows.error||categoryRows.error).message); setLoading(false) }
+        if (locationError) {
+          if (!cancelled) { setError(locationError.message); setLoading(false) }
           return
         }
 
