@@ -5,28 +5,29 @@ import {supabase} from './lib/supabase'
 function norm(v){return String(v||'').toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim().replace(/\\s+/g,' ')}
 function entriesOf(row){
   if(Array.isArray(row.company_entries)&&row.company_entries.length)return row.company_entries
-  return String(row.companies_handled||'').split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean).map(company_name=>({company_name,division:'',category:'Pharmaceutical'}))
+  return String(row.companies_handled||'').split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean).map(company_name=>({company_name,handled_as:'company',brand:'',division:'',category:'Pharmaceutical'}))
 }
 
 export default function AdminDistributorSubmissions({onBack}){
   const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[selected,setSelected]=useState(null)
-  const [companies,setCompanies]=useState([]),[distributors,setDistributors]=useState([]),[aliases,setAliases]=useState([]),[divisions,setDivisions]=useState([]),[categories,setCategories]=useState([]),[locations,setLocations]=useState([])
+  const [companies,setCompanies]=useState([]),[distributors,setDistributors]=useState([]),[aliases,setAliases]=useState([]),[divisions,setDivisions]=useState([]),[brands,setBrands]=useState([]),[categories,setCategories]=useState([]),[locations,setLocations]=useState([])
   const [mappings,setMappings]=useState({}),[selectedDistributor,setSelectedDistributor]=useState(''),[selectedLocation,setSelectedLocation]=useState(''),[companySearches,setCompanySearches]=useState({}),[adminNotes,setAdminNotes]=useState('')
 
   async function load(){
     setLoading(true);setError('')
-    const [subRes,companyRes,distributorRes,aliasRes,divisionRes,categoryRes,locationRes]=await Promise.all([
+    const [subRes,companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes]=await Promise.all([
       supabase.from('distributor_submissions').select('*').order('submitted_at',{ascending:false}),
       supabase.from('companies').select('id,company_name,legal_name,short_name,status').eq('status','active').order('company_name'),
       supabase.from('distributors').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,status').eq('status','active').order('distributor_name'),
       supabase.from('search_aliases').select('entity_type,entity_id,alias,normalized_alias').eq('entity_type','company'),
       supabase.from('divisions').select('id,division_name,division_code,company_id,status').eq('status','active').order('division_name'),
+      supabase.from('brands').select('id,brand_name,company_id,status').eq('status','active').order('brand_name'),
       supabase.from('categories').select('id,name,status').eq('status','active').order('name'),
       supabase.from('locations').select('id,city,district,state,pincode,status').eq('status','active').order('city')
     ])
-    const bad=[subRes,companyRes,distributorRes,aliasRes,divisionRes,categoryRes,locationRes].find(x=>x.error)
+    const bad=[subRes,companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes].find(x=>x.error)
     if(bad)setError(bad.error.message)
-    else{setRows(subRes.data||[]);setCompanies(companyRes.data||[]);setDistributors(distributorRes.data||[]);setAliases(aliasRes.data||[]);setDivisions(divisionRes.data||[]);setCategories(categoryRes.data||[]);setLocations(locationRes.data||[])}
+    else{setRows(subRes.data||[]);setCompanies(companyRes.data||[]);setDistributors(distributorRes.data||[]);setAliases(aliasRes.data||[]);setDivisions(divisionRes.data||[]);setBrands(brandRes.data||[]);setCategories(categoryRes.data||[]);setLocations(locationRes.data||[])}
     setLoading(false)
   }
   useEffect(()=>{load()},[])
@@ -76,9 +77,10 @@ export default function AdminDistributorSubmissions({onBack}){
       const m=matchCompany(e)
       if(m.company){
         const div=divisionFor(e,m.company.id)
-        next[i]={action:'',company_id:m.company.id,division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
+        const b=brands.find(x=>x.company_id===m.company.id&&norm(x.brand_name)===norm(e.brand||''))
+        next[i]={action:'',company_id:m.company.id,handled_as:e.handled_as||'company',brand_id:b?.id||'',brand_name:e.brand||'',division_id:div?.id||'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
       }else{
-        next[i]={action:'',company_id:'',division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
+        next[i]={action:'',company_id:'',handled_as:e.handled_as||'company',brand_id:'',brand_name:e.brand||'',division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
       }
     })
     const exactDist=distributorForSubmission(row)
@@ -92,7 +94,9 @@ export default function AdminDistributorSubmissions({onBack}){
   function chooseCompany(i,companyId){
     const entry=entriesOf(selected)[i]
     const div=divisionFor(entry,companyId)
-    updateMap(i,{action:'match',company_id:companyId,division_id:div?.id||''})
+    const entryBrand=norm(entry.brand||'')
+    const b=brands.find(x=>x.company_id===companyId&&entryBrand&&norm(x.brand_name)===entryBrand)
+    updateMap(i,{action:'match',company_id:companyId,division_id:div?.id||'',brand_id:b?.id||'',brand_name:entry.brand||''})
     setCompanySearches(x=>{const n={...x};delete n[i];return n})
   }
 
@@ -118,7 +122,7 @@ export default function AdminDistributorSubmissions({onBack}){
   async function publish(){
     if(!selected)return
     setSaving(selected.id);setError('')
-    const unresolved=reviewEntries.some((e,i)=>!mappings[i]?.action||!mappings[i]?.category)
+    const unresolved=reviewEntries.some((e,i)=>!mappings[i]?.action||!mappings[i]?.category||mappings[i]?.handled_as==='brand'&&!mappings[i]?.brand_name||mappings[i]?.handled_as==='division'&&!mappings[i]?.division_id)
     if(unresolved){setError('Resolve every company row before publishing.');setSaving('');return}
     if(!selectedDistributor && !selected.city){setError('A distributor or submitted distributor location is required.');setSaving('');return}
     const categoryMap=new Map(categories.map(c=>[norm(c.name),c.id]))
@@ -166,7 +170,7 @@ export default function AdminDistributorSubmissions({onBack}){
         <button className="report-close" onClick={closeReview} aria-label="Close"><X size={18}/></button>
         <p className="section-kicker">SUBMISSION REVIEW</p>
         <h2>{selected.distributor_name}</h2>
-        <p className="report-help">Nothing is published until you confirm the distributor, company, division, category and distributor location.</p>
+        <p className="report-help">Nothing is published until you confirm the distributor, company, brand/division classification, category and distributor location. Approve & Publish automatically records the relationship as Verified.</p>
 
         <div className="admin-publish-summary">
           <span><Check size={13}/> {summary.matched} matched</span><span><Building2 size={13}/> {summary.create} new</span><span><AlertTriangle size={13}/> {summary.review} unresolved</span>
@@ -198,7 +202,7 @@ export default function AdminDistributorSubmissions({onBack}){
               const auto=matchCompany(e), m=mappings[i]||{}
               return <div className="admin-company-publish-row" key={i}>
                 <div className="admin-company-publish-top">
-                  <div><strong>{e.company_name||'Company missing'}</strong><small>{e.division||'No division'} · {e.category||'Pharmaceutical'}</small></div>
+                  <div><strong>{e.company_name||'Company missing'}</strong><small>{e.handled_as==='brand'&&e.brand?'Brand: '+e.brand:e.handled_as==='division'&&e.division?'Division: '+e.division:e.handled_as==='unclear'?'Needs classification':'Company generally'} · {e.category||'Pharmaceutical'}</small></div>
                   <span className={'admin-status '+(m.action==='match'?'approved':m.action==='create'?'open':'under_review')}>{m.action==='match'?'Matched':m.action==='create'?'New company':'Needs decision'}</span>
                 </div>
                 <div className="admin-company-publish-controls admin-company-match-controls">
@@ -229,10 +233,12 @@ export default function AdminDistributorSubmissions({onBack}){
                   </div>}
                   {m.action==='create'&&<input value={m.company_name||e.company_name||''} onChange={ev=>updateMap(i,{company_name:ev.target.value})} placeholder="New company name"/>}
                   <div className="admin-company-relationship-fields">
+                    <label>Reference type<select value={m.handled_as||'company'} onChange={ev=>updateMap(i,{handled_as:ev.target.value})}><option value="company">Company</option><option value="brand">Brand</option><option value="division">Division</option><option value="unclear">Unclear</option></select></label>
                     <label>Category<select value={m.category||'Pharmaceutical'} onChange={ev=>updateMap(i,{category:ev.target.value})}>
                       {categories.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
                     </select></label>
-                    {m.action==='match'&&<label>Division<select value={m.division_id||''} onChange={ev=>updateMap(i,{division_id:ev.target.value})}>
+                    {m.action==='match'&&m.handled_as==='brand'&&<label>Brand<select value={m.brand_id||''} onChange={ev=>{const b=brands.find(x=>x.id===ev.target.value);updateMap(i,{brand_id:ev.target.value,brand_name:b?.brand_name||''})}}><option value="">Select brand…</option>{brands.filter(b=>b.company_id===m.company_id).map(b=><option key={b.id} value={b.id}>{b.brand_name}</option>)}</select></label>}
+                    {m.action==='match'&&m.handled_as==='division'&&<label>Division<select value={m.division_id||''} onChange={ev=>updateMap(i,{division_id:ev.target.value})}>
                       <option value="">No division / select if applicable</option>
                       {divisions.filter(d=>d.company_id===m.company_id).map(d=><option key={d.id} value={d.id}>{d.division_name}</option>)}
                     </select></label>}
