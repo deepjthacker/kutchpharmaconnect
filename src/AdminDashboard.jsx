@@ -67,7 +67,7 @@ export default function AdminDashboard(){
  const data=[
   ['Data Health',stats?.missingLocation||0,Database,'Missing location records / data-quality checks','verification'],
   ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','companyCatalogUpload'],
-  ['Distributor PDF Import',null,FileUp,'Read a distributor PDF and send the extracted list to review','documentImport'],
+  ['Distributor PDF Import',null,Upload,'Read a distributor PDF and send the extracted list to review','documentImport'],
   ['Import & Export',null,Database,'Controlled distributor/relationship import, export and backup','tools'],
   ['Aliases',null,Search,'Alternate names used for matching and search','aliases']
  ]
