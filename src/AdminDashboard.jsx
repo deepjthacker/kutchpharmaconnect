@@ -4,6 +4,7 @@ import {supabase} from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
 import AdminCompanies from './AdminCompanies'
+import AdminCompanyCatalogUpload from './AdminCompanyCatalogUpload'
 import AdminDistributors from './AdminDistributors'
 import AdminDistributorships from './AdminDistributorships'
 import AdminVerification from './AdminVerification'
@@ -39,7 +40,8 @@ export default function AdminDashboard(){
  const back=()=>setView('dashboard')
  if(view==='submissions')return <AdminDistributorSubmissions onBack={back}/>
  if(view==='reports')return <AdminReports onBack={back}/>
- if(view==='companies')return <AdminCompanies onBack={back}/>
+ if(view==='companies')return <AdminCompanies onBack={back} onBulkUpload={()=>setView('companyCatalogUpload')}/>
+ if(view==='companyCatalogUpload')return <AdminCompanyCatalogUpload onBack={()=>setView('companies')}/>
  if(view==='distributors')return <AdminDistributors onBack={back}/>
  if(view==='relationships')return <AdminDistributorships onBack={back}/>
  if(view==='verification')return <AdminVerification onBack={back}/>
@@ -62,7 +64,7 @@ export default function AdminDashboard(){
  ]
  const data=[
   ['Data Health',stats?.missingLocation||0,Database,'Missing location records / data-quality checks','verification'],
-  ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','tools'],
+  ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','companyCatalogUpload'],
   ['Import & Export',null,Database,'Controlled distributor/relationship import, export and backup','tools'],
   ['Aliases',null,Search,'Alternate names used for matching and search','aliases']
  ]
