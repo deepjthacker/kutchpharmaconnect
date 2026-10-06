@@ -963,3 +963,9 @@ html[data-theme="dark"] .admin-delete-btn{background:#2a1717;color:#ffb0b0;borde
 .admin-category-picker>div{display:flex;flex-wrap:wrap;gap:8px}
 .admin-category-picker>div>label{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid var(--border,#e5e7eb);border-radius:8px}
 .admin-category-picker input{accent-color:currentColor}
+
+/* V1 public directory filters */
+.browse-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}
+.browse-filters select,.browse-filters button{border:1px solid #d5deeb;border-radius:8px;background:#fff;color:#344a68;padding:8px 10px;font-size:11px;font-weight:700}
+.browse-filters button{cursor:pointer;color:#3159a8}
+html[data-theme="dark"] .browse-filters select,html[data-theme="dark"] .browse-filters button{background:#111c2e;border-color:#334155;color:#e5e7eb}
