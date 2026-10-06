@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Building2, Edit3, LoaderCircle, Plus, Search, Save, X, Trash2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-export default function AdminCompanies({ onBack }){
+export default function AdminCompanies({ onBack, onBulkUpload }){
   const [companies,setCompanies]=useState([]),[categories,setCategories]=useState([]),[companyCategoryIds,setCompanyCategoryIds]=useState([])
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
@@ -115,9 +115,12 @@ export default function AdminCompanies({ onBack }){
           <h1>Companies</h1>
           <p>Manage company identities used throughout the directory.</p>
         </div>
-        <button className="admin-refresh" onClick={loadCompanies} disabled={loading}>
-          <LoaderCircle className={loading?'spin':''} size={15}/> Refresh
-        </button>
+        <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+          <button className="admin-refresh" onClick={onBulkUpload}><Plus size={15}/> Bulk Upload</button>
+          <button className="admin-refresh" onClick={loadCompanies} disabled={loading}>
+            <LoaderCircle className={loading?'spin':''} size={15}/> Refresh
+          </button>
+        </div>
       </div>
 
       {error&&<div className="admin-error">{error}</div>}
