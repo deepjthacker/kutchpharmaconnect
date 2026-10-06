@@ -35,7 +35,7 @@ function toCsv(rows) {
   return rows.map(row => row.map(value => {
     const s = String(value ?? '')
     return /[",\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s
-  }).join(',')).join('\\n')
+  }).join(',')).join('\n')
 }
 
 export default function AdminCompanyCatalogUpload({ onBack }) {
