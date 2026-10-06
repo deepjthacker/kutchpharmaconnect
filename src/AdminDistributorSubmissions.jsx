@@ -153,7 +153,7 @@ export default function AdminDistributorSubmissions({onBack}){
           <h3>{r.distributor_name}</h3>
           <p><strong>Contact:</strong> {r.contact_person||'—'} · {r.mobile}</p>
           <p><strong>Email:</strong> {r.email||'—'} · <strong>Location:</strong> {[r.city,r.district,r.state].filter(Boolean).join(', ')||'—'}</p>
-          <p><strong>Companies:</strong> {es.length}{r.bulk_source&&<> · <strong>Source:</strong> {r.bulk_source==='manual'?'Manual':r.bulk_source==='paste'?'Pasted list':'Excel / CSV'}</>}</p>
+          <p><strong>Companies:</strong> {es.length}{r.bulk_source&&<> · <strong>Source:</strong> {r.bulk_source==='manual'?'Manual':r.bulk_source==='paste'?'Pasted list':'CSV'}</>}</p>
           {r.notes&&<p><strong>Notes:</strong> {r.notes}</p>}
           <div className="admin-actions">
             {(r.status==='open'||r.status==='under_review')&&<button onClick={()=>prepareReview(r)}><Eye size={14}/> Review & Match</button>}
