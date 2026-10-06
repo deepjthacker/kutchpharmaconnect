@@ -1,8 +1,8 @@
-Company Name,Type,Brand,Division,Category
-Procter & Gamble,brand,Vicks,,OTC
-Procter & Gamble,brand,Head & Shoulders,,OTC
-MSD Pharmaceuticals,brand,Janumet,,Pharmaceutical
-Aristo Pharmaceuticals,company,,,Pharmaceutical
-Example Pharma,division,,Actual Division Name,Pharmaceutical
-Appasamy Associates,company,,,Medical Devices
-Appasamy Associates,company,,,Pharmaceutical
+Company Name,Division,Brand,Category
+Procter & Gamble,Health Care,Vicks,OTC
+Procter & Gamble,Health Care,Head & Shoulders,OTC
+MSD Pharmaceuticals,,Janumet,Pharmaceutical
+Aristo Pharmaceuticals Private Limited,,,Pharmaceutical
+Example Pharma,Actual Division Name,,Pharmaceutical
+Appasamy Associates Private Limited,, ,Medical Devices
+Appasamy Associates Private Limited,, ,Pharmaceutical
