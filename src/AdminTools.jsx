@@ -362,7 +362,8 @@ export default function AdminTools({onBack}){
    const rows=parseCatalogCsv(await f.text())
    if(!rows.length)throw new Error('The selected CSV file contains no data rows.')
    const headers=Object.keys(parseCsv(await f.text())[0]||{})
-   const unexpected=headers.filter(h=>!['company_name','company_legal_name','company_short_name','division_name','division_code','brand_name'].includes(h))
+   const accepted=['company','company name','company_name','legal name','company legal name','company_legal_name','short name','company short name','company_short_name','division','division name','division_name','division code','division_code','brand','brand name','brand_name']
+   const unexpected=headers.filter(h=>!accepted.includes(String(h||'').trim().toLowerCase().replace(/\\s+/g,' ')))
    setCatalogPreview({file:f.name,rows,headers,unexpected})
    setMessage('Loaded '+rows.length+' company/division/brand row(s). No database records were changed.')
   }catch(e){setError(e.message)}
@@ -507,13 +508,30 @@ export default function AdminTools({onBack}){
     <button className="admin-tool-button" onClick={()=>fileRef.current?.click()} disabled={!!busy}><Upload size={16}/>{busy==='import'?<><LoaderCircle className="spin" size={16}/> Reading…</>:'Select CSV file'}</button>
    </section>
 
-   <section className="admin-panel">
-    <p className="section-kicker">COMPANY CATALOG</p><h2>Upload companies, divisions & brands</h2>
-    <p className="admin-help">This is a separate catalog-only uploader. It does not create distributors, relationships, categories, locations or products. Use one row per company/division/brand combination.</p>
+   <section className="admin-panel" style={{gridColumn:'1 / -1'}}>
+    <p className="section-kicker">COMPANY DATABASE</p>
+    <h2>Upload Companies + Divisions + Brands</h2>
+    <p className="admin-help"><strong>This is the simple upload you should use for company master data.</strong> It does not ask for distributors, categories, locations, prices or products.</p>
+    <div className="admin-note" style={{margin:'10px 0'}}>
+     <strong>Only 3 columns are needed:</strong> Company &nbsp; | &nbsp; Division &nbsp; | &nbsp; Brand
+     <br/>Use <strong>one row for each combination</strong>. Repeat the company name when it has multiple divisions or brands.
+     <br/>If something does not apply, leave that cell blank.
+    </div>
+    <div style={{overflowX:'auto',margin:'10px 0 14px'}}>
+     <table className="admin-table"><thead><tr><th>Company</th><th>Division</th><th>Brand</th><th>What it means</th></tr></thead>
+      <tbody>
+       <tr><td>Procter &amp; Gamble</td><td>Health Care</td><td>Vicks</td><td>Brand belongs to this division</td></tr>
+       <tr><td>Procter &amp; Gamble</td><td>Health Care</td><td>Head &amp; Shoulders</td><td>Another brand under same division</td></tr>
+       <tr><td>MSD Pharmaceuticals</td><td></td><td>Janumet</td><td>Brand directly under company</td></tr>
+       <tr><td>Aristo Pharmaceuticals</td><td></td><td></td><td>Company only</td></tr>
+      </tbody>
+     </table>
+    </div>
+    <p className="admin-help">Best workflow: <strong>Download Easy Template → fill the 3 columns → save as CSV → Upload Company List → Validate → Confirm &amp; Import.</strong></p>
     <input ref={catalogFileRef} type="file" accept=".csv" hidden onChange={handleCatalogImport}/>
     <div className="admin-inline-actions">
-     <button className="admin-tool-button" onClick={()=>catalogFileRef.current?.click()} disabled={catalogBusy}><Upload size={16}/>{catalogBusy?'Working…':'Select company catalog CSV'}</button>
-     <button className="admin-tool-button" onClick={downloadCatalogSample} disabled={catalogBusy}><Download size={16}/> Sample CSV</button>
+     <button className="admin-tool-button" onClick={downloadCatalogSample} disabled={catalogBusy}><Download size={16}/> Download Easy Template</button>
+     <button className="admin-tool-button" onClick={()=>catalogFileRef.current?.click()} disabled={catalogBusy}><Upload size={16}/>{catalogBusy?'Reading…':'Upload Company List (CSV)'}</button>
     </div>
    </section>
 
@@ -531,7 +549,7 @@ export default function AdminTools({onBack}){
     <div><p className="section-kicker">COMPANY CATALOG PREVIEW</p><h2>{catalogPreview.file}</h2></div>
     <div className="admin-inline-actions"><button className="admin-tool-button" onClick={validateCatalogImport} disabled={catalogBusy}>Validate catalog</button><button className="admin-tool-button" onClick={()=>{setCatalogPreview(null);setCatalogValidation(null)}}>Close</button></div>
    </div>
-   <p className="admin-help">{catalogPreview.rows.length} row(s). Accepted columns: company_name, company_legal_name, company_short_name, division_name, division_code, brand_name.</p>
+   <p className="admin-help">{catalogPreview.rows.length} row(s). The upload uses the simple columns <strong>Company, Division, Brand</strong>. Extra legacy company fields are optional and will be ignored unless supplied.</p>
    {catalogPreview.unexpected.length>0&&<div className="admin-error">Unknown columns: {catalogPreview.unexpected.join(', ')}. They will be ignored.</div>}
    <div style={{overflowX:'auto'}}><table className="admin-table"><thead><tr>{catalogPreview.headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{catalogPreview.rows.slice(0,20).map((row,i)=><tr key={i}>{catalogPreview.headers.map(h=><td key={h}>{String(row[h]??'')}</td>)}</tr>)}</tbody></table></div>
    {catalogPreview.rows.length>20&&<p className="admin-help">Showing first 20 rows only.</p>}
