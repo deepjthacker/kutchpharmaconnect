@@ -336,7 +336,6 @@ export default function AdminTools({onBack}){
     <p className="section-kicker">BACKUP</p><h2>Full database export</h2>
     <p className="admin-help">CSV exports are available for directory tables. JSON remains available as a machine-readable backup.</p>
     <div className="admin-inline-actions">
-     <button className="admin-tool-button" onClick={()=>exportAll('xlsx')} disabled={!!busy}><FileSpreadsheet size={16}/>{busy==='allxlsx'?<><LoaderCircle className="spin" size={16}/> Exporting…</>:'Download full Excel backup'}</button>
      <button className="admin-tool-button" onClick={()=>exportAll('json')} disabled={!!busy}><FileJson size={16}/>{busy==='alljson'?<><LoaderCircle className="spin" size={16}/> Exporting…</>:'Download full JSON backup'}</button>
     </div>
    </section>
@@ -361,7 +360,6 @@ export default function AdminTools({onBack}){
     <p className="section-kicker">SAMPLE FILES</p><h2>Distributorship import sample</h2>
     <p className="admin-help">Use these samples as the standard import structure for distributor ↔ company relationships.</p>
     <div className="admin-inline-actions">
-     <button className="admin-tool-button" onClick={()=>downloadImportSample('xlsx')}><FileSpreadsheet size={16}/> Sample Excel</button>
      <button className="admin-tool-button" onClick={downloadImportSample}><Download size={16}/> Sample CSV</button>
     </div>
    </section>
