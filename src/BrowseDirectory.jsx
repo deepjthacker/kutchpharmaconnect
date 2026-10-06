@@ -25,6 +25,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState(category || '')
+  const [locationFilter, setLocationFilter] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -75,13 +77,17 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
           ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds).eq('status','active')
           : { data: [], error: null }
 
-        if (locationError) {
-          if (!cancelled) { setError(locationError.message); setLoading(false) }
+        if (locationError || relationshipCategoryRows.error || categoryRows.error) {
+          if (!cancelled) { setError((locationError||relationshipCategoryRows.error||categoryRows.error).message); setLoading(false) }
           return
         }
 
         const locationMap = new Map((locations || []).map(x => [x.id, x]))
         const relationshipMap = new Map()
+        const categoryIds=[...new Set((rels||[]).map(x=>x.category_id).filter(Boolean))]
+        const {data:catRows,error:catError}=categoryIds.length?await supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active'):{data:[],error:null}
+        if(catError){if(!cancelled){setError(catError.message);setLoading(false)};return}
+        const categoryMap=new Map((catRows||[]).map(x=>[x.id,x.name]))
         ;(rels || []).forEach(rel => {
           const entry = relationshipMap.get(rel.company_id) || { count: 0, verifiedCount: 0, reviewCount: 0, locations: new Map() }
           entry.count += 1
@@ -96,7 +102,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         if (!cancelled) {
           setItems(companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
-            return { ...x, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()] }
+            return { ...x, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()], locationIds:[...info.locations.keys()], categoryNames:[...new Set((rels||[]).filter(r=>r.company_id===x.id).map(r=>categoryMap.get(r.category_id)).filter(Boolean))] }
           }).filter(x => x.relationshipCount > 0))
         }
       } else if (isLocations) {
@@ -153,6 +159,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         }
 
         const locationIds = [...new Set((data || []).map(x => x.city_id).filter(Boolean))]
+        const relationshipCategoryRows = ids.length ? await supabase.from('distributorships').select('distributor_id,category_id,location_id').eq('status','active').in('distributor_id',ids) : {data:[],error:null}
+        const categoryIds=[...new Set((relationshipCategoryRows.data||[]).map(x=>x.category_id).filter(Boolean))]
+        const categoryRows=categoryIds.length?await supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active'):{data:[],error:null}
         const { data: locations, error: locationError } = locationIds.length
           ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
           : { data: [], error: null }
@@ -163,9 +172,15 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         }
 
         const locationMap = new Map((locations || []).map(x => [x.id, x]))
+        const categoryMap = new Map((categoryRows.data || []).map(x => [x.id, x.name]))
         const counts = new Map()
+        const distributorCategoryNames = new Map()
+        const distributorLocationIds = new Map()
         ;(rels || []).forEach(x => {
           const entry = counts.get(x.distributor_id) || { count: 0, verifiedCount: 0, reviewCount: 0 }
+          const sourceRel=(relationshipCategoryRows.data||[]).find(r=>r.distributor_id===x.distributor_id)
+          if(sourceRel?.category_id){const set=distributorCategoryNames.get(x.distributor_id)||new Set();const n=categoryMap.get(sourceRel.category_id);if(n)set.add(n);distributorCategoryNames.set(x.distributor_id,set)}
+          if(x.location_id){const set=distributorLocationIds.get(x.distributor_id)||new Set();set.add(x.location_id);distributorLocationIds.set(x.distributor_id,set)}
           entry.count += 1
           if (x.verification_status === 'verified') entry.verifiedCount += 1
           if (x.verification_status === 'needs_review') entry.reviewCount += 1
@@ -178,7 +193,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
             location: locationMap.get(x.city_id),
             relationshipCount: counts.get(x.id)?.count || 0,
             verifiedCount: counts.get(x.id)?.verifiedCount || 0,
-            reviewCount: counts.get(x.id)?.reviewCount || 0
+            reviewCount: counts.get(x.id)?.reviewCount || 0,
+            categoryNames:[...((distributorCategoryNames.get(x.id)||new Set()))],
+            locationIds:[...(distributorLocationIds.get(x.id)||new Set())]
           })))
         }
       }
@@ -192,6 +209,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
 
   const term = query.trim().toLowerCase()
   const filtered = items.filter(item => {
+    if (categoryFilter && !(item.categoryNames || []).includes(categoryFilter)) return false
+    if (locationFilter && !(item.locationIds || []).includes(locationFilter)) return false
     const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? item.company_name : item.distributor_name
     const secondary = isLocations ? '' : isCompanies ? item.short_name : item.contact_person
     const locationText = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies
@@ -235,6 +254,18 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
             aria-label={isCompanies ? 'Search companies' : 'Search distributors'}
           />
         </div>
+
+        {!loading && !error && !isLocations && <div className="browse-filters">
+          <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} aria-label="Filter by category">
+            <option value="">All categories</option>
+            {['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary'].map(x=><option key={x} value={x}>{x}</option>)}
+          </select>
+          <select value={locationFilter} onChange={e=>setLocationFilter(e.target.value)} aria-label="Filter by location">
+            <option value="">All locations</option>
+            {[...new Map(items.flatMap(x=>(x.locations||[]).map(l=>[l.id,l]))).values()].sort((a,b)=>(a.city||'').localeCompare(b.city||'')).map(l=><option key={l.id} value={l.id}>{[l.city,l.district].filter(Boolean).join(', ')}</option>)}
+          </select>
+          {(categoryFilter||locationFilter) && <button type="button" onClick={()=>{setCategoryFilter(category||'');setLocationFilter('')}}>Clear</button>}
+        </div>}
 
         {loading && (
           <div className="result-state"><LoaderCircle className="spin" size={20} /> Loading directory…</div>
