@@ -16,9 +16,9 @@ function parseDelimited(text) {
     const ch = text[i], next = text[i + 1]
     if (ch === '"' && quoted && next === '"') { cell += '"'; i++; continue }
     if (ch === '"') { quoted = !quoted; continue }
-    if (!quoted && (ch === ',' || ch === '\\t')) { row.push(cell.trim()); cell = ''; continue }
-    if (!quoted && (ch === '\\n' || ch === '\\r')) {
-      if (ch === '\\r' && next === '\\n') i++
+    if (!quoted && (ch === ',' || ch === '\t')) { row.push(cell.trim()); cell = ''; continue }
+    if (!quoted && (ch === '\n' || ch === '\r')) {
+      if (ch === '\r' && next === '\n') i++
       row.push(cell.trim()); cell = ''
       if (row.some(Boolean)) rows.push(row)
       row = []
@@ -34,7 +34,7 @@ function parseDelimited(text) {
 function toCsv(rows) {
   return rows.map(row => row.map(value => {
     const s = String(value ?? '')
-    return /[",\\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s
+    return /[",\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s
   }).join(',')).join('\\n')
 }
 
