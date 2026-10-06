@@ -355,6 +355,7 @@ export default function App(){
       const companyIds=[...new Set(rels.map(x=>x.company_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
+      const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
       const [cRes,vRes,lRes,bRes]=await Promise.all([
         companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
