@@ -1,7 +1,6 @@
 import React from 'react'
 import { useRef,useState } from 'react'
-import { ArrowLeft,Download,Upload,Database,FileJson,FileSpreadsheet,LoaderCircle,Eye } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import { ArrowLeft,Download,Upload,Database,FileJson,LoaderCircle,Eye } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const tables=['companies','distributors','divisions','categories','locations','distributorships','search_aliases','company_categories']
@@ -25,17 +24,31 @@ function downloadBlob(blob,name){
  const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)
 }
 
+function csvEscape(value){
+ const s=String(value??'')
+ return /[",\\n\\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s
+}
 function downloadCsv(rows,name){
- const ws=XLSX.utils.json_to_sheet(rows)
- const csv=XLSX.utils.sheet_to_csv(ws)
+ const data=rows||[]
+ const headers=data.length?Object.keys(data[0]):[]
+ const csv=[headers.map(csvEscape).join(','),...data.map(row=>headers.map(h=>csvEscape(row[h])).join(','))].join('\\r\\n')
  downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),name)
 }
-
-function downloadXlsx(rows,name,sheet='DATA'){
- const wb=XLSX.utils.book_new()
- const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{}])
- XLSX.utils.book_append_sheet(wb,ws,sheet.slice(0,31))
- XLSX.writeFile(wb,name)
+function parseCsvLine(line){
+ const values=[];let value='';let quoted=false
+ for(let i=0;i<line.length;i++){
+  const ch=line[i]
+  if(ch==='"'){
+   if(quoted&&line[i+1]==='"'){value+='"';i++}else quoted=!quoted
+  }else if(ch===','&&!quoted){values.push(value);value=''}else value+=ch
+ }
+ values.push(value);return values
+}
+function parseCsv(text){
+ const lines=String(text||'').replace(/^\\uFEFF/,'').split(/\\r?\\n/).filter(line=>line.trim())
+ if(!lines.length)return []
+ const headers=parseCsvLine(lines[0]).map(x=>x.trim())
+ return lines.slice(1).map(line=>{const values=parseCsvLine(line),row={};headers.forEach((h,i)=>row[h]=values[i]??'');return row})
 }
 
 export default function AdminTools({onBack}){
@@ -50,34 +63,25 @@ export default function AdminTools({onBack}){
   return r.data||[]
  }
 
- async function exportTable(name,format='xlsx'){
-  setBusy(name+format);setError('');setMessage('')
+ async function exportTable(name){
+  setBusy(name+'csv');setError('');setMessage('')
   try{
    const rows=await getRows(name)
    const stamp=new Date().toISOString().slice(0,10)
-   if(format==='csv')downloadCsv(rows,`kutchpharmaconnect-${name}-${stamp}.csv`)
-   else downloadXlsx(rows,`kutchpharmaconnect-${name}-${stamp}.xlsx`,name)
-   setMessage(`Exported ${name} as ${format.toUpperCase()}.`)
+   downloadCsv(rows,`kutchpharmaconnect-${name}-${stamp}.csv`)
+   setMessage(`Exported ${name} as CSV.`)
   }catch(e){setError(e.message)}
   setBusy('')
  }
 
- async function exportAll(format='xlsx'){
-  setBusy('all'+format);setError('');setMessage('')
+ async function exportAll(){
+  setBusy('alljson');setError('');setMessage('')
   try{
-   const wb=format==='xlsx'?XLSX.utils.book_new():null
    const out={exported_at:new Date().toISOString(),tables:{}}
-   for(const t of tables){
-    const rows=await getRows(t);out.tables[t]=rows
-    if(wb){
-     const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{}])
-     XLSX.utils.book_append_sheet(wb,ws,t.slice(0,31))
-    }
-   }
+   for(const t of tables){out.tables[t]=await getRows(t)}
    const stamp=new Date().toISOString().slice(0,10)
-   if(format==='xlsx')XLSX.writeFile(wb,`kutchpharmaconnect-backup-${stamp}.xlsx`)
-   else downloadBlob(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}),`kutchpharmaconnect-backup-${stamp}.json`)
-   setMessage(format==='xlsx'?'Full Excel workbook exported with separate sheets.':'Full JSON backup exported.')
+   downloadBlob(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}),'kutchpharmaconnect-backup-'+stamp+'.json')
+   setMessage('Full JSON backup exported.')
   }catch(e){setError(e.message)}
   setBusy('')
  }
@@ -296,28 +300,9 @@ export default function AdminTools({onBack}){
   }
   setBusy('')
  }
- function downloadImportSample(format){
+ function downloadImportSample(){
   const stamp='kutchpharmaconnect-distributorship-import-sample'
-  if(format==='csv')downloadCsv(sampleRows,stamp+'.csv')
-  else{
-   const wb=XLSX.utils.book_new()
-   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleRows,{header:importHeaders}),'DISTRIBUTORSHIPS_IMPORT')
-   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sampleExampleRows,{header:importHeaders}),'EXAMPLES')
-   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ['IMPORT INSTRUCTIONS'],
-    ['The DISTRIBUTORSHIPS_IMPORT sheet contains 40 blank rows for your real data.'],
-    ['One row = one distributor ↔ company distributorship relationship.'],
-    ['Use verified company/entity names. Unknown companies are blocked and never created automatically.'],
-    ['Leave division blank if unknown or unverified.'],
-    ['relationship_status: active/inactive'],
-    ['verification_status: unverified/needs_review/verified'],
-    ['verified_date: YYYY-MM-DD for verified relationships.'],
-    ['Existing relationships are detected and skipped rather than overwritten.'],
-    ['New distributors require explicit admin confirmation.'],
-    ['The EXAMPLES sheet is illustrative only and must not be imported as real data.']
-   ]),'IMPORT_INSTRUCTIONS')
-   XLSX.writeFile(wb,stamp+'.xlsx')
-  }
+  downloadCsv(sampleRows,stamp+'.csv')
  }
 
  async function handleImport(e){
@@ -325,18 +310,14 @@ export default function AdminTools({onBack}){
   if(!f)return
   setBusy('import');setError('');setMessage('');setPreview(null)
   try{
-   const ext=f.name.toLowerCase().endsWith('.csv')?'csv':'xlsx'
-   if(!f.name.toLowerCase().endsWith('.csv')&&!f.name.toLowerCase().endsWith('.xlsx'))throw new Error('Please select a .csv or .xlsx file.')
-   const data=await f.arrayBuffer()
-   const wb=XLSX.read(data,{type:'array'})
-   const first=wb.Sheets[wb.SheetNames[0]]
-   const rows=XLSX.utils.sheet_to_json(first,{defval:''})
-   if(!rows.length)throw new Error('The selected file contains no data rows.')
+   if(!f.name.toLowerCase().endsWith('.csv'))throw new Error('Please select a .csv file.')
+   const rows=parseCsv(await f.text())
+   if(!rows.length)throw new Error('The selected CSV file contains no data rows.')
    const headers=Object.keys(rows[0])
    const missing=importHeaders.filter(h=>!headers.includes(h))
    const recognized=Object.keys(rows[0]).filter(h=>importHeaders.includes(h))
-   setPreview({file:f.name,format:ext,rows,headers,missing,recognized})
-   setMessage(`Loaded ${rows.length} row(s) from ${f.name}. No database records were changed.`)
+   setPreview({file:f.name,format:'csv',rows,headers,missing,recognized})
+   setMessage('Loaded '+rows.length+' row(s) from '+f.name+'. No database records were changed.')
   }catch(e){setError(e.message)}
   setBusy('')
  }
@@ -345,7 +326,7 @@ export default function AdminTools({onBack}){
   <div className="admin-head"><div>
    <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button>
    <p className="section-kicker">DATA TOOLS</p><h1>Import, Export & Backup</h1>
-   <p>Use Excel or CSV for directory data. Imports are previewed before any production write.</p>
+   <p>Use CSV for directory data. Imports are previewed before any production write.</p>
   </div></div>
   {error&&<div className="admin-error">{error}</div>}
   {message&&<div className="admin-note admin-message">{message}</div>}
@@ -353,7 +334,7 @@ export default function AdminTools({onBack}){
   <div className="admin-tool-grid">
    <section className="admin-panel">
     <p className="section-kicker">BACKUP</p><h2>Full database export</h2>
-    <p className="admin-help">Excel creates one sheet per directory table. JSON remains available as a machine-readable backup.</p>
+    <p className="admin-help">CSV exports are available for directory tables. JSON remains available as a machine-readable backup.</p>
     <div className="admin-inline-actions">
      <button className="admin-tool-button" onClick={()=>exportAll('xlsx')} disabled={!!busy}><FileSpreadsheet size={16}/>{busy==='allxlsx'?<><LoaderCircle className="spin" size={16}/> Exporting…</>:'Download full Excel backup'}</button>
      <button className="admin-tool-button" onClick={()=>exportAll('json')} disabled={!!busy}><FileJson size={16}/>{busy==='alljson'?<><LoaderCircle className="spin" size={16}/> Exporting…</>:'Download full JSON backup'}</button>
@@ -362,21 +343,18 @@ export default function AdminTools({onBack}){
 
    <section className="admin-panel">
     <p className="section-kicker">EXPORT</p><h2>Individual tables</h2>
-    <p className="admin-help">Export companies, distributors, divisions and other directory tables in either Excel or CSV.</p>
+    <p className="admin-help">Export companies, distributors, divisions and other directory tables as CSV.</p>
     {tables.map(t=><div className="admin-tool-row" key={t}>
      <span>{t}</span>
-     <span className="admin-inline-actions">
-      <button onClick={()=>exportTable(t,'xlsx')} disabled={!!busy} title="Excel"><FileSpreadsheet size={14}/></button>
-      <button onClick={()=>exportTable(t,'csv')} disabled={!!busy} title="CSV"><Download size={14}/></button>
-     </span>
+     <span className="admin-inline-actions"><button onClick={()=>exportTable(t)} disabled={!!busy} title="CSV"><Download size={14}/></button></span>
     </div>)}
    </section>
 
    <section className="admin-panel">
     <p className="section-kicker">IMPORT</p><h2>Controlled import</h2>
-    <p className="admin-help">Both .xlsx and .csv are supported. The first sheet/file is parsed and shown for review; nothing is written automatically.</p>
-    <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={handleImport}/>
-    <button className="admin-tool-button" onClick={()=>fileRef.current?.click()} disabled={!!busy}><Upload size={16}/>{busy==='import'?<><LoaderCircle className="spin" size={16}/> Reading…</>:'Select Excel / CSV file'}</button>
+    <p className="admin-help">CSV files are supported. The file is parsed and shown for review; nothing is written automatically.</p>
+    <input ref={fileRef} type="file" accept=".csv" hidden onChange={handleImport}/>
+    <button className="admin-tool-button" onClick={()=>fileRef.current?.click()} disabled={!!busy}><Upload size={16}/>{busy==='import'?<><LoaderCircle className="spin" size={16}/> Reading…</>:'Select CSV file'}</button>
    </section>
 
    <section className="admin-panel">
@@ -384,7 +362,7 @@ export default function AdminTools({onBack}){
     <p className="admin-help">Use these samples as the standard import structure for distributor ↔ company relationships.</p>
     <div className="admin-inline-actions">
      <button className="admin-tool-button" onClick={()=>downloadImportSample('xlsx')}><FileSpreadsheet size={16}/> Sample Excel</button>
-     <button className="admin-tool-button" onClick={()=>downloadImportSample('csv')}><Download size={16}/> Sample CSV</button>
+     <button className="admin-tool-button" onClick={downloadImportSample}><Download size={16}/> Sample CSV</button>
     </div>
    </section>
   </div>
