@@ -62,7 +62,8 @@ export default function AdminDashboard(){
  ]
  const data=[
   ['Data Health',stats?.missingLocation||0,Database,'Missing location records / data-quality checks','verification'],
-  ['Import & Export',null,Upload,'Controlled import, export and backup','tools'],
+  ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','tools'],
+  ['Import & Export',null,Database,'Controlled distributor/relationship import, export and backup','tools'],
   ['Aliases',null,Search,'Alternate names used for matching and search','aliases']
  ]
  return <div className="admin-page">
