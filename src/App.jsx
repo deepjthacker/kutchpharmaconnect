@@ -352,16 +352,16 @@ export default function App(){
       const companyIds=[...new Set(rels.map(x=>x.company_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
-      const [cRes,vRes,lRes]=await Promise.all([
+      const [cRes,vRes,lRes,bRes]=await Promise.all([
         companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
         locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null})
       ])
-      if(cRes.error||vRes.error||lRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
+      if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
+      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
     }
     setProfileLoading(false)
   }
