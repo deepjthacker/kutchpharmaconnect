@@ -4,13 +4,15 @@ import * as XLSX from 'xlsx'
 import {supabase} from './lib/supabase'
 
 const CATEGORIES=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
-const blankEntry=()=>({company_name:'',division:'',category:'Pharmaceutical'})
+const blankEntry=()=>({company_name:'',handled_as:'company',brand:'',division:'',category:'Pharmaceutical'})
 const initial={distributor_name:'',legal_name:'',contact_person:'',mobile:'',whatsapp:'',email:'',address:'',city:'',district:'Kutch',state:'Gujarat',maps_url:'',website:'',notes:''}
 
 function clean(v){return String(v??'').trim()}
 function rowsFromSheet(rows){
   return rows.map(r=>({
     company_name:clean(r['Company Name']??r['company_name']??r['Company']),
+    handled_as:clean(r['Type']??r['Handled As']??r['handled_as'])||'company',
+    brand:clean(r['Brand']??r['brand']),
     division:clean(r['Division']??r['division']),
     category:clean(r['Category']??r['category'])||'Pharmaceutical'
   })).filter(r=>r.company_name)
@@ -45,7 +47,8 @@ export default function DistributorSubmission(){
   function saveDraft(){
     const company=clean(draft.company_name)
     if(!company){setError('Enter the company name before adding it.');return}
-    const next={company_name:company,division:clean(draft.division),category:clean(draft.category)||'Pharmaceutical'}
+    if(draft.handled_as==='brand'&&!clean(draft.brand)){setError('Enter the brand name when the row is marked as Brand.');return}
+    const next={company_name:company,handled_as:clean(draft.handled_as)||'company',brand:clean(draft.brand),division:clean(draft.division),category:clean(draft.category)||'Pharmaceutical'}
     if(editingIndex===null)setEntries(x=>[...x,next])
     else setEntries(x=>x.map((r,i)=>i===editingIndex?next:r))
     setDraft(blankEntry());setEditingIndex(null);setAddMode(false);setError('')
@@ -75,11 +78,11 @@ export default function DistributorSubmission(){
   }
 
   function pasteBulk(){
-    const text=window.prompt('Paste one company per line using: Company | Division | Category')
+    const text=window.prompt('Paste one row per line using: Company | Type | Brand | Division | Category')
     if(text===null)return
     const rows=text.split(/\r?\n/).map(line=>{
       const parts=line.split('|').map(clean)
-      return {company_name:parts[0]||'',division:parts[1]||'',category:parts[2]||'Pharmaceutical'}
+      return {company_name:parts[0]||'',handled_as:parts[1]||'company',brand:parts[2]||'',division:parts[3]||'',category:parts[4]||'Pharmaceutical'}
     }).filter(r=>r.company_name)
     applyBulk(rows,'paste','Pasted company list')
   }
@@ -89,12 +92,13 @@ export default function DistributorSubmission(){
     const missing=required.filter(([,v])=>!clean(v)).map(([k])=>k)
     if(missing.length){setError('Please complete: '+missing.join(', ')+'.');return false}
     if(!entries.length){setError('Please add at least one company you handle.');return false}
+    if(entries.some(r=>r.handled_as==='brand'&&!r.brand)){setError('Every Brand row must include the brand name.');return false}
     setError('');setReviewing(true);return true
   }
 
   async function submit(){
     setBusy(true);setError('')
-    const cleaned=entries.map(r=>({company_name:clean(r.company_name),division:clean(r.division),category:clean(r.category)||'Pharmaceutical'})).filter(r=>r.company_name)
+    const cleaned=entries.map(r=>({company_name:clean(r.company_name),handled_as:clean(r.handled_as)||'company',brand:clean(r.brand),division:clean(r.division),category:clean(r.category)||'Pharmaceutical'})).filter(r=>r.company_name)
     const companies_handled=cleaned.map(r=>[r.company_name,r.division].filter(Boolean).join(' — ')).join('\n')
     const payload={...form,distributor_name:clean(form.distributor_name),mobile:clean(form.mobile),whatsapp:clean(form.whatsapp),companies_handled,email:clean(form.email)||null,company_entries:cleaned,bulk_source:bulkInfo?.source||'manual',bulk_file_name:bulkInfo?.fileName||null,bulk_row_count:cleaned.length}
     const {error}=await supabase.from('distributor_submissions').insert(payload)
@@ -114,7 +118,7 @@ export default function DistributorSubmission(){
             <div>
               <p className="section-kicker">DISTRIBUTOR SUBMISSION</p>
               <h2>List Your Distributorship</h2>
-              <p className="report-help">Tell us who you are and which companies you handle. You will get a chance to review everything before sending it to our admin team.</p>
+              <p className="report-help">Use one company record for each legal/business company. If you are referring to a brand or an actual division, tell us which one — we will keep it under the parent company.</p>
             </div>
             <div className="submission-step-indicator"><span className="active">1</span><i></i><span>2</span></div>
           </div>
@@ -151,7 +155,7 @@ export default function DistributorSubmission(){
                   <div className="company-review-index">{String(i+1).padStart(2,'0')}</div>
                   <div className="company-review-main">
                     <strong>{r.company_name}</strong>
-                    <div><span>{r.division||'No division specified'}</span><em>{r.category}</em></div>
+                    <div><span>{r.handled_as==='brand'&&r.brand?'Brand: '+r.brand:r.handled_as==='division'&&r.division?'Division: '+r.division:r.handled_as==='unclear'?'Needs admin review':'Company generally'}</span><em>{r.category}</em></div>
                   </div>
                   <div className="company-review-actions">
                     <button type="button" onClick={()=>editEntry(i)} aria-label={'Edit '+r.company_name}><Edit3 size={14}/> Edit</button>
@@ -170,7 +174,10 @@ export default function DistributorSubmission(){
                 <div className="company-editor-heading"><div><strong>{editingIndex===null?'New company':'Edit company'}</strong><span>{editingIndex===null?'Enter the company exactly as you know it. We will check the name during admin review.':'Make your correction below.'}</span></div>{editingIndex!==null&&<button type="button" onClick={()=>{setEditingIndex(null);setDraft(blankEntry());setAddMode(false)}}>Cancel edit</button>}</div>
                 <div className="company-editor-grid">
                   <label>Company / Organization <span className="required">*</span><input autoFocus value={draft.company_name} onChange={e=>updateDraft('company_name',e.target.value)} placeholder="e.g. Cipla"/></label>
-                  <label>Division / Unit <span className="optional-label">optional</span><input value={draft.division} onChange={e=>updateDraft('division',e.target.value)} placeholder="e.g. Healthcare"/></label>
+                  <label>What does the line refer to?<select value={draft.handled_as||'company'} onChange={e=>updateDraft('handled_as',e.target.value)}><option value="company">Company</option><option value="brand">Brand</option><option value="division">Division</option><option value="unclear">Unclear / needs admin review</option></select></label>
+                  {draft.handled_as==='brand'&&<label>Brand<input value={draft.brand||''} onChange={e=>updateDraft('brand',e.target.value)} placeholder="e.g. Vicks"/></label>}
+                  {draft.handled_as==='division'&&<label>Division<input value={draft.division||''} onChange={e=>updateDraft('division',e.target.value)} placeholder="Actual company division"/></label>}
+                  {draft.handled_as!=='brand'&&draft.handled_as!=='division'&&<label>Brand <span className="optional-label">optional</span><input value={draft.brand||''} onChange={e=>updateDraft('brand',e.target.value)} placeholder="If known"/></label>}
                   <label>Category<select value={draft.category} onChange={e=>updateDraft('category',e.target.value)}>{CATEGORIES.map(x=><option key={x}>{x}</option>)}</select></label>
                 </div>
                 <button type="button" className="save-company-button" onClick={saveDraft}><CheckCircle2 size={15}/>{editingIndex===null?'Save company':'Save changes'}</button>
@@ -208,7 +215,7 @@ export default function DistributorSubmission(){
 
             <section className="final-review-section">
               <div className="final-review-heading"><div><h3>Companies submitted</h3><span>{entries.length} {entries.length===1?'company':'companies'}</span></div><button type="button" onClick={()=>{setReviewing(false);setAddMode(false)}}><Edit3 size={13}/> Edit</button></div>
-              <div className="final-review-company-list">{entries.map((r,i)=><div key={i}><span>{String(i+1).padStart(2,'0')}</span><div><strong>{r.company_name}</strong><small>{r.division||'No division'} · {r.category}</small></div></div>)}</div>
+              <div className="final-review-company-list">{entries.map((r,i)=><div key={i}><span>{String(i+1).padStart(2,'0')}</span><div><strong>{r.company_name}</strong><small>{r.handled_as==='brand'&&r.brand?'Brand: '+r.brand:r.handled_as==='division'&&r.division?'Division: '+r.division:r.handled_as==='unclear'?'Needs admin review':'Company generally'} · {r.category}</small></div></div>)}</div>
             </section>
 
             {error&&<div className="report-error">{error}</div>}
