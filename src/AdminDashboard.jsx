@@ -5,6 +5,7 @@ import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
 import AdminCompanies from './AdminCompanies'
 import AdminCompanyCatalogUpload from './AdminCompanyCatalogUpload'
+import AdminDocumentImport from './AdminDocumentImport'
 import AdminDistributors from './AdminDistributors'
 import AdminDistributorships from './AdminDistributorships'
 import AdminVerification from './AdminVerification'
@@ -42,6 +43,7 @@ export default function AdminDashboard(){
  if(view==='reports')return <AdminReports onBack={back}/>
  if(view==='companies')return <AdminCompanies onBack={back} onBulkUpload={()=>setView('companyCatalogUpload')}/>
  if(view==='companyCatalogUpload')return <AdminCompanyCatalogUpload onBack={()=>setView('companies')}/>
+ if(view==='documentImport')return <AdminDocumentImport onBack={back} onOpenSubmissions={()=>setView('submissions')}/>
  if(view==='distributors')return <AdminDistributors onBack={back}/>
  if(view==='relationships')return <AdminDistributorships onBack={back}/>
  if(view==='verification')return <AdminVerification onBack={back}/>
@@ -65,6 +67,7 @@ export default function AdminDashboard(){
  const data=[
   ['Data Health',stats?.missingLocation||0,Database,'Missing location records / data-quality checks','verification'],
   ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','companyCatalogUpload'],
+  ['Distributor PDF Import',null,FileUp,'Read a distributor PDF and send the extracted list to review','documentImport'],
   ['Import & Export',null,Database,'Controlled distributor/relationship import, export and backup','tools'],
   ['Aliases',null,Search,'Alternate names used for matching and search','aliases']
  ]
