@@ -956,3 +956,10 @@ html[data-theme="dark"] .admin-delete-btn{background:#2a1717;color:#ffb0b0;borde
 .admin-info-box span{color:var(--muted,#6b7280);line-height:1.45}
 @media(max-width:1000px){.admin-control-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:720px){.admin-control-summary,.admin-workflow-grid{grid-template-columns:1fr}.admin-control-summary{gap:8px}.admin-control-summary>div{padding:13px}}
+
+.admin-category-picker{border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+.admin-category-picker legend{font-weight:700;padding:0 5px}
+.admin-category-picker p{margin:0 0 8px;color:var(--muted,#6b7280);font-size:13px}
+.admin-category-picker>div{display:flex;flex-wrap:wrap;gap:8px}
+.admin-category-picker>div>label{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid var(--border,#e5e7eb);border-radius:8px}
+.admin-category-picker input{accent-color:currentColor}
