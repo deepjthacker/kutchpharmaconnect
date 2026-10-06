@@ -89,13 +89,12 @@ export default function DistributorSubmission(){
   async function handleFile(e){
     const file=e.target.files?.[0];e.target.value=''
     if(!file)return
+    if(!file.name.toLowerCase().endsWith('.csv')){setError('Please upload a CSV file.');return}
     try{
-      const data=await file.arrayBuffer()
-      const wb=XLSX.read(data,{type:'array'})
-      const ws=wb.Sheets[wb.SheetNames[0]]
-      const rows=rowsFromSheet(XLSX.utils.sheet_to_json(ws,{defval:''}))
-      applyBulk(rows,'excel_csv',file.name)
-    }catch(err){setError('Could not read this file. Please use the KutchPharmaConnect sample CSV/XLSX format.')}
+      const text=await file.text()
+      const rows=rowsFromSheet(parseCsv(text))
+      applyBulk(rows,'csv',file.name)
+    }catch(err){setError('Could not read this file. Please use the KutchPharmaConnect sample CSV format.')}
   }
 
   function pasteBulk(){
@@ -166,7 +165,7 @@ export default function DistributorSubmission(){
               <div className="company-tools">
                 <button type="button" className="submission-tool-button" onClick={downloadSample}><Download size={15}/> Sample CSV</button>
                 <button type="button" className="submission-tool-button" onClick={pasteBulk}><Upload size={15}/> Paste company list</button>
-                <label className="submission-tool-button"><FileSpreadsheet size={15}/> Upload CSV<input type="file" accept=".csv" onChange={handleFile} hidden/></label>
+                <label className="submission-tool-button"><Upload size={15}/> Upload CSV<input type="file" accept=".csv,text/csv" onChange={handleFile} hidden/></label>
               </div>
 
               {bulkInfo&&<div className="bulk-loaded"><ClipboardCheck size={15}/><span><strong>{bulkInfo.count} companies loaded</strong> from {bulkInfo.fileName}. You can edit or delete any row before submitting.</span></div>}
