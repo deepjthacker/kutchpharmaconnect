@@ -148,7 +148,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         const { data: rels, error: relError } = ids.length
           ? await supabase
               .from('distributorships')
-              .select('distributor_id,verification_status')
+              .select('distributor_id,location_id,category_id,verification_status')
               .eq('status', 'active')
               .in('distributor_id', ids)
           : { data: [], error: null }
@@ -159,7 +159,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         }
 
         const locationIds = [...new Set((data || []).map(x => x.city_id).filter(Boolean))]
-        const relationshipCategoryRows = ids.length ? await supabase.from('distributorships').select('distributor_id,category_id,location_id').eq('status','active').in('distributor_id',ids) : {data:[],error:null}
+        const relationshipCategoryRows = {data:rels||[],error:null}
         const categoryIds=[...new Set((relationshipCategoryRows.data||[]).map(x=>x.category_id).filter(Boolean))]
         const categoryRows=categoryIds.length?await supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active'):{data:[],error:null}
         const { data: locations, error: locationError } = locationIds.length
@@ -178,8 +178,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         const distributorLocationIds = new Map()
         ;(rels || []).forEach(x => {
           const entry = counts.get(x.distributor_id) || { count: 0, verifiedCount: 0, reviewCount: 0 }
-          const sourceRel=(relationshipCategoryRows.data||[]).find(r=>r.distributor_id===x.distributor_id)
-          if(sourceRel?.category_id){const set=distributorCategoryNames.get(x.distributor_id)||new Set();const n=categoryMap.get(sourceRel.category_id);if(n)set.add(n);distributorCategoryNames.set(x.distributor_id,set)}
+          if(x.category_id){const set=distributorCategoryNames.get(x.distributor_id)||new Set();const n=categoryMap.get(x.category_id);if(n)set.add(n);distributorCategoryNames.set(x.distributor_id,set)}
           if(x.location_id){const set=distributorLocationIds.get(x.distributor_id)||new Set();set.add(x.location_id);distributorLocationIds.set(x.distributor_id,set)}
           entry.count += 1
           if (x.verification_status === 'verified') entry.verifiedCount += 1
@@ -262,7 +261,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
           </select>
           <select value={locationFilter} onChange={e=>setLocationFilter(e.target.value)} aria-label="Filter by location">
             <option value="">All locations</option>
-            {[...new Map(items.flatMap(x=>(x.locations||[]).map(l=>[l.id,l]))).values()].sort((a,b)=>(a.city||'').localeCompare(b.city||'')).map(l=><option key={l.id} value={l.id}>{[l.city,l.district].filter(Boolean).join(', ')}</option>)}
+            {[...new Map(items.flatMap(x=>(x.locations||[x.location]).filter(Boolean).map(l=>[l.id,l]))).values()].sort((a,b)=>(a.city||'').localeCompare(b.city||'')).map(l=><option key={l.id} value={l.id}>{[l.city,l.district].filter(Boolean).join(', ')}</option>)}
           </select>
           {(categoryFilter||locationFilter) && <button type="button" onClick={()=>{setCategoryFilter(category||'');setLocationFilter('')}}>Clear</button>}
         </div>}
