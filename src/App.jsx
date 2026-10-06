@@ -260,18 +260,21 @@ export default function App(){
     const allCompanyIds=[...new Set(relationships.map(x=>x.company_id))]
     const allDistributorIds=[...new Set(relationships.map(x=>x.distributor_id))]
     const allDivisionIds=[...new Set(relationships.map(x=>x.division_id).filter(Boolean))]
+    const allBrandIds=[...new Set(relationships.map(x=>x.brand_id).filter(Boolean))]
 
-    const [rc,rd,rv]=await Promise.all([
+    const [rc,rd,rv,rb]=await Promise.all([
       allCompanyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',allCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       allDistributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').in('id',allDistributorIds):Promise.resolve({data:[],error:null}),
-      allDivisionIds.length?supabase.from('divisions').select('id,division_name,company_id').in('id',allDivisionIds):Promise.resolve({data:[],error:null})
+      allDivisionIds.length?supabase.from('divisions').select('id,division_name,company_id').in('id',allDivisionIds):Promise.resolve({data:[],error:null}),
+      allBrandIds.length?supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',allBrandIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
-    const lookupErr=rc.error||rd.error||rv.error
+    const lookupErr=rc.error||rd.error||rv.error||rb.error
     if(lookupErr){setError(lookupErr.message);setResults([]);setLoading(false);return}
 
     const companyMap=new Map((rc.data||[]).map(x=>[x.id,x]))
     const distributorMap=new Map((rd.data||[]).map(x=>[x.id,x]))
     const divisionMap=new Map((rv.data||[]).map(x=>[x.id,x]))
+    const brandMap=new Map((rb.data||[]).map(x=>[x.id,x]))
 
     const searchedCompanyIds=new Set(companyIds)
     const searchedDistributorIds=new Set(distributorIds)
@@ -286,7 +289,7 @@ export default function App(){
       const company=companyMap.get(rel.company_id)
       const distributor=distributorMap.get(rel.distributor_id)
       const division=rel.division_id?divisionMap.get(rel.division_id):null
-      const brand=rel.brand_id?brandRows.find(x=>x.id===rel.brand_id):null
+      const brand=rel.brand_id?brandMap.get(rel.brand_id):null
       if(!company||!distributor)return
 
       const companyMatch=searchedCompanyIds.has(rel.company_id)
@@ -355,7 +358,8 @@ export default function App(){
       const [cRes,vRes,lRes,bRes]=await Promise.all([
         companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
-        locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null})
+        locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null}),
+        brandIds.length?supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',brandIds).eq('status','active'):Promise.resolve({data:[],error:null})
       ])
       if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
