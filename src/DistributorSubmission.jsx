@@ -1,6 +1,5 @@
 import React,{useState} from 'react'
-import {CheckCircle2,Download,FileSpreadsheet,LoaderCircle,Plus,Send,Truck,Upload,X,Edit3,Trash2,ChevronRight,ClipboardCheck,ArrowLeft} from 'lucide-react'
-import * as XLSX from 'xlsx'
+import {CheckCircle2,Download,FileText,LoaderCircle,Plus,Send,Truck,Upload,X,Edit3,Trash2,ChevronRight,ClipboardCheck,ArrowLeft} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
 const CATEGORIES=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
@@ -16,6 +15,28 @@ function rowsFromSheet(rows){
     division:clean(r['Division']??r['division']),
     category:clean(r['Category']??r['category'])||'Pharmaceutical'
   })).filter(r=>r.company_name)
+}
+function parseCsvLine(line){
+  const values=[];let value='';let quoted=false
+  for(let i=0;i<line.length;i++){
+    const ch=line[i]
+    if(ch==='"'){
+      if(quoted&&line[i+1]==='"'){value+='"';i++}
+      else quoted=!quoted
+    }else if(ch===','&&!quoted){values.push(value);value=''}else value+=ch
+  }
+  values.push(value)
+  return values
+}
+function parseCsv(text){
+  const lines=String(text||'').replace(/^\\uFEFF/,'').split(/\\r?\\n/).filter(line=>line.trim())
+  if(!lines.length)return []
+  const headers=parseCsvLine(lines[0]).map(clean)
+  return lines.slice(1).map(line=>{
+    const values=parseCsvLine(line),row={}
+    headers.forEach((h,i)=>{row[h]=values[i]??''})
+    return row
+  })
 }
 function downloadSample(){
   const a=document.createElement('a')
@@ -145,7 +166,7 @@ export default function DistributorSubmission(){
               <div className="company-tools">
                 <button type="button" className="submission-tool-button" onClick={downloadSample}><Download size={15}/> Sample CSV</button>
                 <button type="button" className="submission-tool-button" onClick={pasteBulk}><Upload size={15}/> Paste company list</button>
-                <label className="submission-tool-button"><FileSpreadsheet size={15}/> Upload Excel / CSV<input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} hidden/></label>
+                <label className="submission-tool-button"><FileSpreadsheet size={15}/> Upload CSV<input type="file" accept=".csv" onChange={handleFile} hidden/></label>
               </div>
 
               {bulkInfo&&<div className="bulk-loaded"><ClipboardCheck size={15}/><span><strong>{bulkInfo.count} companies loaded</strong> from {bulkInfo.fileName}. You can edit or delete any row before submitting.</span></div>}
