@@ -21,7 +21,7 @@ export default function AdminDistributorSubmissions({onBack}){
       supabase.from('distributors').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,status').eq('status','active').order('distributor_name'),
       supabase.from('search_aliases').select('entity_type,entity_id,alias,normalized_alias').eq('entity_type','company'),
       supabase.from('divisions').select('id,division_name,division_code,company_id,status').eq('status','active').order('division_name'),
-      supabase.from('brands').select('id,brand_name,company_id,status').eq('status','active').order('brand_name'),
+      supabase.from('brands').select('id,brand_name,company_id,division_id,status').eq('status','active').order('brand_name'),
       supabase.from('categories').select('id,name,status').eq('status','active').order('name'),
       supabase.from('locations').select('id,city,district,state,pincode,status').eq('status','active').order('city')
     ])
@@ -78,9 +78,9 @@ export default function AdminDistributorSubmissions({onBack}){
       if(m.company){
         const div=divisionFor(e,m.company.id)
         const b=brands.find(x=>x.company_id===m.company.id&&norm(x.brand_name)===norm(e.brand||''))
-        next[i]={action:'',company_id:m.company.id,handled_as:e.handled_as||'company',brand_id:b?.id||'',brand_name:e.brand||'',division_id:div?.id||'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
+        next[i]={action:'',company_id:m.company.id,handled_as:e.brand?'brand':e.division?'division':'company',brand_id:b?.id||'',brand_name:e.brand||'',division_id:div?.id||'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
       }else{
-        next[i]={action:'',company_id:'',handled_as:e.handled_as||'company',brand_id:'',brand_name:e.brand||'',division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
+        next[i]={action:'',company_id:'',handled_as:e.brand?'brand':e.division?'division':'company',brand_id:'',brand_name:e.brand||'',division_id:'',category:(e.category||'Pharmaceutical'),category_id:'',territory:'',company_name:e.company_name}
       }
     })
     const exactDist=distributorForSubmission(row)
@@ -96,7 +96,7 @@ export default function AdminDistributorSubmissions({onBack}){
     const div=divisionFor(entry,companyId)
     const entryBrand=norm(entry.brand||'')
     const b=brands.find(x=>x.company_id===companyId&&entryBrand&&norm(x.brand_name)===entryBrand)
-    updateMap(i,{action:'match',company_id:companyId,division_id:div?.id||'',brand_id:b?.id||'',brand_name:entry.brand||''})
+    updateMap(i,{action:'match',company_id:companyId,division_id:div?.id||'',brand_id:b?.id||'',brand_name:entry.brand||'',handled_as:entry.brand?'brand':entry.division?'division':'company'})
     setCompanySearches(x=>{const n={...x};delete n[i];return n})
   }
 
@@ -122,7 +122,7 @@ export default function AdminDistributorSubmissions({onBack}){
   async function publish(){
     if(!selected)return
     setSaving(selected.id);setError('')
-    const unresolved=reviewEntries.some((e,i)=>!mappings[i]?.action||!mappings[i]?.category||mappings[i]?.handled_as==='brand'&&!mappings[i]?.brand_name||mappings[i]?.handled_as==='division'&&!mappings[i]?.division_id)
+    const unresolved=reviewEntries.some((e,i)=>!mappings[i]?.action||!mappings[i]?.category||false)
     if(unresolved){setError('Resolve every company row before publishing.');setSaving('');return}
     if(!selectedDistributor && !selected.city){setError('A distributor or submitted distributor location is required.');setSaving('');return}
     const categoryMap=new Map(categories.map(c=>[norm(c.name),c.id]))
@@ -233,16 +233,12 @@ export default function AdminDistributorSubmissions({onBack}){
                   </div>}
                   {m.action==='create'&&<input value={m.company_name||e.company_name||''} onChange={ev=>updateMap(i,{company_name:ev.target.value})} placeholder="New company name"/>}
                   <div className="admin-company-relationship-fields">
-                    <label>Reference type<select value={m.handled_as||'company'} onChange={ev=>updateMap(i,{handled_as:ev.target.value})}><option value="company">Company</option><option value="brand">Brand</option><option value="division">Division</option><option value="unclear">Unclear</option></select></label>
+                    <label>Division <span className="optional-label">optional</span><select value={m.division_id||''} onChange={ev=>updateMap(i,{division_id:ev.target.value,handled_as:m.brand_id?'brand':ev.target.value?'division':'company'})}><option value="">None / not specified</option>{divisions.filter(d=>d.company_id===m.company_id).map(d=><option key={d.id} value={d.id}>{d.division_name}</option>)}</select></label>
+                    <label>Brand <span className="optional-label">optional</span><select value={m.brand_id||''} onChange={ev=>{const b=brands.find(x=>x.id===ev.target.value);updateMap(i,{brand_id:ev.target.value,brand_name:b?.brand_name||'',handled_as:ev.target.value?'brand':m.division_id?'division':'company'})}}><option value="">None / not specified</option>{brands.filter(b=>b.company_id===m.company_id&&(!m.division_id||!b.division_id||b.division_id===m.division_id)).map(b=><option key={b.id} value={b.id}>{b.brand_name}</option>)}</select></label>
                     <label>Category<select value={m.category||'Pharmaceutical'} onChange={ev=>updateMap(i,{category:ev.target.value})}>
                       {categories.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
                     </select></label>
-                    {m.action==='match'&&m.handled_as==='brand'&&<label>Brand<select value={m.brand_id||''} onChange={ev=>{const b=brands.find(x=>x.id===ev.target.value);updateMap(i,{brand_id:ev.target.value,brand_name:b?.brand_name||''})}}><option value="">Select brand…</option>{brands.filter(b=>b.company_id===m.company_id).map(b=><option key={b.id} value={b.id}>{b.brand_name}</option>)}</select></label>}
-                    {m.action==='match'&&m.handled_as==='division'&&<label>Division<select value={m.division_id||''} onChange={ev=>updateMap(i,{division_id:ev.target.value})}>
-                      <option value="">No division / select if applicable</option>
-                      {divisions.filter(d=>d.company_id===m.company_id).map(d=><option key={d.id} value={d.id}>{d.division_name}</option>)}
-                    </select></label>}
-                  </div>
+                    </div>
                 </div>
                 {auto.kind==='matched'&&<div className="admin-company-publish-hint admin-match-success">Company matched by {auto.method}{auto.aliasUsed?' using alias "'+auto.aliasUsed+'". Review and accept the match above.':'. Review and accept the match above.'}</div>}
                 {auto.kind==='suggested'&&<div className="admin-company-publish-hint">Suggested match: {auto.label}. Accept it only after confirming the company identity.</div>}
