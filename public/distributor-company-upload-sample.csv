@@ -1,6 +1,8 @@
-Company Name,Division,Category
-Zydus Healthcare,Healthcare,Pharmaceutical
-Cipla,,Pharmaceutical
-Abbott Healthcare,Pharma,Pharmaceutical
-Example Surgical,Surgical Division,Surgical
-Example Nutraceuticals,,Nutraceutical
+Company Name,Type,Brand,Division,Category
+Procter & Gamble,brand,Vicks,,OTC
+Procter & Gamble,brand,Head & Shoulders,,OTC
+MSD Pharmaceuticals,brand,Janumet,,Pharmaceutical
+Aristo Pharmaceuticals,company,,,Pharmaceutical
+Example Pharma,division,,Actual Division Name,Pharmaceutical
+Appasamy Associates,company,,,Medical Devices
+Appasamy Associates,company,,,Pharmaceutical
