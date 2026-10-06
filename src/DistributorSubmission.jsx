@@ -68,8 +68,10 @@ export default function DistributorSubmission(){
   function saveDraft(){
     const company=clean(draft.company_name)
     if(!company){setError('Enter the company name before adding it.');return}
-    if(draft.handled_as==='brand'&&!clean(draft.brand)){setError('Enter the brand name when the row is marked as Brand.');return}
-    const next={company_name:company,handled_as:clean(draft.handled_as)||'company',brand:clean(draft.brand),division:clean(draft.division),category:clean(draft.category)||'Pharmaceutical'}
+    const brand=clean(draft.brand)
+    const division=clean(draft.division)
+    const handled_as=brand?'brand':division?'division':'company'
+    const next={company_name:company,handled_as,brand,division,category:clean(draft.category)||'Pharmaceutical'}
     if(editingIndex===null)setEntries(x=>[...x,next])
     else setEntries(x=>x.map((r,i)=>i===editingIndex?next:r))
     setDraft(blankEntry());setEditingIndex(null);setAddMode(false);setError('')
@@ -98,11 +100,12 @@ export default function DistributorSubmission(){
   }
 
   function pasteBulk(){
-    const text=window.prompt('Paste one row per line using: Company | Type | Brand | Division | Category')
+    const text=window.prompt('Paste one row per line using: Company | Division | Brand | Category')
     if(text===null)return
     const rows=text.split(/\r?\n/).map(line=>{
       const parts=line.split('|').map(clean)
-      return {company_name:parts[0]||'',handled_as:parts[1]||'company',brand:parts[2]||'',division:parts[3]||'',category:parts[4]||'Pharmaceutical'}
+      const division=parts[1]||'', brand=parts[2]||''
+      return {company_name:parts[0]||'',handled_as:brand?'brand':division?'division':'company',brand,division,category:parts[3]||'Pharmaceutical'}
     }).filter(r=>r.company_name)
     applyBulk(rows,'paste','Pasted company list')
   }
@@ -112,14 +115,13 @@ export default function DistributorSubmission(){
     const missing=required.filter(([,v])=>!clean(v)).map(([k])=>k)
     if(missing.length){setError('Please complete: '+missing.join(', ')+'.');return false}
     if(!entries.length){setError('Please add at least one company you handle.');return false}
-    if(entries.some(r=>r.handled_as==='brand'&&!r.brand)){setError('Every Brand row must include the brand name.');return false}
     setError('');setReviewing(true);return true
   }
 
   async function submit(){
     setBusy(true);setError('')
-    const cleaned=entries.map(r=>({company_name:clean(r.company_name),handled_as:clean(r.handled_as)||'company',brand:clean(r.brand),division:clean(r.division),category:clean(r.category)||'Pharmaceutical'})).filter(r=>r.company_name)
-    const companies_handled=cleaned.map(r=>[r.company_name,r.division].filter(Boolean).join(' — ')).join('\n')
+    const cleaned=entries.map(r=>({company_name:clean(r.company_name),handled_as:clean(r.brand)?'brand':clean(r.division)?'division':'company',brand:clean(r.brand),division:clean(r.division),category:clean(r.category)||'Pharmaceutical'})).filter(r=>r.company_name)
+    const companies_handled=cleaned.map(r=>[r.company_name,r.division,r.brand].filter(Boolean).join(' — ')).join('\n')
     const payload={...form,distributor_name:clean(form.distributor_name),mobile:clean(form.mobile),whatsapp:clean(form.whatsapp),companies_handled,email:clean(form.email)||null,company_entries:cleaned,bulk_source:bulkInfo?.source||'manual',bulk_file_name:bulkInfo?.fileName||null,bulk_row_count:cleaned.length}
     const {error}=await supabase.from('distributor_submissions').insert(payload)
     if(error){setError(error.message);setBusy(false);return}
@@ -160,7 +162,7 @@ export default function DistributorSubmission(){
             </section>
 
             <section className="submission-section">
-              <div className="submission-section-heading"><span className="submission-section-number">2</span><div><h3>Companies you handle</h3><p>Add the company name and, if applicable, its division. Products or brands are not required at this stage.</p></div></div>
+              <div className="submission-section-heading"><span className="submission-section-number">2</span><div><h3>Companies you handle</h3><p>Enter the company first. Division and Brand are optional and can both be provided when the distributor line specifies both.</p></div></div>
 
               <div className="company-tools">
                 <button type="button" className="submission-tool-button" onClick={downloadSample}><Download size={15}/> Sample CSV</button>
@@ -175,7 +177,7 @@ export default function DistributorSubmission(){
                   <div className="company-review-index">{String(i+1).padStart(2,'0')}</div>
                   <div className="company-review-main">
                     <strong>{r.company_name}</strong>
-                    <div><span>{r.handled_as==='brand'&&r.brand?'Brand: '+r.brand:r.handled_as==='division'&&r.division?'Division: '+r.division:r.handled_as==='unclear'?'Needs admin review':'Company generally'}</span><em>{r.category}</em></div>
+                    <div><span>{r.division?'Division: '+r.division:''}{r.division&&r.brand?' · ':''}{r.brand?'Brand: '+r.brand:''}{!r.division&&!r.brand?'Company generally':''}</span><em>{r.category}</em></div>
                   </div>
                   <div className="company-review-actions">
                     <button type="button" onClick={()=>editEntry(i)} aria-label={'Edit '+r.company_name}><Edit3 size={14}/> Edit</button>
@@ -194,10 +196,8 @@ export default function DistributorSubmission(){
                 <div className="company-editor-heading"><div><strong>{editingIndex===null?'New company':'Edit company'}</strong><span>{editingIndex===null?'Enter the company exactly as you know it. We will check the name during admin review.':'Make your correction below.'}</span></div>{editingIndex!==null&&<button type="button" onClick={()=>{setEditingIndex(null);setDraft(blankEntry());setAddMode(false)}}>Cancel edit</button>}</div>
                 <div className="company-editor-grid">
                   <label>Company / Organization <span className="required">*</span><input autoFocus value={draft.company_name} onChange={e=>updateDraft('company_name',e.target.value)} placeholder="e.g. Cipla"/></label>
-                  <label>What does the line refer to?<select value={draft.handled_as||'company'} onChange={e=>updateDraft('handled_as',e.target.value)}><option value="company">Company</option><option value="brand">Brand</option><option value="division">Division</option><option value="unclear">Unclear / needs admin review</option></select></label>
-                  {draft.handled_as==='brand'&&<label>Brand<input value={draft.brand||''} onChange={e=>updateDraft('brand',e.target.value)} placeholder="e.g. Vicks"/></label>}
-                  {draft.handled_as==='division'&&<label>Division<input value={draft.division||''} onChange={e=>updateDraft('division',e.target.value)} placeholder="Actual company division"/></label>}
-                  {draft.handled_as!=='brand'&&draft.handled_as!=='division'&&<label>Brand <span className="optional-label">optional</span><input value={draft.brand||''} onChange={e=>updateDraft('brand',e.target.value)} placeholder="If known"/></label>}
+                  <label>Division <span className="optional-label">optional</span><input value={draft.division||''} onChange={e=>updateDraft('division',e.target.value)} placeholder="If the line specifies a division"/></label>
+                  <label>Brand <span className="optional-label">optional</span><input value={draft.brand||''} onChange={e=>updateDraft('brand',e.target.value)} placeholder="If the line specifies a brand"/></label>
                   <label>Category<select value={draft.category} onChange={e=>updateDraft('category',e.target.value)}>{CATEGORIES.map(x=><option key={x}>{x}</option>)}</select></label>
                 </div>
                 <button type="button" className="save-company-button" onClick={saveDraft}><CheckCircle2 size={15}/>{editingIndex===null?'Save company':'Save changes'}</button>
