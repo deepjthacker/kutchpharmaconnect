@@ -937,3 +937,22 @@ html[data-theme="dark"] .admin-danger-zone{background:#261313;border-color:#6730
 html[data-theme="dark"] .admin-danger-zone strong{color:#ff9b9b}
 html[data-theme="dark"] .admin-danger-zone p{color:#d8aaaa}
 html[data-theme="dark"] .admin-delete-btn{background:#2a1717;color:#ffb0b0;border-color:#7d3838}
+
+/* Admin control center + company/brand data model */
+.admin-control-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:18px 0}
+.admin-control-summary>div{padding:16px;border:1px solid var(--border,#e5e7eb);border-radius:14px;background:var(--card,#fff);display:flex;flex-direction:column;gap:3px}
+.admin-control-summary strong{font-size:25px;line-height:1}
+.admin-control-summary span{font-weight:700}
+.admin-control-summary small{color:var(--muted,#6b7280);line-height:1.35}
+.admin-workflow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.admin-workflow-panel{min-height:100%}
+.admin-panel-heading{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.admin-panel-heading h2{margin:2px 0 4px}
+.admin-panel-heading p:not(.section-kicker){margin:0;color:var(--muted,#6b7280)}
+.admin-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;margin-left:8px;padding:0 6px;border-radius:999px;background:rgba(37,99,235,.1);font-size:12px}
+.admin-health-strip{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.admin-health-strip span{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:var(--card,#fff);border:1px solid var(--border,#e5e7eb);font-size:13px}
+.admin-info-box{display:flex;gap:10px;align-items:flex-start;padding:13px 15px;margin:14px 0;border:1px solid var(--border,#e5e7eb);border-radius:12px;background:rgba(37,99,235,.04)}
+.admin-info-box span{color:var(--muted,#6b7280);line-height:1.45}
+@media(max-width:1000px){.admin-control-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.admin-control-summary,.admin-workflow-grid{grid-template-columns:1fr}.admin-control-summary{gap:8px}.admin-control-summary>div{padding:13px}}
