@@ -32,6 +32,18 @@ export default function AdminDistributorSubmissions({onBack}){
   }
   useEffect(()=>{load()},[])
 
+  async function deleteSubmission(row){
+    if(!row?.id)return
+    const ok=window.confirm('Delete this distributor request permanently? This removes only the submission from the Admin Inbox; it does not delete any published distributor or company records.')
+    if(!ok)return
+    setSaving(row.id);setError('')
+    const {error}=await supabase.from('distributor_submissions').delete().eq('id',row.id)
+    if(error){setError(error.message);setSaving('');return}
+    setRows(x=>x.filter(r=>r.id!==row.id))
+    if(selected?.id===row.id)setSelected(null)
+    setSaving('')
+  }
+
   async function updateStatus(id,status){
     setSaving(id);setError('')
     const {data:{user}}=await supabase.auth.getUser()
@@ -160,6 +172,7 @@ export default function AdminDistributorSubmissions({onBack}){
             {r.status==='open'&&<button onClick={()=>updateStatus(r.id,'under_review')} disabled={saving===r.id}>Mark Under Review</button>}
             {r.status!=='approved'&&<button className="primary" onClick={()=>prepareReview(r)} disabled={saving===r.id}><CheckCircle2 size={14}/> Review & Publish</button>}
             {r.status!=='rejected'&&<button onClick={()=>updateStatus(r.id,'rejected')} disabled={saving===r.id}>Reject</button>}
+            <button className="danger" onClick={()=>deleteSubmission(r)} disabled={saving===r.id}>Delete</button>
             {r.status!=='open'&&<button onClick={()=>updateStatus(r.id,'open')} disabled={saving===r.id}>Reopen</button>}
           </div>
         </div>
