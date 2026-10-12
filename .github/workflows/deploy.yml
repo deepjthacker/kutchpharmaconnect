@@ -40,6 +40,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_ADMIN_PHONE: ${{ secrets.VITE_ADMIN_PHONE }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
