@@ -6,7 +6,7 @@ const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
-const ADMIN_PHONE='918980043357'
+const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||'918980043357'
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
 const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
