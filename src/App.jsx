@@ -11,6 +11,7 @@ const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||''
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
 const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
+const stockWhatsAppMessage=(distributor,company)=>`Hello ${distributor}, do you currently have stock of ${company} available for Mundra/Kutch? I found your contact through KutchPharmaConnect. Thank you.`
 const normalizePhone=number=>{
   const raw=String(number||'').trim()
   if(!raw)return ''
@@ -39,6 +40,8 @@ export default function App(){
   const searchRequestRef=useRef(0)
   const suggestionRequestRef=useRef(0)
   const lastSearchTermRef=useRef('')
+  const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
+  const [reportTarget,setReportTarget]=useState(null)
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
@@ -190,9 +193,10 @@ export default function App(){
     e.preventDefault()
     if(!report.message.trim()) return
     setReportSubmitting(true);setReportError('')
+    const target=reportTarget
     const payload={
-      entity_type: profile?.type || 'directory',
-      entity_id: profile?.entity?.id || null,
+      entity_type: target?.type || profile?.type || 'directory',
+      entity_id: target?.id || profile?.entity?.id || null,
       issue_type: report.type,
       description: report.message.trim(),
       reporter_name: report.reporter_name.trim() || null,
@@ -205,9 +209,24 @@ export default function App(){
     setReportSent(true);setReportSubmitting(false)
   }
 
-  function openReport(){
-    setReport({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  function openReport(target=null){
+    setReportTarget(target)
+    setReport({type:'incorrect_relationship',message:target?.message||'',reporter_name:'',reporter_mobile:'',reporter_email:''})
     setReportError('');setReportSent(false);setReportOpen(true)
+  }
+
+  function rememberRecent(type,id,name){
+    if(!id||!name||!['company','distributor'].includes(type))return
+    setRecentSearches(current=>{
+      const next=[{type,id,name,at:Date.now()},...current.filter(x=>!(x.type===type&&x.id===id))].slice(0,5)
+      try{localStorage.setItem('kpc-recent-searches',JSON.stringify(next))}catch{}
+      return next
+    })
+  }
+
+  function clearRecentSearches(){
+    setRecentSearches([])
+    try{localStorage.removeItem('kpc-recent-searches')}catch{}
   }
 
   function chooseSuggestion(item){
@@ -359,6 +378,7 @@ export default function App(){
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
+      if(companyRes.data)rememberRecent('company',id,companyRes.data.company_name)
       const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
@@ -382,6 +402,7 @@ export default function App(){
       ])
       if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
+      if(distRes.data)rememberRecent('distributor',id,distRes.data.distributor_name)
       const companyIds=[...new Set(rels.map(x=>x.company_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
@@ -693,14 +714,17 @@ export default function App(){
                               )}
                               {r.target.whatsapp && (
                                 <a
-                                  href={waLink(r.target.whatsapp || r.target.mobile,distributorWhatsAppMessage(r.target.distributor_name))}
+                                  href={waLink(r.target.whatsapp || r.target.mobile,stockWhatsAppMessage(r.target.distributor_name||r.target.company_name,profileType==='company'?r.title:(r.target.company_name||r.title)))}
                                   target="_blank"
                                   rel="noreferrer"
-                                  onClick={e => {e.stopPropagation();trackEvent('whatsapp_click',{entity_type:profileType})}}
+                                  onClick={e => {e.stopPropagation();trackEvent('whatsapp_stock_inquiry',{entity_type:profileType})}}
                                 >
-                                  <MessageCircle size={14}/> WhatsApp
+                                  <MessageCircle size={14}/> Check Stock on WhatsApp
                                 </a>
                               )}
+                              <button type="button" className="result-report-action" onClick={e=>{e.stopPropagation();openReport({type:profileType,id:profileId,name:r.title,message:`Please review the listing or distributorship relationship for ${r.title} and ${r.target.company_name||r.target.distributor_name}.`})}}>
+                                <Flag size={13}/> Report / Update Info
+                              </button>
                               {mapsLink(r.target) && (
                                 <a
                                   href={mapsLink(r.target)}
@@ -736,6 +760,23 @@ export default function App(){
                   </div>
                 )}
               </div>
+            )}
+
+            {!searched && recentSearches.length>0 && (
+              <section className="recent-searches" aria-labelledby="recent-searches-title">
+                <div className="recent-searches-heading">
+                  <h2 id="recent-searches-title">Recent Searches</h2>
+                  <button type="button" onClick={clearRecentSearches}>Clear</button>
+                </div>
+                <div className="recent-searches-list">
+                  {recentSearches.map(item=>(
+                    <button type="button" key={item.type+'-'+item.id} onClick={()=>openProfile(item.type,item.id)}>
+                      {item.type==='company'?<Building2 size={15}/>:<Truck size={15}/>}
+                      <span>{item.name}</span><ArrowRight size={14}/>
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
 
             {!searched && (
@@ -813,7 +854,7 @@ export default function App(){
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /></Suspense></ErrorBoundary> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
       <DistributorSubmissionLauncher />
@@ -843,7 +884,7 @@ export default function App(){
             <p className="section-kicker">DIRECTORY FEEDBACK</p>
             <h2 id="report-dialog-title">Report Incorrect Information</h2>
             <p className="report-help">Help us keep KutchPharmaConnect accurate. Report an outdated relationship, incorrect contact detail, company name, or other directory issue.</p>
-            {profile && <div className="report-target"><strong>{profile.entity?.company_name || profile.entity?.distributor_name}</strong><span>Profile currently open</span></div>}
+            {(reportTarget||profile) && <div className="report-target"><strong>{reportTarget?.name || profile?.entity?.company_name || profile?.entity?.distributor_name}</strong><span>{reportTarget?'Listing selected from directory':'Profile currently open'}</span></div>}
             <form onSubmit={submitReport}>
               <label>What is incorrect?
                 <select value={report.type} onChange={e=>setReport({...report,type:e.target.value})}>
