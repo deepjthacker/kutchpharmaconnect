@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle, Flag } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Truck, Flag } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const browseCache = new Map()
@@ -259,7 +259,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         </div>
 
         <div className="browse-search">
-          <Search size={18} />
+          <img className="kpc-asset-icon kpc-search-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true" />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -291,7 +291,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
             {filtered.map(item => (
               <div className="browse-card" key={item.id}>
                 <div className="browse-card-icon">
-                  {isLocations ? <MapPin size={20} /> : isCompanies ? <Building2 size={20} /> : <Truck size={20} />}
+                  {isLocations ? <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/marker.svg`} alt="" aria-hidden="true" /> : isCompanies ? <Building2 size={20} /> : <Truck size={20} />}
                 </div>
                 <div className="browse-card-copy">
                   <strong>{isLocations ? item.city : isCompanies ? item.company_name : item.distributor_name}</strong>
@@ -315,9 +315,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                       {item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Current relationships are listed from supplied directory data but have not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
-                          {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={14}/><span>Call</span></a>}
-                          {item.mobile && <a className="contact-action whatsapp-action" href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={14}/><span>WhatsApp</span></a>}
-                        {mapsLink(item) && <a className="contact-action maps-action" href={mapsLink(item)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/><span>Maps</span></a>}
+                          {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true" /><span>Call</span></a>}
+                          {item.mobile && <a className="contact-action whatsapp-action" href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true" /><span>WhatsApp</span></a>}
+                        {mapsLink(item) && <a className="contact-action maps-action" href={mapsLink(item)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/marker.svg`} alt="" aria-hidden="true" /><span>Maps</span></a>}
                         </div>
                       )}
                       {!isLocations && <button type="button" className="browse-report-action" onClick={e=>{e.stopPropagation();onReport?.({type:isCompanies?'company':'distributor',id:item.id,name:isCompanies?item.company_name:item.distributor_name,message:`Please review the directory information for ${isCompanies?item.company_name:item.distributor_name}.`})}}><Flag size={12}/> Report / Update Info</button>}
