@@ -561,11 +561,11 @@ export default function App(){
                         {profile.type === 'company' && (
                           <div className="profile-rel-actions">
                             {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)}><Phone size={13}/> Call</a>}
-                            {rel.distributor?.whatsapp && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
+                            {(rel.distributor?.whatsapp || rel.distributor?.mobile) && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
                             {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer"><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
                           </div>
                         )}
-                        {profile.type === 'distributor' && profile.entity?.whatsapp && (
+                        {profile.type === 'distributor' && (profile.entity?.whatsapp || profile.entity?.mobile) && (
                           <div className="profile-rel-actions">
                             <a className="profile-rel-action" href={waLink(profile.entity.whatsapp || profile.entity.mobile,stockWhatsAppMessage(profile.entity.distributor_name,rel.company?.company_name||'the product'))} target="_blank" rel="noreferrer">
                               <MessageCircle size={13}/> Check Stock
@@ -717,7 +717,7 @@ export default function App(){
                                   <Phone size={14}/> Call
                                 </a>
                               )}
-                              {r.contact?.whatsapp && (
+                              {(r.contact?.whatsapp || r.contact?.mobile) && (
                                 <a href={waLink(r.contact.whatsapp || r.contact.mobile,stockWhatsAppMessage(r.contact.distributor_name,profileType==='company'?r.title:(r.target.company_name||r.title)))} target="_blank" rel="noreferrer" onClick={e=>{e.stopPropagation();trackEvent('whatsapp_stock_inquiry',{entity_type:profileType})}}>
                                   <MessageCircle size={14}/> Check Stock on WhatsApp
                                 </a>
@@ -762,7 +762,7 @@ export default function App(){
               </div>
             )}
 
-            {!searched && recentSearches.length>0 && (
+            {recentSearches.length>0 && (
               <section className="recent-searches" aria-labelledby="recent-searches-title">
                 <div className="recent-searches-heading">
                   <h2 id="recent-searches-title">Recent Searches</h2>
