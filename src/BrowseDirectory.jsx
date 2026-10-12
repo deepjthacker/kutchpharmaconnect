@@ -19,6 +19,11 @@ const normalizePhone=number=>{
 }
 const phoneLink=number=>`tel:${normalizePhone(number)}`
 const waLink=(number,message)=>`https://wa.me/${normalizePhone(number).replace(/\D/g,'')}?text=${encodeURIComponent(message)}`
+const mapsLink=entity=>{
+  if(entity?.maps_url)return entity.maps_url
+  const query=[entity?.distributor_name,entity?.address,entity?.location?.city,'Kutch','Gujarat'].filter(Boolean).join(', ')
+  return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:null
+}
 
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile, onReport }) {
   const isCompanies = type === 'companies'
@@ -142,7 +147,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
       } else {
         const { data, error: distributorError } = await supabase
           .from('distributors')
-          .select('id,distributor_name,contact_person,mobile,whatsapp,city_id')
+          .select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url')
           .eq('status', 'active')
           .order('distributor_name')
 
@@ -310,8 +315,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                       {item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Current relationships are listed from supplied directory data but have not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
-                          {item.mobile && <a href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={13}/> Call</a>}
-                          {item.mobile && <a href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={13}/> WhatsApp</a>}
+                          {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={14}/><span>Call</span></a>}
+                          {item.mobile && <a className="contact-action whatsapp-action" href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={14}/><span>WhatsApp</span></a>}
+                        {mapsLink(item) && <a className="contact-action maps-action" href={mapsLink(item)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/><span>Maps</span></a>}
                         </div>
                       )}
                       {!isLocations && <button type="button" className="browse-report-action" onClick={e=>{e.stopPropagation();onReport?.({type:isCompanies?'company':'distributor',id:item.id,name:isCompanies?item.company_name:item.distributor_name,message:`Please review the directory information for ${isCompanies?item.company_name:item.distributor_name}.`})}}><Flag size={12}/> Report / Update Info</button>}
