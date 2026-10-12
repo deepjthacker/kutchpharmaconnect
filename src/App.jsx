@@ -116,6 +116,9 @@ export default function App(){
     const t=setTimeout(()=>{
       const term=q.trim()
       if(term.length<2){
+        lastSearchTermRef.current=''
+        searchRequestRef.current++
+        suggestionRequestRef.current++
         setResults([])
         setSearched(false)
         setSuggestions([])
