@@ -275,19 +275,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         {!loading && !error && filtered.length > 0 && (
           <div className="browse-grid">
             {filtered.map(item => (
-              <div
-                className="browse-card"
-                key={item.id}
-                role={isLocations ? undefined : 'button'}
-                tabIndex={isLocations ? undefined : 0}
-                onClick={() => !isLocations && onOpenProfile(isCompanies ? 'company' : 'distributor', item.id)}
-                onKeyDown={e => {
-                  if(!isLocations && (e.key === 'Enter' || e.key === ' ')){
-                    e.preventDefault()
-                    onOpenProfile(isCompanies ? 'company' : 'distributor', item.id)
-                  }
-                }}
-              >
+              <div className="browse-card" key={item.id}>
                 <div className="browse-card-icon">
                   {isLocations ? <MapPin size={20} /> : isCompanies ? <Building2 size={20} /> : <Truck size={20} />}
                 </div>
