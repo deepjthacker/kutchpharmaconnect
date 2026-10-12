@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle, Flag } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
+const browseCache = new Map()
+
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
 const normalizePhone=number=>{
@@ -32,30 +34,30 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
     let cancelled = false
 
     async function load() {
-      setLoading(true)
+      const cacheKey = `${type}:${category || ''}`
+      const cached = browseCache.get(cacheKey)
+      if (cached) { setItems(cached); setLoading(false) } else setLoading(true)
       setError('')
 
       if (isCompanies) {
         let categoryCompanyIds = null
+        const [categoryResult, companyResult] = await Promise.all([
+          category
+            ? supabase.from('categories').select('id,name').ilike('name', category).eq('status', 'active').maybeSingle()
+            : Promise.resolve({data:null,error:null}),
+          supabase.from('companies').select('id,company_name,short_name').eq('status', 'active').order('company_name')
+        ])
+        if (categoryResult.error || companyResult.error) {
+          if (!cancelled) { setError((categoryResult.error || companyResult.error).message); setLoading(false) }
+          return
+        }
         if (category) {
-          const { data: categoryRow, error: categoryError } = await supabase.from('categories').select('id,name').ilike('name', category).eq('status', 'active').maybeSingle()
-          if (categoryError) { if (!cancelled) { setError(categoryError.message); setLoading(false) }; return }
-          if (!categoryRow) { if (!cancelled) { setError('Category not found.'); setLoading(false) }; return }
-          const { data: categoryLinks, error: categoryLinkError } = await supabase.from('company_categories').select('company_id').eq('category_id', categoryRow.id)
+          if (!categoryResult.data) { if (!cancelled) { setError('Category not found.'); setLoading(false) }; return }
+          const { data: categoryLinks, error: categoryLinkError } = await supabase.from('company_categories').select('company_id').eq('category_id', categoryResult.data.id)
           if (categoryLinkError) { if (!cancelled) { setError(categoryLinkError.message); setLoading(false) }; return }
           categoryCompanyIds = [...new Set((categoryLinks || []).map(x => x.company_id).filter(Boolean))]
         }
-
-        const { data, error: companyError } = await supabase
-          .from('companies')
-          .select('id,company_name,short_name')
-          .eq('status', 'active')
-          .order('company_name')
-
-        if (companyError) {
-          if (!cancelled) { setError(companyError.message); setLoading(false) }
-          return
-        }
+        const data = companyResult.data || []
 
         const companyRows = categoryCompanyIds ? (data || []).filter(x => categoryCompanyIds.includes(x.id)) : (data || [])
         const ids = companyRows.map(x => x.id)
@@ -73,20 +75,19 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         }
 
         const locationIds = [...new Set((rels || []).map(x => x.location_id).filter(Boolean))]
-        const { data: locations, error: locationError } = locationIds.length
-          ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds).eq('status','active')
-          : { data: [], error: null }
-
-        if (locationError) {
-          if (!cancelled) { setError(locationError.message); setLoading(false) }
+        const categoryIds=[...new Set((rels||[]).map(x=>x.category_id).filter(Boolean))]
+        const [locationsResult, catResult] = await Promise.all([
+          locationIds.length ? supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds).eq('status','active') : Promise.resolve({data:[],error:null}),
+          categoryIds.length ? supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active') : Promise.resolve({data:[],error:null})
+        ])
+        if (locationsResult.error || catResult.error) {
+          if (!cancelled) { setError((locationsResult.error || catResult.error).message); setLoading(false) }
           return
         }
-
-        const locationMap = new Map((locations || []).map(x => [x.id, x]))
+        const locations = locationsResult.data || []
+        const catRows = catResult.data || []
+        const locationMap = new Map(locations.map(x => [x.id, x]))
         const relationshipMap = new Map()
-        const categoryIds=[...new Set((rels||[]).map(x=>x.category_id).filter(Boolean))]
-        const {data:catRows,error:catError}=categoryIds.length?await supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active'):{data:[],error:null}
-        if(catError){if(!cancelled){setError(catError.message);setLoading(false)};return}
         const categoryMap=new Map((catRows||[]).map(x=>[x.id,x.name]))
         ;(rels || []).forEach(rel => {
           const entry = relationshipMap.get(rel.company_id) || { count: 0, verifiedCount: 0, reviewCount: 0, locations: new Map() }
@@ -100,10 +101,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         })
 
         if (!cancelled) {
-          setItems(companyRows.map(x => {
+          const nextItems=companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
             return { ...x, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()], locationIds:[...info.locations.keys()], categoryNames:[...new Set((rels||[]).filter(r=>r.company_id===x.id).map(r=>categoryMap.get(r.category_id)).filter(Boolean))] }
-          }).filter(x => x.relationshipCount > 0))
+          }).filter(x => x.relationshipCount > 0)
+          browseCache.set(cacheKey,nextItems)
+          setItems(nextItems)
         }
       } else if (isLocations) {
         const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').eq('status','active').order('city')
@@ -128,10 +131,14 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           if(dm.has(rel.distributor_id)) e.distributors.set(rel.distributor_id,dm.get(rel.distributor_id))
           grouped.set(rel.location_id,e)
         })
-        if(!cancelled) setItems((locations||[]).map(location=>{
+        if(!cancelled) {
+          const nextItems=(locations||[]).map(location=>{
           const e=grouped.get(location.id)||{companies:new Map(),distributors:new Map()}
           return {...location,companies:[...e.companies.values()],distributors:[...e.distributors.values()]}
-        }).filter(x=>x.companies.length||x.distributors.length))
+          }).filter(x=>x.companies.length||x.distributors.length)
+          browseCache.set(cacheKey,nextItems)
+          setItems(nextItems)
+        }
       } else {
         const { data, error: distributorError } = await supabase
           .from('distributors')
@@ -187,7 +194,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         })
 
         if (!cancelled) {
-          setItems((data || []).map(x => ({
+          const nextItems=(data || []).map(x => ({
             ...x,
             location: locationMap.get(x.city_id),
             relationshipCount: counts.get(x.id)?.count || 0,
@@ -195,7 +202,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
             reviewCount: counts.get(x.id)?.reviewCount || 0,
             categoryNames:[...((distributorCategoryNames.get(x.id)||new Set()))],
             locationIds:[...(distributorLocationIds.get(x.id)||new Set())]
-          })))
+          }))
+          browseCache.set(cacheKey,nextItems)
+          setItems(nextItems)
         }
       }
 
