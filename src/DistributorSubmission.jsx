@@ -45,8 +45,7 @@ function downloadSample(){
   a.click()
 }
 
-export default function DistributorSubmission(){
-  const [open,setOpen]=useState(false)
+export default function DistributorSubmission({open=false,onClose=()=>{}}){
   const [form,setForm]=useState(initial)
   const [entries,setEntries]=useState([])
   const [draft,setDraft]=useState(blankEntry())
@@ -61,7 +60,7 @@ export default function DistributorSubmission(){
   function reset(){
     setForm(initial);setEntries([]);setDraft(blankEntry());setEditingIndex(null);setAddMode(true);setReviewing(false);setSent(false);setError('');setBusy(false);setBulkInfo(null)
   }
-  function close(){setOpen(false);reset()}
+  function close(){onClose();reset()}
   function update(key,value){setForm(x=>({...x,[key]:value}))}
   function updateDraft(key,value){setDraft(x=>({...x,[key]:value}))}
 
@@ -129,8 +128,6 @@ export default function DistributorSubmission(){
   }
 
   return <>
-    <button className="distributor-submit-cta" onClick={()=>{setOpen(true);setSent(false);setError('')}}><Truck size={17}/><span><strong>Are you a distributor?</strong><small>Add your company & distributorship details</small></span></button>
-
     {open&&<div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}>
       <div className="report-modal distributor-submit-modal distributor-form-modal">
         <button className="report-close" onClick={close} aria-label="Close"><X size={18}/></button>
