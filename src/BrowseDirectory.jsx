@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle, Flag } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
@@ -18,7 +18,7 @@ const normalizePhone=number=>{
 const phoneLink=number=>`tel:${normalizePhone(number)}`
 const waLink=(number,message)=>`https://wa.me/${normalizePhone(number).replace(/\D/g,'')}?text=${encodeURIComponent(message)}`
 
-export default function BrowseDirectory({ type, category, onBack, onOpenProfile }) {
+export default function BrowseDirectory({ type, category, onBack, onOpenProfile, onReport }) {
   const isCompanies = type === 'companies'
   const isLocations = type === 'locations'
   const [items, setItems] = useState([])
@@ -317,6 +317,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
                           {item.mobile && <a href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={13}/> WhatsApp</a>}
                         </div>
                       )}
+                      {!isLocations && <button type="button" className="browse-report-action" onClick={e=>{e.stopPropagation();onReport?.({type:isCompanies?'company':'distributor',id:item.id,name:isCompanies?item.company_name:item.distributor_name,message:`Please review the directory information for ${isCompanies?item.company_name:item.distributor_name}.`})}}><Flag size={12}/> Report / Update Info</button>}
                     </>
                   )}
                 </div>
