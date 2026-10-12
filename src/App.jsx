@@ -797,8 +797,8 @@ export default function App(){
               <p>Contact the KutchPharmaConnect admin team for help with directory information or a missing listing.</p>
             </div>
             <div className="admin-contact-actions">
-              <a href={phoneLink(ADMIN_PHONE)}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true"/> Call Admin</a>
-              <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true"/> WhatsApp Admin</a>
+              <a href={phoneLink(ADMIN_PHONE)}><img className="kpc-contact-icon kpc-call-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true"/> Call Admin</a>
+              <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><img className="kpc-contact-icon kpc-whatsapp-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true"/> WhatsApp Admin</a>
             </div>
           </div>
         </section>
@@ -872,7 +872,7 @@ export default function App(){
           </div>
           <div className="site-footer-contact">
             <span>Admin Contact</span>
-            {ADMIN_PHONE && <><a href={phoneLink(ADMIN_PHONE)}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true"/> Call Admin</a><a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true"/> WhatsApp</a></>}
+            {ADMIN_PHONE && <><a href={phoneLink(ADMIN_PHONE)}><img className="kpc-contact-icon kpc-call-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true"/> Call Admin</a><a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><img className="kpc-contact-icon kpc-whatsapp-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true"/> WhatsApp</a></>}
           </div>
         </div>
       </footer>
