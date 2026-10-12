@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Truck, Flag } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Truck, Flag, Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const browseCache = new Map()
@@ -259,7 +259,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         </div>
 
         <div className="browse-search">
-          <img className="kpc-asset-icon kpc-search-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true" />
+          <Search size={17} strokeWidth={1.8} aria-hidden="true" />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
