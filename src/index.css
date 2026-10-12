@@ -169,9 +169,19 @@ footer{background:#fff;border-top:1px solid #e6eaf0}.footer-inner{min-height:70p
 .site-footer-contact a:hover{text-decoration:underline}
 @media(max-width:760px){.admin-contact-card{display:block;padding:22px}.admin-contact-actions{margin-top:16px}.site-footer-contact{margin-top:10px}}
 
-.browse-contact-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
-.browse-contact-actions a{display:inline-flex;align-items:center;gap:4px;text-decoration:none;border:1px solid #d2dbe8;border-radius:7px;padding:5px 7px;color:#3159a8;background:#fff;font-size:10px;font-weight:800}
-.browse-contact-actions a:hover{border-color:#9fb3d5;background:#f8fbff}
+.browse-contact-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.browse-contact-actions .contact-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:6px 10px;border:1px solid transparent;border-radius:9px;text-decoration:none;font-size:10px;font-weight:850;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease;color:#fff}
+.browse-contact-actions .contact-action svg{flex:none}
+.browse-contact-actions .contact-action:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(15,23,42,.14)}
+.browse-contact-actions .call-action{background:#22c55e;border-color:#16a34a}
+.browse-contact-actions .call-action:hover{background:#16a34a}
+.browse-contact-actions .whatsapp-action{background:#25d366;border-color:#1fb85a}
+.browse-contact-actions .whatsapp-action:hover{background:#1da851}
+.browse-contact-actions .maps-action{background:#4285f4;border-color:#2f6fd3}
+.browse-contact-actions .maps-action:hover{background:#2f6fd3}
+.browse-contact-actions .contact-action:focus-visible{outline:2px solid #172033;outline-offset:2px}
+.browse-report-action{transition:color .16s ease,background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+.browse-report-action:hover{background:#fff0f0!important;border-color:#e7a0a0!important;color:#c62828!important;transform:translateY(-1px);box-shadow:0 4px 10px rgba(198,40,40,.10)}
 
 .verified-badge{display:inline-flex;align-items:center;gap:5px;width:max-content;margin-top:8px;padding:5px 9px;border:1px solid #b8e0c2;border-radius:7px;background:#ecf9ef;color:#18733a;font-size:11px;font-weight:800;line-height:1}
 .verified-badge svg{color:#188044;flex:none}
