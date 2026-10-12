@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
 import {CheckCircle2,Download,LoaderCircle,Send,Truck,Upload,X,Edit3,Trash2,ChevronRight,ClipboardCheck,ArrowLeft} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
@@ -56,6 +56,13 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
   const [sent,setSent]=useState(false)
   const [error,setError]=useState('')
   const [bulkInfo,setBulkInfo]=useState(null)
+
+  useEffect(()=>{
+    if(!open)return
+    const onKeyDown=e=>{if(e.key==='Escape')close()}
+    document.addEventListener('keydown',onKeyDown)
+    return()=>document.removeEventListener('keydown',onKeyDown)
+  },[open])
 
   function reset(){
     setForm(initial);setEntries([]);setDraft(blankEntry());setEditingIndex(null);setAddMode(true);setReviewing(false);setSent(false);setError('');setBusy(false);setBulkInfo(null)
@@ -129,14 +136,14 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
 
   return <>
     {open&&<div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}>
-      <div className="report-modal distributor-submit-modal distributor-form-modal">
+      <div className="report-modal distributor-submit-modal distributor-form-modal" role="dialog" aria-modal="true" aria-labelledby="distributor-submit-dialog-title">
         <button className="report-close" onClick={close} aria-label="Close"><X size={18}/></button>
 
         {!sent&&!reviewing&&<>
           <div className="submission-top">
             <div>
               <p className="section-kicker">DISTRIBUTOR SUBMISSION</p>
-              <h2>List Your Distributorship</h2>
+              <h2 id="distributor-submit-dialog-title">List Your Distributorship</h2>
               <p className="report-help">Use one company record for each legal/business company. If you are referring to a brand or an actual division, tell us which one — we will keep it under the parent company.</p>
             </div>
             <div className="submission-step-indicator"><span className="active">1</span><i></i><span>2</span></div>
