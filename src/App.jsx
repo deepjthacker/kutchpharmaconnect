@@ -3,7 +3,7 @@ import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin
 import { supabase } from './lib/supabase'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
-const DistributorSubmission = lazy(() => import('./DistributorSubmission'))
+import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE='918980043357'
@@ -809,7 +809,7 @@ export default function App(){
         {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /></Suspense> : renderSearch()}
       </main>
 
-      <Suspense fallback={null}><DistributorSubmission /></Suspense>
+      <DistributorSubmissionLauncher />
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
 
