@@ -1092,3 +1092,22 @@ html[data-theme="dark"] .site-footer{background:#0f172a;border-color:#26354a}
 .kpc-asset-icon{width:20px;height:20px;display:block;flex:none;object-fit:contain}
 .kpc-search-icon{width:18px;height:18px}
 .browse-contact-actions .kpc-asset-icon{width:14px;height:14px}
+
+/* Uploaded KPC SVG assets */
+.kpc-asset-icon{width:20px;height:20px;display:block;flex:none;object-fit:contain}
+.kpc-hero-search-icon{width:22px;height:22px}
+.kpc-home-icon{width:20px;height:20px;margin-right:7px}
+.result-icon .kpc-asset-icon{width:19px;height:19px}
+.suggestion-icon .kpc-asset-icon{width:15px;height:15px}
+.quick-links .kpc-asset-icon,.admin-contact-actions .kpc-asset-icon,.site-footer-contact .kpc-asset-icon{width:16px;height:16px}
+.report-close .kpc-asset-icon{width:18px;height:18px}
+.mobile-menu-toggle{display:none;border:1px solid #dbe1ea;background:#fff;border-radius:8px;padding:7px}
+.mobile-menu-toggle .kpc-asset-icon{width:19px;height:19px}
+@media(max-width:700px){
+  .header-inner{position:relative}
+  .mobile-menu-toggle{display:grid;place-items:center}
+  .header-nav{display:none}
+  .header-nav.mobile-menu-open{display:flex;position:absolute;top:64px;right:0;z-index:20;flex-direction:column;align-items:stretch;min-width:190px;padding:7px;background:#fff;border:1px solid #dfe5ed;border-radius:10px;box-shadow:0 12px 30px rgba(31,52,88,.12)}
+  .header-nav.mobile-menu-open button{width:100%;text-align:left;padding:10px 11px}
+  .header-nav.mobile-menu-open .theme-toggle{justify-content:flex-start}
+}
