@@ -1,5 +1,5 @@
-import React,{useState} from 'react'
-import {CheckCircle2,Download,FileText,LoaderCircle,Plus,Send,Truck,Upload,X,Edit3,Trash2,ChevronRight,ClipboardCheck,ArrowLeft} from 'lucide-react'
+import {useState} from 'react'
+import {CheckCircle2,Download,LoaderCircle,Send,Truck,Upload,X,Edit3,Trash2,ChevronRight,ClipboardCheck,ArrowLeft} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
 const CATEGORIES=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
