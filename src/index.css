@@ -969,3 +969,22 @@ html[data-theme="dark"] .admin-delete-btn{background:#2a1717;color:#ffb0b0;borde
 .browse-filters select,.browse-filters button{border:1px solid #d5deeb;border-radius:8px;background:#fff;color:#344a68;padding:8px 10px;font-size:11px;font-weight:700}
 .browse-filters button{cursor:pointer;color:#3159a8}
 html[data-theme="dark"] .browse-filters select,html[data-theme="dark"] .browse-filters button{background:#111c2e;border-color:#334155;color:#e5e7eb}
+
+
+/* Recent searches and contextual correction actions */
+.recent-searches{margin:18px 0 8px;padding:16px;border:1px solid var(--border,#e5e7eb);border-radius:14px;background:var(--card,#fff)}
+.recent-searches-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.recent-searches-heading h2{margin:0;font-size:15px;color:var(--text,#1f2937)}
+.recent-searches-heading>button{border:0;background:transparent;color:var(--muted,#64748b);font-size:12px;font-weight:700;cursor:pointer}
+.recent-searches-list{display:flex;flex-wrap:wrap;gap:8px}
+.recent-searches-list>button{display:inline-flex;align-items:center;gap:8px;max-width:100%;border:1px solid var(--border,#e5e7eb);border-radius:9px;padding:9px 11px;background:var(--surface,#f8fafc);color:var(--text,#334155);font-size:12px;font-weight:700;cursor:pointer}
+.recent-searches-list>button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-report-action,.browse-report-action{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #d7e1ec;border-radius:8px;background:transparent;color:#52657b;padding:7px 9px;font-size:11px;font-weight:750;cursor:pointer}
+.result-report-action:hover,.browse-report-action:hover{background:#f1f5f9;border-color:#b8c8da;color:#244f86}
+.browse-report-action{margin-top:7px;align-self:flex-start}
+html[data-theme="dark"] .recent-searches{background:#111c2e;border-color:#2d3b50}
+html[data-theme="dark"] .recent-searches-heading h2{color:#f1f5f9}
+html[data-theme="dark"] .recent-searches-list>button{background:#162236;border-color:#334155;color:#e5e7eb}
+html[data-theme="dark"] .result-report-action,html[data-theme="dark"] .browse-report-action{border-color:#334155;color:#cbd5e1}
+html[data-theme="dark"] .result-report-action:hover,html[data-theme="dark"] .browse-report-action:hover{background:#162236}
+@media(max-width:600px){.recent-searches{padding:12px}.recent-searches-list{display:grid;grid-template-columns:1fr}.recent-searches-list>button{width:100%;box-sizing:border-box;justify-content:flex-start}.result-report-action{padding:7px 8px}}
