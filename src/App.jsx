@@ -565,6 +565,13 @@ export default function App(){
                             {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer"><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
                           </div>
                         )}
+                        {profile.type === 'distributor' && profile.entity?.whatsapp && (
+                          <div className="profile-rel-actions">
+                            <a className="profile-rel-action" href={waLink(profile.entity.whatsapp || profile.entity.mobile,stockWhatsAppMessage(profile.entity.distributor_name,rel.company?.company_name||'the product'))} target="_blank" rel="noreferrer">
+                              <MessageCircle size={13}/> Check Stock
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
