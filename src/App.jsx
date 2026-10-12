@@ -350,7 +350,7 @@ export default function App(){
         const key='company-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
-          cards.push({type:'relationship',icon:'company',title:company.company_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handled by',target:distributor,rel})
+          cards.push({type:'relationship',icon:'company',title:company.company_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handled by',target:distributor,contact:distributor,rel})
         }
       }
 
@@ -358,7 +358,7 @@ export default function App(){
         const key='distributor-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
-          cards.push({type:'relationship',icon:'distributor',title:distributor.distributor_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handles',target:company,rel})
+          cards.push({type:'relationship',icon:'distributor',title:distributor.distributor_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handles',target:company,contact:distributor,rel})
         }
       }
     })
@@ -417,6 +417,7 @@ export default function App(){
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
+      const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
     }
     setProfileLoading(false)
@@ -560,7 +561,7 @@ export default function App(){
                         {profile.type === 'company' && (
                           <div className="profile-rel-actions">
                             {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)}><Phone size={13}/> Call</a>}
-                            {rel.distributor?.whatsapp && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,distributorWhatsAppMessage(rel.distributor.distributor_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>}
+                            {rel.distributor?.whatsapp && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
                             {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer"><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
                           </div>
                         )}
@@ -704,21 +705,13 @@ export default function App(){
                             )}
 
                             <div className="result-actions">
-                              {r.target.mobile && (
-                                <a
-                                  href={phoneLink(r.target.mobile)}
-                                  onClick={e => e.stopPropagation()}
-                                >
+                              {r.contact?.mobile && (
+                                <a href={phoneLink(r.contact.mobile)} onClick={e=>e.stopPropagation()}>
                                   <Phone size={14}/> Call
                                 </a>
                               )}
-                              {r.target.whatsapp && (
-                                <a
-                                  href={waLink(r.target.whatsapp || r.target.mobile,stockWhatsAppMessage(r.target.distributor_name||r.target.company_name,profileType==='company'?r.title:(r.target.company_name||r.title)))}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={e => {e.stopPropagation();trackEvent('whatsapp_stock_inquiry',{entity_type:profileType})}}
-                                >
+                              {r.contact?.whatsapp && (
+                                <a href={waLink(r.contact.whatsapp || r.contact.mobile,stockWhatsAppMessage(r.contact.distributor_name,profileType==='company'?r.title:(r.target.company_name||r.title)))} target="_blank" rel="noreferrer" onClick={e=>{e.stopPropagation();trackEvent('whatsapp_stock_inquiry',{entity_type:profileType})}}>
                                   <MessageCircle size={14}/> Check Stock on WhatsApp
                                 </a>
                               )}
