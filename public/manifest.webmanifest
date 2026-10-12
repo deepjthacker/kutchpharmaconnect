@@ -1,0 +1,24 @@
+{
+  "id": "./",
+  "name": "KutchPharmaConnect — Kutch Pharmaceutical & Healthcare Directory",
+  "short_name": "KutchPharmaConnect",
+  "description": "Find pharmaceutical companies, distributors and who handles what in Kutch.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0f766e",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "kutchpharma-connect-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
