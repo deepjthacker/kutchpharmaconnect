@@ -41,6 +41,18 @@ export default function App(){
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
+    const closeOnEscape=e=>{
+      if(e.key!=='Escape')return
+      if(reportOpen)setReportOpen(false)
+      else if(passwordResetOpen)setPasswordResetOpen(false)
+      else if(resetOpen)setResetOpen(false)
+      else if(authOpen)setAuthOpen(false)
+    }
+    document.addEventListener('keydown',closeOnEscape)
+    return()=>document.removeEventListener('keydown',closeOnEscape)
+  },[reportOpen,authOpen,resetOpen,passwordResetOpen])
+
+  useEffect(()=>{
     document.documentElement.dataset.theme=theme
     try{localStorage.setItem('kpc-theme',theme)}catch{}
   },[theme])
@@ -709,7 +721,7 @@ export default function App(){
 
                           <button
                             className="result-open"
-                            aria-label="Open profile"
+                            aria-label={`Open ${r.target.company_name || r.target.distributor_name} profile`}
                             onClick={e => {
                               e.stopPropagation()
                               openProfile(profileType, profileId)
@@ -831,11 +843,11 @@ export default function App(){
       </footer>
 
       {reportOpen && <div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&setReportOpen(false)}>
-        <div className="report-modal">
+        <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
           <button className="report-close" onClick={()=>setReportOpen(false)} aria-label="Close"><X size={18}/></button>
           {!reportSent ? <>
             <p className="section-kicker">DIRECTORY FEEDBACK</p>
-            <h2>Report Incorrect Information</h2>
+            <h2 id="report-dialog-title">Report Incorrect Information</h2>
             <p className="report-help">Help us keep KutchPharmaConnect accurate. Report an outdated relationship, incorrect contact detail, company name, or other directory issue.</p>
             {profile && <div className="report-target"><strong>{profile.entity?.company_name || profile.entity?.distributor_name}</strong><span>Profile currently open</span></div>}
             <form onSubmit={submitReport}>
@@ -866,9 +878,9 @@ export default function App(){
         </div>
       </div>}
 
-      {authOpen && <div className="report-overlay"><div className="report-modal">
+      {authOpen && <div className="report-overlay"><div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title">
         <button className="report-close" onClick={()=>setAuthOpen(false)} aria-label="Close"><X size={18}/></button>
-        <p className="section-kicker">ADMIN ACCESS</p><h2>Admin Login</h2><p className="report-help">Sign in with the authorized KutchPharmaConnect admin account.</p>
+        <p className="section-kicker">ADMIN ACCESS</p><h2 id="auth-dialog-title">Admin Login</h2><p className="report-help">Sign in with the authorized KutchPharmaConnect admin account.</p>
         <form onSubmit={signInAdmin}>
           <label>Email address<input required type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="admin@example.com" /></label>
           <label>Password<input required type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Password" /></label>
@@ -878,9 +890,9 @@ export default function App(){
         <button className="profile-link-button" style={{marginTop:'12px'}} onClick={()=>{setResetError('');setResetSent(false);setAuthOpen(false);setResetOpen(true)}}>Forgot password?</button>
       </div></div>}
 
-      {resetOpen && <div className="report-overlay"><div className="report-modal">
+      {resetOpen && <div className="report-overlay"><div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title">
         <button className="report-close" onClick={()=>setResetOpen(false)} aria-label="Close"><X size={18}/></button>
-        <p className="section-kicker">ADMIN ACCESS</p><h2>Reset Password</h2>
+        <p className="section-kicker">ADMIN ACCESS</p><h2 id="reset-dialog-title">Reset Password</h2>
         {!resetSent ? <>
           <p className="report-help">Password reset remains email-based in this version. Use the admin email configured in Supabase.</p>
           <form onSubmit={requestPasswordReset}>
@@ -894,8 +906,8 @@ export default function App(){
         </>}
       </div></div>}
 
-      {passwordResetOpen && <div className="report-overlay"><div className="report-modal">
-        <p className="section-kicker">ADMIN ACCESS</p><h2>Set New Password</h2><p className="report-help">Your reset link is valid. Choose a new password for the admin account.</p>
+      {passwordResetOpen && <div className="report-overlay"><div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="password-reset-dialog-title">
+        <p className="section-kicker">ADMIN ACCESS</p><h2 id="password-reset-dialog-title">Set New Password</h2><p className="report-help">Your reset link is valid. Choose a new password for the admin account.</p>
         <form onSubmit={updateAdminPassword}>
           <label>New password<input required type="password" minLength="8" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="New password" /></label>
           <label>Confirm password<input required type="password" minLength="8" value={newPasswordConfirm} onChange={e=>setNewPasswordConfirm(e.target.value)} placeholder="Confirm new password" /></label>
@@ -906,12 +918,6 @@ export default function App(){
 
       {admin && session && <button className="admin-signout" onClick={signOutAdmin}>Sign out</button>}
 
-      <footer>
-        <div className="container footer-inner">
-          <span>KutchPharmaConnect</span>
-          <span>Companies • Distributors • Divisions • Contact Details</span>
-        </div>
-      </footer>
     </div>
   )
 }
