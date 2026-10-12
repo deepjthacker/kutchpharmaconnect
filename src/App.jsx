@@ -42,7 +42,7 @@ export default function App(){
   const lastSearchTermRef=useRef('')
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[mobileMenuOpen,setMobileMenuOpen]=useState(false),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -594,7 +594,7 @@ export default function App(){
           <div className="hero-glow hero-glow-two"></div>
           <div className="container hero-inner hero-content">
             <div className="eyebrow">
-              <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> Kutch pharmaceutical directory
+              <UserRound size={14} strokeWidth={1.8} aria-hidden="true"/> Kutch pharmaceutical directory
             </div>
 
             <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
@@ -610,7 +610,7 @@ export default function App(){
                 if (q.trim().length >= 2) search(q.trim())
               }}
             >
-              <img className="kpc-asset-icon kpc-hero-search-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/>
+              <Search size={22} strokeWidth={1.8} aria-hidden="true"/>
               <input
                 value={q}
                 onChange={e => {setQ(e.target.value);setShowSuggestions(true)}}
@@ -634,7 +634,7 @@ export default function App(){
                     {suggestions.map(item=>(
                       <button className="suggestion-item" key={item.type+'-'+item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>chooseSuggestion(item)}>
                         <span className={`suggestion-icon ${item.type==='distributor'?'suggestion-distributor':''}`}>
-                          {item.type==='company'?<img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/>:item.type==='distributor'?<img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/>:<img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/>}
+                          {item.type==='company'?<Building2 size={15} aria-hidden="true"/>:item.type==='distributor'?<Truck size={15} aria-hidden="true"/>:<Search size={15} aria-hidden="true"/>}
                         </span>
                         <span className="suggestion-copy">
                           <strong>{item.label}</strong>
@@ -676,7 +676,7 @@ export default function App(){
                           key={r.type + r.rel.id}
                         >
                           <div className={`result-icon ${r.icon === 'distributor' ? 'distributor-icon' : ''}`}>
-                            {r.icon === 'company' ? <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> : <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/>}
+                            {r.icon === 'company' ? <Building2 size={19} aria-hidden="true"/> : <Truck size={19} aria-hidden="true"/>}
                           </div>
 
                           <div className="result-copy">
@@ -781,9 +781,9 @@ export default function App(){
 
             {!searched && (
               <div className="quick-links">
-                <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> Browse Companies <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/></button>
-                <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> Browse Distributors <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/></button>
-                <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/marker.svg`} alt="" aria-hidden="true"/> Browse Locations <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/></button>
+                <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><Building2 size={15} aria-hidden="true"/> Browse Companies</button>
+                <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><Truck size={15} aria-hidden="true"/> Browse Distributors</button>
+                <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}><img className="kpc-contact-icon kpc-marker-icon" src={`${import.meta.env.BASE_URL}assets/marker.svg`} alt="" aria-hidden="true"/> Browse Locations</button>
               </div>
             )}
           </div>
@@ -832,23 +832,23 @@ export default function App(){
       <header className="header">
         <div className="container header-inner">
           <a className="brand" href={import.meta.env.BASE_URL} aria-label="KutchPharmaConnect home">
-            <img className="kpc-asset-icon kpc-home-icon" src={`${import.meta.env.BASE_URL}assets/home.svg`} alt="" aria-hidden="true"/><span className="brand-text">KutchPharmaConnect</span>
+            <span className="brand-text">KutchPharmaConnect</span>
           </a>
-          <button className="mobile-menu-toggle" type="button" onClick={()=>setMobileMenuOpen(v=>!v)} aria-label="Open menu"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/menu-burger.svg`} alt="" aria-hidden="true"/></button><nav className={`header-nav ${mobileMenuOpen?"mobile-menu-open":""}`}>
-            <button onClick={()=>{setBrowse('companies');setBrowseCategory(null);setMobileMenuOpen(false)}}>Companies</button>
-            <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null);setMobileMenuOpen(false)}}>Distributors</button>
-            <button onClick={()=>{setBrowse('locations');setBrowseCategory(null);setMobileMenuOpen(false)}}>Locations</button>
+          <nav className="header-nav">
+            <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
+            <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
+            <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
             <button
               className="theme-toggle"
               type="button"
-              onClick={()=>{setTheme(current=>current==='dark'?'light':'dark');setMobileMenuOpen(false)}}
+              onClick={()=>{setTheme(current=>current==='dark'?'light':'dark')}}
               aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
               title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
             >
               {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
               <span>{theme==='dark'?'Light':'Dark'}</span>
             </button>
-            <button onClick={()=>{setProfile(null);setBrowse(null);setMobileMenuOpen(false);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
+            <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
           </nav>
         </div>
       </header>
@@ -879,7 +879,7 @@ export default function App(){
 
       {reportOpen && <div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&setReportOpen(false)}>
         <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
-          <button className="report-close" onClick={()=>setReportOpen(false)} aria-label="Close"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/cross.svg`} alt="" aria-hidden="true"/></button>
+          <button className="report-close" onClick={()=>setReportOpen(false)} aria-label="Close"><X size={18} aria-hidden="true"/></button>
           {!reportSent ? <>
             <p className="section-kicker">DIRECTORY FEEDBACK</p>
             <h2 id="report-dialog-title">Report Incorrect Information</h2>
