@@ -236,7 +236,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
         <div className="browse-header">
           <div>
             <p className="section-kicker">DIRECTORY</p>
-            <h2>{isLocations ? 'Kutch Locations' : isCompanies && category ? category : isCompanies ? 'Companies' : 'Distributors'}</h2>
+            <h1>{isLocations ? 'Kutch Locations' : isCompanies && category ? category : isCompanies ? 'Companies' : 'Distributors'}</h1>
             <p>{isLocations ? 'Browse Kutch locations with active company and distributor relationships.' : isCompanies
               ? (category ? 'Companies listed in this category with current Kutch distributorship relationships.' : 'Browse active companies with current Kutch distributorship relationships.')
               : 'Browse active distributors and the companies they currently handle.'}</p>
@@ -320,7 +320,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile 
                     </>
                   )}
                 </div>
-                {!isLocations && <ArrowRight size={18} />}
+                {!isLocations && <button type="button" className="browse-card-open" aria-label={`Open ${isCompanies ? item.company_name : item.distributor_name} profile`} onClick={()=>onOpenProfile(isCompanies ? 'company' : 'distributor', item.id)}><ArrowRight size={18}/></button>}
               </div>
             ))}
           </div>
