@@ -644,12 +644,6 @@ export default function App(){
                         <div
                           className="result-card"
                           key={r.type + r.rel.id}
-                          onClick={() => openProfile(profileType, profileId)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') openProfile(profileType, profileId)
-                          }}
                         >
                           <div className={`result-icon ${r.icon === 'distributor' ? 'distributor-icon' : ''}`}>
                             {r.icon === 'company' ? <Building2 size={19}/> : <Truck size={19}/>}
