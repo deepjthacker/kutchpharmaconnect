@@ -42,7 +42,7 @@ export default function App(){
   const lastSearchTermRef=useRef('')
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[mobileMenuOpen,setMobileMenuOpen]=useState(false),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -832,23 +832,23 @@ export default function App(){
       <header className="header">
         <div className="container header-inner">
           <a className="brand" href={import.meta.env.BASE_URL} aria-label="KutchPharmaConnect home">
-            <span className="brand-text">KutchPharmaConnect</span>
+            <img className="kpc-asset-icon kpc-home-icon" src={`${import.meta.env.BASE_URL}assets/home.svg`} alt="" aria-hidden="true"/><span className="brand-text">KutchPharmaConnect</span>
           </a>
-          <nav className="header-nav">
-            <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
-            <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
-            <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
+          <button className="mobile-menu-toggle" type="button" onClick={()=>setMobileMenuOpen(v=>!v)} aria-label="Open menu"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/menu-burger.svg`} alt="" aria-hidden="true"/></button><nav className={`header-nav ${mobileMenuOpen?"mobile-menu-open":""}`}>
+            <button onClick={()=>{setBrowse('companies');setBrowseCategory(null);setMobileMenuOpen(false)}}>Companies</button>
+            <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null);setMobileMenuOpen(false)}}>Distributors</button>
+            <button onClick={()=>{setBrowse('locations');setBrowseCategory(null);setMobileMenuOpen(false)}}>Locations</button>
             <button
               className="theme-toggle"
               type="button"
-              onClick={()=>setTheme(current=>current==='dark'?'light':'dark')}
+              onClick={()=>{setTheme(current=>current==='dark'?'light':'dark');setMobileMenuOpen(false)}}
               aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
               title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
             >
               {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
               <span>{theme==='dark'?'Light':'Dark'}</span>
             </button>
-            <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
+            <button onClick={()=>{setProfile(null);setBrowse(null);setMobileMenuOpen(false);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
           </nav>
         </div>
       </header>
