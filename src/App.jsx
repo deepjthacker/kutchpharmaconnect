@@ -3,7 +3,7 @@ import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin
 import { supabase } from './lib/supabase'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
-import DistributorSubmission from './DistributorSubmission'
+const DistributorSubmission = lazy(() => import('./DistributorSubmission'))
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE='918980043357'
@@ -38,7 +38,7 @@ export default function App(){
   const searchRequestRef=useRef(0)
   const suggestionRequestRef=useRef(0)
   const lastSearchTermRef=useRef('')
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     document.documentElement.dataset.theme=theme
@@ -741,34 +741,6 @@ export default function App(){
           </div>
         </section>
 
-        <section className="featured-section">
-          <div className="container">
-            <div className="featured-heading">
-              <div>
-                <p className="section-kicker">KUTCH DISTRIBUTORS</p>
-                <h2>Distributors currently in the directory</h2>
-                <p>Browse the distributor names currently connected to active Kutch distributorship records.</p>
-              </div>
-              <button className="featured-view-all" onClick={()=>{setBrowse('distributors');setBrowseCategory(null);setProfile(null);setSearched(false)}}>View all <ArrowRight size={15}/></button>
-            </div>
-            {homeDistributors.length>0 && (
-              <div className="featured-grid">
-                {homeDistributors.map(d=>(
-                  <button className="featured-card" key={d.id} onClick={()=>openProfile('distributor',d.id)}>
-                    <span className="featured-icon"><Truck size={18}/></span>
-                    <span className="featured-copy">
-                      <strong>{d.distributor_name}</strong>
-                      {d.contact_person && <small>{d.contact_person}</small>}
-                      <span>{d.relationshipCount} active {d.relationshipCount===1?'distributorship':'distributorships'}</span>
-                    </span>
-                    <ArrowRight size={16}/>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
         <section className="admin-contact-section">
           <div className="container admin-contact-card">
             <div>
@@ -837,7 +809,7 @@ export default function App(){
         {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /></Suspense> : renderSearch()}
       </main>
 
-      <DistributorSubmission />
+      <Suspense fallback={null}><DistributorSubmission /></Suspense>
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
 
