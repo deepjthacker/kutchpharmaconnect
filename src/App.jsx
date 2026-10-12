@@ -1,9 +1,8 @@
-import React from 'react'
-import { useEffect, useRef, useState } from 'react'
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import BrowseDirectory from './BrowseDirectory'
-import AdminDashboard from './AdminDashboard'
+const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
+const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmission from './DistributorSubmission'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
@@ -835,7 +834,7 @@ export default function App(){
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <AdminDashboard /> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /></Suspense> : renderSearch()}
       </main>
 
       <DistributorSubmission />
