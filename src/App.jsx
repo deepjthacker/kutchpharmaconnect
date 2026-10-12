@@ -594,7 +594,7 @@ export default function App(){
           <div className="hero-glow hero-glow-two"></div>
           <div className="container hero-inner hero-content">
             <div className="eyebrow">
-              <ShieldCheck size={16}/> Kutch pharmaceutical directory
+              <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> Kutch pharmaceutical directory
             </div>
 
             <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
@@ -610,7 +610,7 @@ export default function App(){
                 if (q.trim().length >= 2) search(q.trim())
               }}
             >
-              <Search size={22}/>
+              <img className="kpc-asset-icon kpc-hero-search-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/>
               <input
                 value={q}
                 onChange={e => {setQ(e.target.value);setShowSuggestions(true)}}
@@ -634,7 +634,7 @@ export default function App(){
                     {suggestions.map(item=>(
                       <button className="suggestion-item" key={item.type+'-'+item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>chooseSuggestion(item)}>
                         <span className={`suggestion-icon ${item.type==='distributor'?'suggestion-distributor':''}`}>
-                          {item.type==='company'?<Building2 size={15}/>:item.type==='distributor'?<Truck size={15}/>:<ArrowRight size={15}/>}
+                          {item.type==='company'?<img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/>:item.type==='distributor'?<img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/>:<img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/>}
                         </span>
                         <span className="suggestion-copy">
                           <strong>{item.label}</strong>
@@ -676,7 +676,7 @@ export default function App(){
                           key={r.type + r.rel.id}
                         >
                           <div className={`result-icon ${r.icon === 'distributor' ? 'distributor-icon' : ''}`}>
-                            {r.icon === 'company' ? <Building2 size={19}/> : <Truck size={19}/>}
+                            {r.icon === 'company' ? <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> : <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/>}
                           </div>
 
                           <div className="result-copy">
@@ -781,9 +781,9 @@ export default function App(){
 
             {!searched && (
               <div className="quick-links">
-                <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
-                <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
-                <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}><MapPin size={17}/> Browse Locations <ArrowRight size={15}/></button>
+                <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> Browse Companies <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/></button>
+                <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/user.svg`} alt="" aria-hidden="true"/> Browse Distributors <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/></button>
+                <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/marker.svg`} alt="" aria-hidden="true"/> Browse Locations <img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/search.svg`} alt="" aria-hidden="true"/></button>
               </div>
             )}
           </div>
@@ -797,8 +797,8 @@ export default function App(){
               <p>Contact the KutchPharmaConnect admin team for help with directory information or a missing listing.</p>
             </div>
             <div className="admin-contact-actions">
-              <a href={phoneLink(ADMIN_PHONE)}><Phone size={16}/> Call Admin</a>
-              <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp Admin</a>
+              <a href={phoneLink(ADMIN_PHONE)}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true"/> Call Admin</a>
+              <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true"/> WhatsApp Admin</a>
             </div>
           </div>
         </section>
@@ -872,14 +872,14 @@ export default function App(){
           </div>
           <div className="site-footer-contact">
             <span>Admin Contact</span>
-            {ADMIN_PHONE && <><a href={phoneLink(ADMIN_PHONE)}><Phone size={13}/> Call Admin</a><a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a></>}
+            {ADMIN_PHONE && <><a href={phoneLink(ADMIN_PHONE)}><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/phone-call.svg`} alt="" aria-hidden="true"/> Call Admin</a><a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/whatsapp.svg`} alt="" aria-hidden="true"/> WhatsApp</a></>}
           </div>
         </div>
       </footer>
 
       {reportOpen && <div className="report-overlay" onMouseDown={e=>e.target===e.currentTarget&&setReportOpen(false)}>
         <div className="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
-          <button className="report-close" onClick={()=>setReportOpen(false)} aria-label="Close"><X size={18}/></button>
+          <button className="report-close" onClick={()=>setReportOpen(false)} aria-label="Close"><img className="kpc-asset-icon" src={`${import.meta.env.BASE_URL}assets/cross.svg`} alt="" aria-hidden="true"/></button>
           {!reportSent ? <>
             <p className="section-kicker">DIRECTORY FEEDBACK</p>
             <h2 id="report-dialog-title">Report Incorrect Information</h2>
