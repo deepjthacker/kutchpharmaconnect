@@ -14,15 +14,15 @@ const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPhar
 const normalizePhone=number=>{
   const raw=String(number||'').trim()
   if(!raw)return ''
-  if(raw.startsWith('+'))return '+'+raw.slice(1).replace(/\\D/g,'')
-  const digits=raw.replace(/\\D/g,'')
+  if(raw.startsWith('+'))return '+'+raw.slice(1).replace(/\D/g,'')
+  const digits=raw.replace(/\D/g,'')
   if(digits.length===10)return '+91'+digits
   if(digits.length===11&&digits.startsWith('0'))return '+91'+digits.slice(1)
   if(digits.startsWith('91')&&digits.length===12)return '+'+digits
   return digits
 }
 const phoneLink=number=>`tel:${normalizePhone(number)}`
-const waLink=(number,message)=>`https://wa.me/${normalizePhone(number).replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
+const waLink=(number,message)=>`https://wa.me/${normalizePhone(number).replace(/\D/g,'')}?text=${encodeURIComponent(message)}`
 const mapsLink=entity=>{
   if(entity?.maps_url)return entity.maps_url
   const query=[entity?.distributor_name,entity?.address,'Kutch','Gujarat'].filter(Boolean).join(', ')
@@ -92,7 +92,7 @@ export default function App(){
     e.preventDefault();setResetError('');setResetSent(false);setAuthBusy(true)
     const email=resetEmail.trim()
     if(!email){setResetError('Enter your admin email address.');setAuthBusy(false);return}
-    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/'})
+    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+import.meta.env.BASE_URL})
     if(error){setResetError(error.message);setAuthBusy(false);return}
     setResetSent(true);setAuthBusy(false)
   }
