@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+'/':''
+const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
 const normalizePhone=number=>{
   const raw=String(number||'').trim()
