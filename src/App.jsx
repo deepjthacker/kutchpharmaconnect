@@ -4,9 +4,10 @@ import { supabase } from './lib/supabase'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
+import ErrorBoundary from './ErrorBoundary'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
-const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||'918980043357'
+const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||''
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
 const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
 const distributorWhatsAppMessage=name=>`Hello, I found ${name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${KPC_WEBSITE}`
@@ -812,7 +813,7 @@ export default function App(){
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /></Suspense> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
       <DistributorSubmissionLauncher />
@@ -830,8 +831,7 @@ export default function App(){
           </div>
           <div className="site-footer-contact">
             <span>Admin Contact</span>
-            <a href={phoneLink(ADMIN_PHONE)}><Phone size={13}/> +91 89800 43357</a>
-            <a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a>
+            {ADMIN_PHONE && <><a href={phoneLink(ADMIN_PHONE)}><Phone size={13}/> Call Admin</a><a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a></>}
           </div>
         </div>
       </footer>
