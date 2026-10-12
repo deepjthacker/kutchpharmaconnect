@@ -1086,3 +1086,9 @@ html[data-theme="dark"] .site-footer{background:#0f172a;border-color:#26354a}
   .browse-count{display:inline-flex;margin-top:10px}
   .browse-search{top:68px}
 }
+
+
+/* Uploaded KPC SVG assets */
+.kpc-asset-icon{width:20px;height:20px;display:block;flex:none;object-fit:contain}
+.kpc-search-icon{width:18px;height:18px}
+.browse-contact-actions .kpc-asset-icon{width:14px;height:14px}
