@@ -1,5 +1,5 @@
 import React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import BrowseDirectory from './BrowseDirectory'
@@ -36,6 +36,9 @@ const trackEvent=(name,params={})=>{
 }
 
 export default function App(){
+  const searchRequestRef=useRef(0)
+  const suggestionRequestRef=useRef(0)
+  const lastSearchTermRef=useRef('')
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[homeDistributors,setHomeDistributors]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
@@ -119,13 +122,16 @@ export default function App(){
         setShowSuggestions(false)
         return
       }
+      if(term===lastSearchTermRef.current)return
+      lastSearchTermRef.current=term
       loadSuggestions(term)
       search(term)
-    },250)
+    },350)
     return()=>clearTimeout(t)
   },[q])
 
   async function loadSuggestions(term){
+    const requestId=++suggestionRequestRef.current
     setSuggestionLoading(true)
     const p='%'+term.replace(/[%_]/g,'')+'%'
     const [co,di,dv,br,al]=await Promise.all([
@@ -135,6 +141,7 @@ export default function App(){
       supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(5),
       supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(8)
     ])
+    if(requestId!==suggestionRequestRef.current)return
     if(co.error||di.error||dv.error||br.error||al.error){setSuggestions([]);setSuggestionLoading(false);return}
 
     const companyAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
@@ -143,6 +150,8 @@ export default function App(){
       companyAliasIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyAliasIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       distributorAliasIds.length?supabase.from('distributors').select('id,distributor_name,contact_person').in('id',distributorAliasIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
+
+    if(requestId!==suggestionRequestRef.current)return
 
     const next=[]
     const seen=new Set()
@@ -197,6 +206,7 @@ export default function App(){
 
 
   async function search(term){
+    const requestId=++searchRequestRef.current
     setLoading(true);setSearched(true);setError('')
     trackEvent('search',{search_term:term.trim()})
 
@@ -213,6 +223,7 @@ export default function App(){
     ])
 
     const err=co.error||di.error||dv.error||br.error||al.error||loc.error
+    if(requestId!==searchRequestRef.current)return
     if(err){setError(err.message);setResults([]);setLoading(false);return}
 
     const aliasCompanyIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
@@ -232,6 +243,7 @@ export default function App(){
     ])
 
     const aliasError=aliasCompaniesRes.error||aliasDistributorsRes.error||locationRelsRes.error
+    if(requestId!==searchRequestRef.current)return
     if(aliasError){setError(aliasError.message);setResults([]);setLoading(false);return}
 
     const companies=[...new Map([...(co.data||[]),...(aliasCompaniesRes.data||[])].map(x=>[x.id,x])).values()]
@@ -254,6 +266,7 @@ export default function App(){
       : Promise.resolve({data:[],error:null})
 
     const [rr,dr]=await Promise.all([relQuery,distributorRelQuery])
+    if(requestId!==searchRequestRef.current)return
     if(rr.error||dr.error){setError((rr.error||dr.error).message);setResults([]);setLoading(false);return}
 
     const relationships=[...new Map([...(rr.data||[]),...(dr.data||[]),...(locationRelsRes.data||[])].map(x=>[x.id,x])).values()]
@@ -269,6 +282,7 @@ export default function App(){
       allBrandIds.length?supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',allBrandIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
     const lookupErr=rc.error||rd.error||rv.error||rb.error
+    if(requestId!==searchRequestRef.current)return
     if(lookupErr){setError(lookupErr.message);setResults([]);setLoading(false);return}
 
     const companyMap=new Map((rc.data||[]).map(x=>[x.id,x]))
@@ -315,6 +329,7 @@ export default function App(){
       }
     })
 
+    if(requestId!==searchRequestRef.current)return
     setResults(cards)
     setLoading(false)
   }
