@@ -42,6 +42,7 @@ export default function App(){
   const lastSearchTermRef=useRef('')
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null)
+  const navigationHistoryRef=useRef(false)
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
@@ -55,6 +56,32 @@ export default function App(){
     document.addEventListener('keydown',closeOnEscape)
     return()=>document.removeEventListener('keydown',closeOnEscape)
   },[reportOpen,authOpen,resetOpen,passwordResetOpen])
+
+  useEffect(()=>{
+    const current=window.history.state
+    if(!current?.kpc){
+      window.history.replaceState({kpc:'home'},'',window.location.href)
+    }
+    const onPopState=e=>{
+      const route=e.state?.kpc||'home'
+      navigationHistoryRef.current=true
+      setProfile(null);setProfileLoading(false);setBrowse(null);setBrowseCategory(null);setAdmin(false);setShowSuggestions(false)
+      if(route==='admin')setAdmin(true)
+      else if(route==='browse'){
+        setBrowse(e.state.type||'companies');setBrowseCategory(e.state.category||null)
+      }else if(route==='profile'){
+        openProfile(e.state.type,e.state.id,{history:false})
+      }
+      navigationHistoryRef.current=false
+    }
+    window.addEventListener('popstate',onPopState)
+    return()=>window.removeEventListener('popstate',onPopState)
+  },[])
+
+  const pushRoute=(route,state={})=>{
+    if(navigationHistoryRef.current)return
+    window.history.pushState({kpc:route,...state},'',window.location.href)
+  }
 
   useEffect(()=>{
     document.documentElement.dataset.theme=theme
@@ -368,7 +395,8 @@ export default function App(){
     setLoading(false)
   }
 
-  async function openProfile(type,id){
+  async function openProfile(type,id,options={}){
+    if(options.history!==false)pushRoute('profile',{type,id})
     setProfileLoading(true);setError('')
     trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
@@ -424,7 +452,8 @@ export default function App(){
   }
 
   function closeProfile(){
-    setProfile(null);setProfileLoading(false)
+    if(window.history.state?.kpc==='profile')window.history.back()
+    else {setProfile(null);setProfileLoading(false)}
   }
 
   function renderProfile(){
@@ -781,9 +810,9 @@ export default function App(){
 
             {!searched && (
               <div className="quick-links">
-                <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
-                <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
-                <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}><MapPin size={17}/> Browse Locations <ArrowRight size={15}/></button>
+                <button onClick={()=>{pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/> Browse Companies <ArrowRight size={15}/></button>
+                <button onClick={()=>{pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/> Browse Distributors <ArrowRight size={15}/></button>
+                <button onClick={()=>{pushRoute('browse',{type:'locations'});setBrowse('locations');setBrowseCategory(null)}}><MapPin size={17}/> Browse Locations <ArrowRight size={15}/></button>
               </div>
             )}
           </div>
@@ -815,7 +844,7 @@ export default function App(){
 
             <div className="category-grid">
               {categories.map(x => (
-                <button className="category-card" key={x} onClick={()=>{setBrowse('companies');setBrowseCategory(x);setProfile(null);setSearched(false);setShowSuggestions(false)}}>
+                <button className="category-card" key={x} onClick={()=>{pushRoute('browse',{type:'companies',category:x});setBrowse('companies');setBrowseCategory(x);setProfile(null);setSearched(false);setShowSuggestions(false)}}>
                   <span>{x}</span>
                   <ArrowRight size={17}/>
                 </button>
@@ -835,9 +864,9 @@ export default function App(){
             <span className="brand-text">KutchPharmaConnect</span>
           </a>
           <nav className="header-nav">
-            <button onClick={()=>{setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
-            <button onClick={()=>{setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
-            <button onClick={()=>{setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
+            <button onClick={()=>{pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
+            <button onClick={()=>{pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
+            <button onClick={()=>{pushRoute('browse',{type:'locations'});setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
             <button
               className="theme-toggle"
               type="button"
@@ -848,13 +877,13 @@ export default function App(){
               {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
               <span>{theme==='dark'?'Light':'Dark'}</span>
             </button>
-            <button onClick={()=>{setProfile(null);setBrowse(null);if(session)setAdmin(true);else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
+            <button onClick={()=>{if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
           </nav>
         </div>
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{setBrowse(null);setBrowseCategory(null)}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{if(window.history.state?.kpc==='browse')window.history.back();else{setBrowse(null);setBrowseCategory(null)}}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
       <DistributorSubmissionLauncher />
