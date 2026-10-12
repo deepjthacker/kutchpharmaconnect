@@ -1086,12 +1086,3 @@ html[data-theme="dark"] .site-footer{background:#0f172a;border-color:#26354a}
   .browse-count{display:inline-flex;margin-top:10px}
   .browse-search{top:68px}
 }
-
-
-/* Required contact SVG assets */
-.kpc-contact-icon{width:13px;height:13px;display:block;flex:none;object-fit:contain}
-.kpc-call-icon{filter:brightness(0) saturate(100%) invert(42%) sepia(58%) saturate(671%) hue-rotate(93deg) brightness(88%) contrast(91%)}
-.kpc-whatsapp-icon{filter:brightness(0) saturate(100%) invert(43%) sepia(79%) saturate(635%) hue-rotate(93deg) brightness(91%) contrast(91%)}
-.kpc-marker-icon{filter:brightness(0) saturate(100%) invert(36%) sepia(47%) saturate(1047%) hue-rotate(185deg) brightness(86%) contrast(88%)}
-.browse-contact-actions .kpc-contact-icon{width:12px;height:12px}
-.admin-contact-actions .kpc-contact-icon,.site-footer-contact .kpc-contact-icon{width:13px;height:13px}
