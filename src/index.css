@@ -1052,8 +1052,7 @@ html[data-theme="dark"] .site-footer{background:#0f172a;border-color:#26354a}
   .header-inner{min-height:62px}
   .brand-text{font-size:19px}
   .header-nav button{padding:7px 7px}
-  .header-nav button:nth-child(-n+3){font-size:0;width:32px}
-  .header-nav button:nth-child(-n+3)::after{font-size:10px}
+  .header-nav button:nth-child(-n+3){font-size:10px;padding-inline:5px}
   .hero-inner{padding:54px 0 62px}
   .hero h1{font-size:clamp(38px,12vw,58px)}
   .hero-copy{font-size:14px}
