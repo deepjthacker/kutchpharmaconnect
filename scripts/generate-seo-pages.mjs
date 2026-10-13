@@ -2,13 +2,10 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 const siteUrl = 'https://deepjthacker.github.io/kutchpharmaconnect'
-const baseUrl = (process.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
-const apiKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
+const baseUrl = (process.env.VITE_SUPABASE_URL || 'https://tyaogpqtpedbucwbjzkw.supabase.co').replace(/\/$/, '')
+const apiKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b1UXANSyOzz5W0FCj6mL2g_0GXJ9edu'
 
-if (!baseUrl || !apiKey) {
-  console.warn('SEO page generation skipped: VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY is missing.')
-  process.exit(0)
-}
+if (!baseUrl || !apiKey) throw new Error('Supabase public API configuration is required to generate SEO pages.')
 
 const publicDir = path.resolve('public')
 const generatedDirs = ['companies', 'distributors']
