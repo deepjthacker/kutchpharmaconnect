@@ -57,20 +57,43 @@ export default function App(){
     return()=>document.removeEventListener('keydown',closeOnEscape)
   },[reportOpen,authOpen,resetOpen,passwordResetOpen])
 
+  const routeFromLocation=()=>{
+    const url=new URL(window.location.href)
+    const view=url.searchParams.get('view')
+    if(view==='companies'||view==='distributors'||view==='locations'){
+      return {kpc:'browse',type:view,category:url.searchParams.get('category')||null}
+    }
+    if(view==='profile'){
+      return {kpc:'profile',type:url.searchParams.get('type'),id:url.searchParams.get('id')}
+    }
+    if(view==='admin')return {kpc:'admin'}
+    return {kpc:'home',q:url.searchParams.get('q')||''}
+  }
+
   useEffect(()=>{
-    const current=window.history.state
-    if(!current?.kpc){
-      window.history.replaceState({kpc:'home'},'',window.location.href)
+    const initial=window.history.state?.kpc?window.history.state:routeFromLocation()
+    window.history.replaceState(initial,'',window.location.href)
+    if(initial.kpc==='browse'){
+      setBrowse(initial.type||'companies');setBrowseCategory(initial.category||null)
+    }else if(initial.kpc==='profile'&&initial.type&&initial.id){
+      openProfile(initial.type,initial.id,{history:false})
+    }else if(initial.kpc==='admin'){
+      setAdmin(true)
+    }else if(initial.q){
+      setQ(initial.q);setSearched(true)
     }
     const onPopState=e=>{
-      const route=e.state?.kpc||'home'
+      const route=e.state?.kpc?e.state:routeFromLocation()
       navigationHistoryRef.current=true
       setProfile(null);setProfileLoading(false);setBrowse(null);setBrowseCategory(null);setAdmin(false);setShowSuggestions(false)
-      if(route==='admin')setAdmin(true)
-      else if(route==='browse'){
-        setBrowse(e.state.type||'companies');setBrowseCategory(e.state.category||null)
-      }else if(route==='profile'){
-        openProfile(e.state.type,e.state.id,{history:false})
+      if(route.kpc==='admin')setAdmin(true)
+      else if(route.kpc==='browse'){
+        setBrowse(route.type||'companies');setBrowseCategory(route.category||null)
+      }else if(route.kpc==='profile'&&route.type&&route.id){
+        openProfile(route.type,route.id,{history:false})
+      }else{
+        setQ(route.q||'')
+        setSearched(Boolean(route.q))
       }
       navigationHistoryRef.current=false
     }
@@ -80,7 +103,23 @@ export default function App(){
 
   const pushRoute=(route,state={})=>{
     if(navigationHistoryRef.current)return
-    window.history.pushState({kpc:route,...state},'',window.location.href)
+    const url=new URL(window.location.href)
+    url.searchParams.delete('view');url.searchParams.delete('type');url.searchParams.delete('id');url.searchParams.delete('category')
+    if(route==='browse'){
+      url.searchParams.set('view',state.type||'companies')
+      if(state.category)url.searchParams.set('category',state.category)
+    }else if(route==='profile'){
+      url.searchParams.set('view','profile')
+      url.searchParams.set('type',state.type)
+      url.searchParams.set('id',state.id)
+    }else if(route==='admin'){
+      url.searchParams.set('view','admin')
+    }else if(route==='search'&&state.q){
+      url.searchParams.set('q',state.q)
+    }else{
+      url.searchParams.delete('q')
+    }
+    window.history.pushState({kpc:route,...state},'',url.pathname+url.search+url.hash)
   }
 
   useEffect(()=>{
