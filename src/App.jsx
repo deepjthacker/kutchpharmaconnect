@@ -308,6 +308,11 @@ export default function App(){
   async function search(term){
     const requestId=++searchRequestRef.current
     setLoading(true);setSearched(true);setError('')
+    const searchUrl=new URL(window.location.href)
+    searchUrl.searchParams.delete('view');searchUrl.searchParams.delete('type');searchUrl.searchParams.delete('id');searchUrl.searchParams.delete('category')
+    if(term.trim())searchUrl.searchParams.set('q',term.trim())
+    else searchUrl.searchParams.delete('q')
+    window.history.replaceState({kpc:'home',q:term.trim()},'',searchUrl.pathname+searchUrl.search+searchUrl.hash)
     trackEvent('search',{search_term:term.trim()})
 
     const cleanTerm=term.trim().replace(/[%_]/g,'')
