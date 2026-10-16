@@ -161,18 +161,21 @@ function drawShareCard(profile, siteUrl, profileUrl) {
     ctx.fillText(`+ ${rels.length - maxRows} more relationship${rels.length - maxRows === 1 ? '' : 's'} on the website`, 66, footerY)
   }
 
-  const footerTop = 1190
+  const footerTop = 1130
   ctx.fillStyle = colors.navy
-  ctx.fillRect(0, footerTop, canvas.width, 160)
+  ctx.fillRect(0, footerTop, canvas.width, 220)
   ctx.fillStyle = '#ffffff'
   ctx.font = '700 25px Arial, sans-serif'
-  ctx.fillText('Search company and distributor contacts across Kutch.', 66, footerTop + 46)
+  ctx.fillText('KutchPharmaConnect — Find Who Handles What in Kutch', 66, footerTop + 38)
   ctx.fillStyle = '#d6e8f1'
-  ctx.font = '22px Arial, sans-serif'
-  ctx.fillText('Directory details can change. Contact the distributor to confirm.', 66, footerTop + 82)
+  ctx.font = '18px Arial, sans-serif'
+  ctx.fillText('A regional pharmaceutical and healthcare directory for Kutch, Gujarat.', 66, footerTop + 76)
+  ctx.fillText('Find which distributors handle which companies and how to contact them.', 66, footerTop + 106)
+  ctx.font = '16px Arial, sans-serif'
+  ctx.fillText('Directory details may change. Contact the distributor to confirm current information.', 66, footerTop + 136)
   ctx.fillStyle = '#ffffff'
-  ctx.font = '700 22px Arial, sans-serif'
-  ctx.fillText(String(siteUrl || absoluteSiteUrl()).replace(/^https?:\/\//, '').replace(/\/$/, ''), 66, footerTop + 124)
+  ctx.font = '700 21px Arial, sans-serif'
+  ctx.fillText(String(profileUrl || siteUrl || absoluteSiteUrl()).replace(/^https?:\/\//, ''), 66, footerTop + 184)
 
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not create the share image.')), 'image/png'))
 }
