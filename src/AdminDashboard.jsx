@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react'
-import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Settings,Search,RefreshCw,ArrowRight,LoaderCircle,Tags,MapPin,GitBranch,MessageSquareWarning} from 'lucide-react'
+import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Settings,Search,RefreshCw,ArrowRight,LoaderCircle,Tags,MapPin,GitBranch,MessageSquare,MessageSquareWarning} from 'lucide-react'
 import {supabase} from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
