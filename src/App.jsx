@@ -6,6 +6,7 @@ const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
+import ProfileReviews from './ProfileReviews'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||''
@@ -655,6 +656,8 @@ export default function App(){
                   <div className="result-state">No active distributorships found.</div>
                 )}
               </div>
+
+              <ProfileReviews profile={profile} />
             </div>
           )}
         </div>
