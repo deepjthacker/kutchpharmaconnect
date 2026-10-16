@@ -33,6 +33,7 @@ export default function AdminWebsiteFeedback({ onBack }) {
       reviewed_by: userData?.user?.id || null
     }).eq('id', row.id).in('status', ['open','reviewing'])
     if (updateError) setError(updateError.message)
+    else if (status === 'reviewing') setRows(current => current.map(x => x.id === row.id ? { ...x, status } : x))
     else setRows(current => current.filter(x => x.id !== row.id))
     setBusyId('')
   }
