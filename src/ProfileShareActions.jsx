@@ -118,7 +118,7 @@ function drawShareCard(profile, siteUrl) {
   ctx.fillText(isCompany ? 'CURRENTLY HANDLED BY' : 'CURRENTLY HANDLES', 66, y)
   y += 26
 
-  const maxRows = 6
+  const maxRows = 5
   const shown = rels.slice(0, maxRows)
   shown.forEach((rel, index) => {
     const name = getRelationshipName(profile, rel) || 'Name not available'
@@ -173,7 +173,7 @@ export default function ProfileShareActions({ profile, siteUrl }) {
   const [message, setMessage] = useState('')
   const title = getName(profile) || 'KutchPharmaConnect directory profile'
   const profileUrl = typeof window !== 'undefined' ? window.location.href : siteUrl
-  const shareText = `${title} | KutchPharmaConnect — Find Who Handles What in Kutch. Search company and distributor relationships and contact details across Kutch. ${profileUrl}`
+  const shareText = `${title} | KutchPharmaConnect — Find Who Handles What in Kutch. A regional pharmaceutical and healthcare directory helping retailers find which distributors handle which companies across Kutch, Gujarat. ${profileUrl}`
 
   async function makeImage() {
     return new File(
