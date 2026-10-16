@@ -523,28 +523,29 @@ export default function App(){
 
           {!profileLoading && !error && profile && (
             <div className="profile-card">
-              <div className="profile-heading">
-                <div className="profile-icon">
-                  {profile.type === 'company' ? <Building2 size={24}/> : <Truck size={24}/>}
+              <div className="profile-heading profile-heading-with-actions">
+                <div className="profile-heading-main">
+                  <div className="profile-icon">
+                    {profile.type === 'company' ? <Building2 size={24}/> : <Truck size={24}/>}
+                  </div>
+                  <div className="profile-heading-copy">
+                    <p className="profile-kicker">
+                      {profile.type === 'company' ? 'COMPANY' : 'DISTRIBUTOR'}
+                    </p>
+                    <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
+                    {profile.entity?.short_name && (
+                      <span className="profile-short">{profile.entity.short_name}</span>
+                    )}
+                    <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
+                    {profile.relationships.some(rel=>rel.verification_status==='verified') && (
+                      <span className="verified-badge" title="At least one current Kutch distributorship relationship has been verified.">
+                        <ShieldCheck size={14}/> Verified
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="profile-kicker">
-                    {profile.type === 'company' ? 'COMPANY' : 'DISTRIBUTOR'}
-                  </p>
-                  <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
-                  {profile.entity?.short_name && (
-                    <span className="profile-short">{profile.entity.short_name}</span>
-                  )}
-                  <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
-                  {profile.relationships.some(rel=>rel.verification_status==='verified') && (
-                    <span className="verified-badge" title="At least one current Kutch distributorship relationship has been verified.">
-                      <ShieldCheck size={14}/> Verified
-                    </span>
-                  )}
-                </div>
+                <ProfileShareActions profile={profile} siteUrl={KPC_WEBSITE} />
               </div>
-
-              <ProfileShareActions profile={profile} siteUrl={KPC_WEBSITE} />
 
               {profile.type === 'distributor' && (
                 <div className="contact-panel">
