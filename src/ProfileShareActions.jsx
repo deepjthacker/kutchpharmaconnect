@@ -265,7 +265,6 @@ export default function ProfileShareActions({ profile, siteUrl }) {
           <Link2 size={16} /> Copy Link
         </button>
       </div>
-      <p className="profile-share-caption">Share a branded profile image with the KutchPharmaConnect link and directory description.</p>
       {message && <p className="profile-share-status" role="status"><Check size={14} /> {message}</p>}
     </div>
   )
