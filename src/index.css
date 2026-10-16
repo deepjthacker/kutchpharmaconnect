@@ -1086,3 +1086,72 @@ html[data-theme="dark"] .site-footer{background:#0f172a;border-color:#26354a}
   .browse-count{display:inline-flex;margin-top:10px}
   .browse-search{top:68px}
 }
+
+
+/* Shareable company and distributor profile cards */
+.profile-share-wrap {
+  margin: 0 0 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--border, #dce5eb);
+  border-radius: 16px;
+  background: var(--surface, #ffffff);
+}
+.profile-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.profile-share-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #dce5eb);
+  border-radius: 10px;
+  background: var(--surface, #ffffff);
+  color: var(--text, #172b3a);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.profile-share-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(16, 43, 70, .10);
+}
+.profile-share-actions button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+.profile-share-actions .profile-share-primary {
+  color: #ffffff;
+  border-color: #175d83;
+  background: #175d83;
+}
+.profile-share-caption,
+.profile-share-status {
+  margin: 10px 0 0;
+  color: var(--muted, #5c6b78);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.profile-share-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #16794b;
+  font-weight: 600;
+}
+.profile-share-status svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+@media (max-width: 560px) {
+  .profile-share-wrap { padding: 14px; }
+  .profile-share-actions { display: grid; grid-template-columns: 1fr; }
+  .profile-share-actions button { width: 100%; }
+}
