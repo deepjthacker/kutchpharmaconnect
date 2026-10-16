@@ -28,7 +28,16 @@ const getRelationshipLocation = (rel) => {
   const loc = rel?.location
   return loc ? [loc.city, loc.district, loc.state].filter(Boolean).join(', ') : (rel?.territory || 'Kutch, Gujarat')
 }
-const slug = (value) => String(value || 'business')\n  .normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '')\n  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'business'\nconst getShareUrl = (profile, siteUrl) => {\n  const base = String(siteUrl || absoluteSiteUrl()).replace(/\\/$/, '')\n  const entity = profile?.entity || {}\n  const kind = profile?.type === 'company' ? 'companies' : 'distributors'\n  return entity.id ? `${base}/${kind}/${slug(getName(profile))}-${String(entity.id).slice(0, 8)}/` : (typeof window !== 'undefined' ? window.location.href : base)\n}\n\nconst safeFileName = (value) => String(value || 'directory-profile')
+const slug = (value) => String(value || 'business')
+  .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'business'
+const getShareUrl = (profile, siteUrl) => {
+  const base = String(siteUrl || absoluteSiteUrl()).replace(/\/$/, '')
+  const entity = profile?.entity || {}
+  const kind = profile?.type === 'company' ? 'companies' : 'distributors'
+  return entity.id ? `${base}/${kind}/${slug(getName(profile))}-${String(entity.id).slice(0, 8)}/` : (typeof window !== 'undefined' ? window.location.href : base)
+}
+const safeFileName = (value) => String(value || 'directory-profile')
   .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'directory-profile'
 
 function roundedRect(ctx, x, y, w, h, r, fill, stroke) {
