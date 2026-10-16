@@ -5,6 +5,7 @@ const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
+import ProfileShareActions from './ProfileShareActions'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||''
@@ -540,6 +541,8 @@ export default function App(){
                   )}
                 </div>
               </div>
+
+              <ProfileShareActions profile={profile} siteUrl={KPC_WEBSITE} />
 
               {profile.type === 'distributor' && (
                 <div className="contact-panel">
