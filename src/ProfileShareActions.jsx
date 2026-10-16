@@ -28,7 +28,7 @@ const getRelationshipLocation = (rel) => {
   const loc = rel?.location
   return loc ? [loc.city, loc.district, loc.state].filter(Boolean).join(', ') : (rel?.territory || 'Kutch, Gujarat')
 }
-const safeFileName = (value) => String(value || 'directory-profile')
+const slug = (value) => String(value || 'business')\n  .normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '')\n  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'business'\nconst getShareUrl = (profile, siteUrl) => {\n  const base = String(siteUrl || absoluteSiteUrl()).replace(/\\/$/, '')\n  const entity = profile?.entity || {}\n  const kind = profile?.type === 'company' ? 'companies' : 'distributors'\n  return entity.id ? `${base}/${kind}/${slug(getName(profile))}-${String(entity.id).slice(0, 8)}/` : (typeof window !== 'undefined' ? window.location.href : base)\n}\n\nconst safeFileName = (value) => String(value || 'directory-profile')
   .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'directory-profile'
 
 function roundedRect(ctx, x, y, w, h, r, fill, stroke) {
@@ -58,7 +58,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines
 }
 
-function drawShareCard(profile, siteUrl) {
+function drawShareCard(profile, siteUrl, profileUrl) {
   const canvas = document.createElement('canvas')
   canvas.width = 1080
   canvas.height = 1350
@@ -172,12 +172,12 @@ export default function ProfileShareActions({ profile, siteUrl }) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const title = getName(profile) || 'KutchPharmaConnect directory profile'
-  const profileUrl = typeof window !== 'undefined' ? window.location.href : siteUrl
+  const profileUrl = getShareUrl(profile, siteUrl)
   const shareText = `${title} | KutchPharmaConnect — Find Who Handles What in Kutch. A regional pharmaceutical and healthcare directory helping retailers find which distributors handle which companies across Kutch, Gujarat. ${profileUrl}`
 
   async function makeImage() {
     return new File(
-      [await drawShareCard(profile, siteUrl || absoluteSiteUrl())],
+      [await drawShareCard(profile, siteUrl || absoluteSiteUrl(), profileUrl)],
       `kutchpharmaconnect-${safeFileName(title)}.png`,
       { type: 'image/png' }
     )
