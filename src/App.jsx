@@ -7,6 +7,7 @@ import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import ProfileReviews from './ProfileReviews'
+import SiteFeedback from './SiteFeedback'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||''
@@ -657,7 +658,7 @@ export default function App(){
                 )}
               </div>
 
-              <ProfileReviews profile={profile} />
+              {profile.type === 'distributor' && <ProfileReviews profile={profile} />}
             </div>
           )}
         </div>
@@ -950,6 +951,8 @@ export default function App(){
             </div>
           </div>
           <div className="site-footer-contact">
+            <span>Help improve this website</span>
+            <SiteFeedback />
             <span>Admin Contact</span>
             {ADMIN_PHONE && <><a href={phoneLink(ADMIN_PHONE)}><Phone size={13}/> Call Admin</a><a href={waLink(ADMIN_PHONE,adminWhatsAppMessage)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> WhatsApp</a></>}
           </div>
