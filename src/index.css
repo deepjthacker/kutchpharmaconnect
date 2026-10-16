@@ -1204,3 +1204,15 @@ html[data-theme="dark"] .profile-review-item{border-color:#2d3b50}
 html[data-theme="dark"] .profile-review-item p{color:#e5e7eb}
 html[data-theme="dark"] .profile-review-form input,html[data-theme="dark"] .profile-review-form textarea{background:#0b1220;border-color:#334155;color:#e5e7eb}
 @media(max-width:560px){.profile-reviews{padding:15px}.profile-reviews-heading h3{font-size:21px}.profile-review-summary{gap:7px;flex-wrap:wrap}.profile-review-top{align-items:flex-start}.admin-review-head-actions{width:100%}}
+
+/* Private website feedback entry point and admin review */
+.site-feedback-trigger{display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;width:fit-content;max-width:100%;padding:8px 10px;border:1px solid var(--border,#dce5eb);border-radius:9px;background:var(--surface,#fff);color:var(--text,#172b3a);font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-align:left}
+.site-feedback-trigger:hover{border-color:#175d83}
+.site-feedback-modal form{display:grid;gap:10px}
+.site-feedback-modal form>label{display:block;font-size:13px;font-weight:700}
+.site-feedback-modal form input,.site-feedback-modal form select,.site-feedback-modal form textarea{display:block;width:100%;margin-top:6px;padding:11px 12px;border:1px solid var(--border,#dce5eb);border-radius:9px;background:var(--surface,#fff);color:var(--text,#172b3a);font:inherit;font-size:14px}
+.site-feedback-modal form textarea{resize:vertical;min-height:95px}
+.site-feedback-admin-details{display:grid;gap:5px;margin-top:10px;color:var(--muted,#5c6b78);font-size:12px;overflow-wrap:anywhere}
+.admin-review-neutral{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border:1px solid var(--border,#dce5eb);border-radius:9px;background:var(--surface,#fff);color:var(--text,#172b3a);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.admin-review-neutral:disabled{opacity:.6;cursor:wait}
+html[data-theme="dark"] .site-feedback-trigger,html[data-theme="dark"] .site-feedback-modal form input,html[data-theme="dark"] .site-feedback-modal form select,html[data-theme="dark"] .site-feedback-modal form textarea,html[data-theme="dark"] .admin-review-neutral{background:#0b1220;border-color:#334155;color:#e5e7eb}
