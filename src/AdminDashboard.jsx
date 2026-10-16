@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react'
-import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Settings,Search,RefreshCw,ArrowRight,LoaderCircle,Tags,MapPin,GitBranch} from 'lucide-react'
+import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Settings,Search,RefreshCw,ArrowRight,LoaderCircle,Tags,MapPin,GitBranch,MessageSquareWarning} from 'lucide-react'
 import {supabase} from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
@@ -16,6 +16,7 @@ import AdminCategories from './AdminCategories'
 import AdminTools from './AdminTools'
 import AdminAliases from './AdminAliases'
 import AdminReviews from './AdminReviews'
+import AdminWebsiteFeedback from './AdminWebsiteFeedback'
 
 export default function AdminDashboard(){
  const [view,setView]=useState('dashboard'),[stats,setStats]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('')
@@ -32,11 +33,12 @@ export default function AdminDashboard(){
    supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active').is('location_id',null),
    supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active').eq('verification_status','unverified'),
    supabase.from('companies').select('id',{count:'exact',head:true}).eq('status','inactive'),
-   supabase.from('profile_reviews').select('id',{count:'exact',head:true}).eq('status','pending')
+   supabase.from('profile_reviews').select('id',{count:'exact',head:true}).eq('status','pending').eq('entity_type','distributor'),
+   supabase.from('website_feedback').select('id',{count:'exact',head:true}).in('status',['open','reviewing'])
   ])
   const bad=qs.find(x=>x.error)
   if(bad)setError(bad.error.message)
-  else setStats({companies:qs[0].count||0,distributors:qs[1].count||0,relationships:qs[2].count||0,brands:qs[3].count||0,submissions:qs[4].count||0,reports:qs[5].count||0,needsReview:qs[6].count||0,missingLocation:qs[7].count||0,unverified:qs[8].count||0,inactiveCompanies:qs[9].count||0,pendingReviews:qs[10].count||0})
+  else setStats({companies:qs[0].count||0,distributors:qs[1].count||0,relationships:qs[2].count||0,brands:qs[3].count||0,submissions:qs[4].count||0,reports:qs[5].count||0,needsReview:qs[6].count||0,missingLocation:qs[7].count||0,unverified:qs[8].count||0,inactiveCompanies:qs[9].count||0,pendingReviews:qs[10].count||0,websiteFeedback:qs[11].count||0})
   setLoading(false)
  }
  useEffect(()=>{load()},[])
@@ -44,6 +46,7 @@ export default function AdminDashboard(){
  if(view==='submissions')return <AdminDistributorSubmissions onBack={back}/>
  if(view==='reports')return <AdminReports onBack={back}/>
  if(view==='reviews')return <AdminReviews onBack={back}/>
+ if(view==='websiteFeedback')return <AdminWebsiteFeedback onBack={back}/>
  if(view==='companies')return <AdminCompanies onBack={back} onBulkUpload={()=>setView('companyCatalogUpload')}/>
  if(view==='companyCatalogUpload')return <AdminCompanyCatalogUpload onBack={()=>setView('companies')}/>
  if(view==='documentImport')return <AdminDocumentImport onBack={back} onOpenSubmissions={()=>setView('submissions')}/>
@@ -59,7 +62,8 @@ export default function AdminDashboard(){
  const work=[
   ['Distributor Inbox',stats?.submissions,Inbox,'New distributor submissions awaiting review','submissions'],
   ['Corrections',stats?.reports,Flag,'Public reports that need admin attention','reports'],
-  ['Reviews & Ratings',stats?.pendingReviews,MessageSquare,'Approve or reject public profile reviews','reviews'],
+  ['Distributor Reviews',stats?.pendingReviews,MessageSquare,'Approve or reject reviews of distributors','reviews'],
+  ['Website Feedback',stats?.websiteFeedback,MessageSquareWarning,'Check reported problems, ratings and suggestions','websiteFeedback'],
   ['Review Exceptions',stats?.needsReview,ShieldAlert,'Relationships requiring a re-check','verification']
  ]
  const directory=[
