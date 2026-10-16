@@ -169,8 +169,7 @@ function drawShareCard(profile, siteUrl, profileUrl) {
   ctx.fillText('KutchPharmaConnect — Find Who Handles What in Kutch', 66, footerTop + 38)
   ctx.fillStyle = '#d6e8f1'
   ctx.font = '18px Arial, sans-serif'
-  ctx.fillText('A regional pharmaceutical and healthcare directory for Kutch, Gujarat.', 66, footerTop + 76)
-  ctx.fillText('Find which distributors handle which companies and how to contact them.', 66, footerTop + 106)
+  ctx.fillText('Pharma company and distributor directory for Kutch, Gujarat.', 66, footerTop + 82)
   ctx.font = '16px Arial, sans-serif'
   ctx.fillText('Directory details may change. Contact the distributor to confirm current information.', 66, footerTop + 136)
   ctx.fillStyle = '#ffffff'
@@ -185,7 +184,7 @@ export default function ProfileShareActions({ profile, siteUrl }) {
   const [message, setMessage] = useState('')
   const title = getName(profile) || 'KutchPharmaConnect directory profile'
   const profileUrl = getShareUrl(profile, siteUrl)
-  const shareText = `${title} | KutchPharmaConnect — Find Who Handles What in Kutch. A regional pharmaceutical and healthcare directory helping retailers find which distributors handle which companies across Kutch, Gujarat. ${profileUrl}`
+  const shareText = `${title} | KutchPharmaConnect — Find pharma companies and distributors across Kutch, Gujarat.`
 
   async function makeImage() {
     return new File(
