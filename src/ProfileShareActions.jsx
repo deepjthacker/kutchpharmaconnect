@@ -241,7 +241,7 @@ export default function ProfileShareActions({ profile, siteUrl }) {
         setMessage('Use Copy Link or Download Image below to share this profile.')
       }
     } catch (error) {
-      if (error?.name !== 'AbortError') setMessage(error?.message || 'Sharing was not available. Use Download Screenshot or Copy Link.')
+      if (error?.name !== 'AbortError') setMessage(error?.message || 'Sharing was not available. Use Download Image or Copy Link.')
     } finally {
       setBusy(false)
     }
