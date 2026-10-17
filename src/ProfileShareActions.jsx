@@ -238,7 +238,7 @@ export default function ProfileShareActions({ profile, siteUrl }) {
         await navigator.clipboard.writeText(profileUrl)
         setMessage('Profile link copied. Download the share image to send both together.')
       } else {
-        setMessage('Use Copy Link or Download Screenshot below to share this profile.')
+        setMessage('Use Copy Link or Download Image below to share this profile.')
       }
     } catch (error) {
       if (error?.name !== 'AbortError') setMessage(error?.message || 'Sharing was not available. Use Download Screenshot or Copy Link.')
