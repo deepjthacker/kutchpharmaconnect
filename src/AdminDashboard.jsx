@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react'
-import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Settings,Search,RefreshCw,ArrowRight,LoaderCircle,Tags,MapPin,GitBranch,MessageSquare,MessageSquareWarning} from 'lucide-react'
+import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Settings,Search,RefreshCw,ArrowRight,LoaderCircle,Tags,MapPin,GitBranch,MessageSquare,MessageSquareWarning,Plus} from 'lucide-react'
 import {supabase} from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
@@ -14,6 +14,7 @@ import AdminBrands from './AdminBrands'
 import AdminLocations from './AdminLocations'
 import AdminCategories from './AdminCategories'
 import AdminTools from './AdminTools'
+import AdminSingleEntry from './AdminSingleEntry'
 import AdminAliases from './AdminAliases'
 import AdminReviews from './AdminReviews'
 import AdminWebsiteFeedback from './AdminWebsiteFeedback'
@@ -59,6 +60,7 @@ export default function AdminDashboard(){
  if(view==='categories')return <AdminCategories onBack={back}/>
  if(view==='aliases')return <AdminAliases onBack={back}/>
  if(view==='tools')return <AdminTools onBack={back}/>
+ if(view==='singleEntry')return <AdminSingleEntry onBack={back}/>
  const work=[
   ['Distributor Inbox',stats?.submissions,Inbox,'New distributor submissions awaiting review','submissions'],
   ['Corrections',stats?.reports,Flag,'Public reports that need admin attention','reports'],
@@ -73,6 +75,7 @@ export default function AdminDashboard(){
   ['Brands',stats?.brands,Tags,'Brands belong to a parent company','brands']
  ]
  const data=[
+  ['Manual Single Entry',null,Plus,'Add one distributor, company, or distributorship at a time','singleEntry'],
   ['Data Health',stats?.missingLocation||0,Database,'Missing location records / data-quality checks','verification'],
   ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','companyCatalogUpload'],
   ['Distributor PDF Import',null,Upload,'Read a distributor PDF and send the extracted list to review','documentImport'],
