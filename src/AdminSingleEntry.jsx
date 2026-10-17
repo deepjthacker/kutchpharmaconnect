@@ -4,7 +4,7 @@ import {supabase} from './lib/supabase'
 
 const blankCompany={company_name:'',legal_name:'',short_name:'',description:'',status:'active'}
 const blankDistributor={distributor_name:'',legal_name:'',contact_person:'',mobile:'',whatsapp:'',email:'',address:'',city_id:'',maps_url:'',website:'',notes:'',status:'active'}
-const blankRelationship={company_id:'',division_id:'',distributor_id:'',category_id:'',location_id:'',territory:'',handled_as:'company',source:'Manual admin entry',verification_status:'unverified',verification_notes:''}
+const blankRelationship={company_id:'',division_id:'',brand_id:'',distributor_id:'',category_id:'',location_id:'',territory:'',handled_as:'company',source:'Manual admin entry',verification_status:'unverified',verification_notes:''}
 const optional=v=>String(v??'').trim()||null
 
 export default function AdminSingleEntry({onBack}){
@@ -12,6 +12,7 @@ export default function AdminSingleEntry({onBack}){
  const [companies,setCompanies]=useState([])
  const [distributors,setDistributors]=useState([])
  const [divisions,setDivisions]=useState([])
+ const [brands,setBrands]=useState([])
  const [categories,setCategories]=useState([])
  const [locations,setLocations]=useState([])
  const [company,setCompany]=useState(blankCompany)
@@ -25,21 +26,23 @@ export default function AdminSingleEntry({onBack}){
 
  async function loadOptions(){
   setLoading(true);setError('')
-  const [c,d,v,k,l]=await Promise.all([
+  const [c,d,v,b,k,l]=await Promise.all([
    supabase.from('companies').select('id,company_name,status').eq('status','active').order('company_name'),
    supabase.from('distributors').select('id,distributor_name,status').eq('status','active').order('distributor_name'),
    supabase.from('divisions').select('id,company_id,division_name,status').eq('status','active').order('division_name'),
+   supabase.from('brands').select('id,company_id,brand_name,status').eq('status','active').order('brand_name'),
    supabase.from('categories').select('*').order('id'),
    supabase.from('locations').select('id,city,district,state,pincode').order('city')
   ])
-  const bad=[c,d,v,k,l].find(x=>x.error)
+  const bad=[c,d,v,b,k,l].find(x=>x.error)
   if(bad)setError('Could not load dropdown options: '+bad.error.message)
-  else{setCompanies(c.data||[]);setDistributors(d.data||[]);setDivisions(v.data||[]);setCategories(k.data||[]);setLocations(l.data||[])}
+  else{setCompanies(c.data||[]);setDistributors(d.data||[]);setDivisions(v.data||[]);setBrands(b.data||[]);setCategories(k.data||[]);setLocations(l.data||[])}
   setLoading(false)
  }
  useEffect(()=>{loadOptions()},[])
  const categoryName=x=>x.category_name||x.name||'Unnamed category'
  const filteredDivisions=useMemo(()=>divisions.filter(x=>!relationship.company_id||x.company_id===relationship.company_id),[divisions,relationship.company_id])
+ const filteredBrands=useMemo(()=>brands.filter(x=>!relationship.company_id||x.company_id===relationship.company_id),[brands,relationship.company_id])
  const field=(label,key,value,setter,opts={})=><label key={key}>{label}{opts.required&&<span className="required"> *</span>}{opts.multiline?<textarea rows={3} required={opts.required} value={value||''} placeholder={opts.placeholder||''} onChange={e=>setter(s=>({...s,[key]:e.target.value}))}/>:<input type={opts.type||'text'} required={opts.required} value={value||''} placeholder={opts.placeholder||''} onChange={e=>setter(s=>({...s,[key]:e.target.value}))}/>}</label>
  const selectField=(label,key,value,setter,items,opts={})=><label key={key}>{label}{opts.required&&<span className="required"> *</span>}<select required={opts.required} value={value||''} onChange={e=>setter(s=>({...s,[key]:e.target.value}))}><option value="">{opts.placeholder||'Select '+label.toLowerCase()}</option>{items.map(x=><option key={x.id} value={x.id}>{opts.label?opts.label(x):x.name}</option>)}</select></label>
 
@@ -77,16 +80,19 @@ export default function AdminSingleEntry({onBack}){
  async function saveRelationship(e){
   e.preventDefault();if(busy)return
   setBusy(true);setError('');setSuccess('')
+  if(relationship.handled_as==='division'&&!relationship.division_id){setError('Choose a division when Handled as is set to Division.');setBusy(false);return}
+  if(relationship.handled_as==='brand'&&!relationship.brand_id){setError('Choose a brand when Handled as is set to Brand.');setBusy(false);return}
   if(relationship.division_id){
    const selectedDivision=divisions.find(x=>x.id===relationship.division_id)
    if(!selectedDivision||selectedDivision.company_id!==relationship.company_id){setError('The selected division does not belong to the selected company.');setBusy(false);return}
   }
-  const duplicateQuery=supabase.from('distributorships').select('id,division_id').eq('company_id',relationship.company_id).eq('distributor_id',relationship.distributor_id).eq('category_id',relationship.category_id).eq('location_id',relationship.location_id).eq('handled_as',relationship.handled_as).eq('status','active')
+  if(relationship.brand_id){const selectedBrand=brands.find(x=>x.id===relationship.brand_id);if(!selectedBrand||selectedBrand.company_id!==relationship.company_id){setError('The selected brand does not belong to the selected company.');setBusy(false);return}}
+  const duplicateQuery=supabase.from('distributorships').select('id,division_id').eq('company_id',relationship.company_id).eq('distributor_id',relationship.distributor_id).eq('category_id',relationship.category_id).eq('location_id',relationship.location_id).eq('handled_as',relationship.handled_as).eq('status','active').eq('brand_id',relationship.brand_id||null)
   const duplicate=await duplicateQuery
   if(duplicate.error){setError(duplicate.error.message);setBusy(false);return}
   const existing=(duplicate.data||[]).find(x=>(x.division_id||null)===(relationship.division_id||null))
   if(existing){setError('An active relationship with these details already exists. Check the Distributorships page before adding another.');setBusy(false);return}
-  const payload={company_id:relationship.company_id,division_id:relationship.division_id||null,brand_id:null,handled_as:relationship.handled_as,distributor_id:relationship.distributor_id,category_id:relationship.category_id,location_id:relationship.location_id,territory:optional(relationship.territory),status:'active',verification_status:'unverified',verification_note:null,verified_date:null,verification_notes:optional(relationship.verification_notes),source:optional(relationship.source)||'Manual admin entry'}
+  const payload={company_id:relationship.company_id,division_id:relationship.division_id||null,brand_id:relationship.brand_id||null,handled_as:relationship.handled_as,distributor_id:relationship.distributor_id,category_id:relationship.category_id,location_id:relationship.location_id,territory:optional(relationship.territory),status:'active',verification_status:'unverified',verification_note:null,verified_date:null,verification_notes:optional(relationship.verification_notes),source:optional(relationship.source)||'Manual admin entry'}
   const r=await supabase.from('distributorships').insert(payload).select('id').single()
   if(r.error){setError(r.error.message);setBusy(false);return}
   setRelationship(blankRelationship);setSuccess('Distributorship added successfully. It is marked Unverified until supporting evidence is checked.');setBusy(false)
@@ -123,12 +129,13 @@ export default function AdminSingleEntry({onBack}){
     <button className="report-submit" disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Saving…</>:<><Plus size={16}/> Add Distributor</>}</button>
    </form></section>}
    {tab==='relationship'&&<section className="admin-panel admin-single-entry-panel"><div className="admin-panel-heading"><div><p className="section-kicker">NEW RECORD</p><h2>Add a Distributorship</h2><p>Link one company to one distributor for a selected category and Kutch location.</p></div><Link2 size={20}/></div><form className="admin-single-entry-form" onSubmit={saveRelationship}>
-    {selectField('Company','company_id',relationship.company_id,(updater)=>setRelationship(s=>{const next=typeof updater==='function'?updater(s):updater;return {...next,division_id:''}}),companies,{required:true,label:x=>x.company_name})}
-    {selectField('Division (optional)','division_id',relationship.division_id,setRelationship,filteredDivisions,{label:x=>x.division_name,placeholder:'Company-level relationship / no division'})}
+    {selectField('Company','company_id',relationship.company_id,(updater)=>setRelationship(s=>{const next=typeof updater==='function'?updater(s):updater;return {...next,division_id:'',brand_id:''}}),companies,{required:true,label:x=>x.company_name})}
+    {selectField('Division (optional)','division_id',relationship.division_id,setRelationship,filteredDivisions,{label:x=>x.division_name,placeholder:'Select a division if applicable'})}
+    {selectField('Brand (optional)','brand_id',relationship.brand_id,setRelationship,filteredBrands,{label:x=>x.brand_name,placeholder:'Select a brand if applicable'})}
     {selectField('Distributor','distributor_id',relationship.distributor_id,setRelationship,distributors,{required:true,label:x=>x.distributor_name})}
     {selectField('Category','category_id',relationship.category_id,setRelationship,categories,{required:true,label:categoryName})}
     {selectField('Operating location','location_id',relationship.location_id,setRelationship,locations,{required:true,label:x=>[x.city,x.district,x.state,x.pincode].filter(Boolean).join(', ')})}
-    <label>Handled as<select value={relationship.handled_as} onChange={e=>setRelationship(s=>({...s,handled_as:e.target.value,division_id:e.target.value==='division'?s.division_id:''}))}><option value="company">Company</option><option value="division">Division</option><option value="brand">Brand</option><option value="unclear">Unclear / needs confirmation</option></select></label>
+    <label>Handled as<select value={relationship.handled_as} onChange={e=>setRelationship(s=>({...s,handled_as:e.target.value,division_id:e.target.value==='division'?s.division_id:'',brand_id:e.target.value==='brand'?s.brand_id:''}))}><option value="company">Company</option><option value="division">Division</option><option value="brand">Brand</option><option value="unclear">Unclear / needs confirmation</option></select></label>
     {field('Territory','territory',relationship.territory,setRelationship,{placeholder:'e.g. Mundra, Gandhidham, all Kutch'})}
     {field('Source / evidence reference','source',relationship.source,setRelationship,{placeholder:'e.g. distributor confirmation, PDF filename'})}
     {field('Verification notes','verification_notes',relationship.verification_notes,setRelationship,{multiline:true,placeholder:'What evidence should be checked?'})}
