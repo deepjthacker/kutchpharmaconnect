@@ -139,7 +139,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
     <div className="admin-page">
       <div className="admin-head">
         <div>
-          <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Companies</button>
+          <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Data Workspace</button>
           <p className="section-kicker">COMPANY CATALOG</p>
           <h1>Bulk Upload</h1>
           <p>Add companies, divisions and brands from one simple spreadsheet.</p>
@@ -236,8 +236,8 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
             <button type="button" onClick={() => setPreviewPage(p => Math.min(pageCount, p + 1))} disabled={previewPage >= pageCount}>Next</button>
           </div>}
           {rows.length !== validRows.length && <p className="report-help">{rows.length - validRows.length} row(s) have no company name and will be skipped. Add a company name or remove those rows.</p>}
-          <button className="report-submit" type="button" onClick={importRows} disabled={!validRows.length || busy} style={{marginTop:'14px'}}>
-            {busy ? <><LoaderCircle className="spin" size={16}/> Importing…</> : <><Upload size={16}/> Import {validRows.length} Rows</>}
+          <button className="report-submit" type="button" onClick={importRows} disabled={!validRows.length || busy || !!result} style={{marginTop:'14px'}}>
+            {busy ? <><LoaderCircle className="spin" size={16}/> Importing…</> : result ? <><CheckCircle2 size={16}/> Import completed</> : <><Upload size={16}/> Import {validRows.length} Rows</>}
           </button>
         </div>
       )}
