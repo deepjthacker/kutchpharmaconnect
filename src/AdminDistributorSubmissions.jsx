@@ -16,7 +16,7 @@ export default function AdminDistributorSubmissions({onBack}){
   async function load(){
     setLoading(true);setError('')
     const [subRes,companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes]=await Promise.all([
-      supabase.from('distributor_submissions').select('*').order('submitted_at',{ascending:false}),
+      supabase.from('distributor_submissions').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city,district,state,maps_url,website,companies_handled,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,company_entries,bulk_source,bulk_file_name,bulk_row_count').order('submitted_at',{ascending:false}),
       supabase.from('companies').select('id,company_name,legal_name,short_name,status').eq('status','active').order('company_name'),
       supabase.from('distributors').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,status').eq('status','active').order('distributor_name'),
       supabase.from('search_aliases').select('entity_type,entity_id,alias,normalized_alias').eq('entity_type','company'),
