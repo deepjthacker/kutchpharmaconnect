@@ -8,6 +8,7 @@ import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import ProfileReviews from './ProfileReviews'
 import ProfileRatingSummary from './ProfileRatingSummary'
+import ProfileRatingSummary from './ProfileRatingSummary'
 import SiteFeedback from './SiteFeedback'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
@@ -550,6 +551,7 @@ export default function App(){
                         <ShieldCheck size={14}/> Verified
                       </span>
                     )}
+                    {profile.type === 'distributor' && <ProfileRatingSummary distributorId={profile.entity?.id} />}
                     {profile.type === 'distributor' && <ProfileRatingSummary distributorId={profile.entity?.id} />}
                   </div>
                 </div>
