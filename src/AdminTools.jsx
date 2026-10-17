@@ -27,7 +27,7 @@ function csvEscape(value){
  const s=String(value??'')
  return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s
 }
-function downloadCsv(rows,name,vertical=false){
+function downloadCsv(rows,name,vertical=false,headersOverride=null){
  const data=rows||[]
  let output=data
  if(vertical&&data.length){
@@ -39,7 +39,7 @@ function downloadCsv(rows,name,vertical=false){
    Object.entries(record).filter(([k])=>!['distributor_name','company_name','division_name','brand_name','product_name','location_name','city','name','id'].includes(k)).forEach(([k,v])=>output.push({Record:'',Field:k.replace(/_/g,' '),Details:v??''}))
   })
  }
- const headers=output.length?Object.keys(output[0]):[]
+ const headers=output.length?Object.keys(output[0]):(headersOverride||[])
  const csv=[headers.map(csvEscape).join(','),...output.map(row=>headers.map(h=>csvEscape(row[h])).join(','))].join('\r\n')
  downloadBlob(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}),name)
 }
@@ -151,7 +151,15 @@ export default function AdminTools({onBack}){
    }else if(kind==='distributorships'){
     rows=relationships.map(x=>({distributor_name:dm.get(String(x.distributor_id))?.distributor_name||'',company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',location_city:lm.get(String(x.location_id))?.city||'',location_district:lm.get(String(x.location_id))?.district||'',territory:x.territory||'',status:x.status||'',verification_status:x.verification_status||'',verified_date:x.verified_date||'',verification_note:x.verification_note||x.verification_notes||'',source:x.source||''}))
    }
-   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`)
+   const emptyHeaders={
+    distributors:['distributor_name','legal_name','contact_person','mobile','whatsapp','email','address','city','district','state','pincode','maps_url','website','notes','status'],
+    companies:['company_name','legal_name','short_name','company_group','description','status'],
+    divisions:['company_name','division_name','division_code','description','status'],
+    brands:['brand_name','company_name','division_name','normalized_brand_name','description','status'],
+    products:['product_name','company_name','division_name','category','generic_name','strength','dosage_form','pack_size','normalized_product_name','status'],
+    distributorships:['distributor_name','company_name','division_name','category','location_city','location_district','territory','status','verification_status','verified_date','verification_note','source']
+   }
+   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`,false,emptyHeaders[kind])
    setMessage(`Exported ${rows.length} ${kind} record(s) with readable names as CSV.`)
   }catch(e){setError('Export failed: '+e.message)}
   setBusy('')
