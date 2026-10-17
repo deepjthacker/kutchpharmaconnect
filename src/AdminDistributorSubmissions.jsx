@@ -215,12 +215,13 @@ export default function AdminDistributorSubmissions({onBack}){
               const auto=matchCompany(e), m=mappings[i]||{}
               return <div className="admin-company-publish-row" key={i}>
                 <div className="admin-company-publish-top">
-                  <div><strong>{e.company_name||'Company missing'}</strong><small>{e.handled_as==='brand'&&e.brand?'Brand: '+e.brand:e.handled_as==='division'&&e.division?'Division: '+e.division:e.handled_as==='unclear'?'Needs classification':'Company generally'} · {e.category||'Pharmaceutical'}</small></div>
+                  <div><strong>{e.company_name||'Company missing'}</strong><small>{[['Category',e.category],['Subsidiary',e.subsidiary],['Division',e.division],['Brand',e.brand],['Product',e.product]].filter(([,v])=>v).map(([k,v])=>k+': '+v).join(' · ')||'Company generally'}</small></div>
                   <span className={'admin-status '+(m.action==='match'?'approved':m.action==='create'?'open':'under_review')}>{m.action==='match'?'Matched':m.action==='create'?'New company':'Needs decision'}</span>
                 </div>
                 <div className="admin-company-publish-controls admin-company-match-controls">
                   <div className="admin-company-match-card">
                     <div className="admin-company-match-line"><span>Submitted company</span><strong>{e.company_name||'Company missing'}</strong></div>
+                    {(e.subsidiary||e.division||e.brand||e.product)&&<div className="admin-company-match-line"><span>Submitted hierarchy</span><strong>{[['Subsidiary',e.subsidiary],['Division',e.division],['Brand',e.brand],['Product',e.product]].filter(([,v])=>v).map(([k,v])=>k+': '+v).join(' · ')}</strong><small>Confirm names against the catalogue before publishing. Submitted product and subsidiary names are retained for review.</small></div>}
                     {auto.company&&<div className="admin-company-match-line"><span>{auto.kind==='matched'?'Matched company':'Suggested company'}</span><strong>{auto.company.company_name}</strong><small>Match source: {auto.method}{auto.aliasUsed?<> · Alias used: <b>{auto.aliasUsed}</b></>:''}</small></div>}
                     {!auto.company&&auto.kind==='review'&&<div className="admin-company-match-line"><span>Possible matches</span><strong>{auto.label}</strong><small>Choose the correct company manually.</small></div>}
                     {!auto.company&&auto.kind==='new'&&<div className="admin-company-match-line"><span>Match result</span><strong>No existing company found</strong><small>Create a new company only after checking the submitted name.</small></div>}
