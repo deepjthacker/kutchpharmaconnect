@@ -28,10 +28,24 @@ function csvEscape(value){
  const s=String(value??'')
  return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s
 }
-function downloadCsv(rows,name){
+function downloadBlob(blob,name){
+ const url=URL.createObjectURL(blob)
+ const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)
+}
+function downloadCsv(rows,name,vertical=false){
  const data=rows||[]
- const headers=data.length?Object.keys(data[0]):[]
- const csv=[headers.map(csvEscape).join(','),...data.map(row=>headers.map(h=>csvEscape(row[h])).join(','))].join('\r\n')
+ let output=data
+ if(vertical&&data.length){
+  output=[]
+  data.forEach((record,index)=>{
+   if(index)output.push({Record:'',Field:'',Details:''})
+   const recordName=record.distributor_name||record.company_name||record.division_name||record.brand_name||record.product_name||record.location_name||record.city||record.name||record.id||('Record '+(index+1))
+   output.push({Record:'Record '+(index+1),Field:'Name',Details:recordName})
+   Object.entries(record).filter(([k])=>!['distributor_name','company_name','division_name','brand_name','product_name','location_name','city','name','id'].includes(k)).forEach(([k,v])=>output.push({Record:'',Field:k.replace(/_/g,' '),Details:v??''}))
+  })
+ }
+ const headers=output.length?Object.keys(output[0]):[]
+ const csv=[headers.map(csvEscape).join(','),...output.map(row=>headers.map(h=>csvEscape(row[h])).join(','))].join('\r\n')
  downloadBlob(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}),name)
 }
 function parseCsvLine(line){
@@ -72,7 +86,7 @@ export default function AdminTools({onBack}){
   try{
    const rows=await getRows(name)
    const stamp=new Date().toISOString().slice(0,10)
-   downloadCsv(rows,`kutchpharmaconnect-${name}-${stamp}.csv`)
+   downloadCsv(rows,`kutchpharmaconnect-${name}-${stamp}.csv`,true)
    setMessage(`Exported ${name} as CSV.`)
   }catch(e){setError(e.message)}
   setBusy('')
@@ -89,20 +103,7 @@ export default function AdminTools({onBack}){
    const stamp=new Date().toISOString().slice(0,10)
    let rows=[],filename=kind
    if(kind==='distributors'){
-    const fields=[
-     ['Distributor name',x=>x.distributor_name],['Legal name',x=>x.legal_name],['Contact person',x=>x.contact_person],['Mobile',x=>x.mobile],['WhatsApp',x=>x.whatsapp],['Email',x=>x.email],['Address',x=>x.address],['City',x=>lm.get(String(x.city_id))?.city],['District',x=>lm.get(String(x.city_id))?.district],['State',x=>lm.get(String(x.city_id))?.state],['Pincode',x=>lm.get(String(x.city_id))?.pincode],['Google Maps URL',x=>x.maps_url],['Website',x=>x.website],['Notes',x=>x.notes],['Status',x=>x.status]
-    ]
-    rows=[{Field:'Distributor record',Details:''}]
-    distributors.forEach((x,i)=>{
-     if(i)rows.push({Field:'',Details:''})
-     rows.push({Field:'Distributor '+(i+1),Details:x.distributor_name||''})
-     fields.forEach(([label,get])=>rows.push({Field:label,Details:get(x)||''}))
-    })
-    downloadCsv(rows,'kutchpharmaconnect-distributors-'+stamp+'.csv')
-    setMessage('Exported '+distributors.length+' distributor record(s) in easy-to-read vertical format.')
-    setBusy('')
-    return
-   }
+    rows=distributors.map(x=>({distributor_name:x.distributor_name,legal_name:x.legal_name||'',contact_person:x.contact_person||'',mobile:x.mobile||'',whatsapp:x.whatsapp||'',email:x.email||'',address:x.address||'',city:lm.get(String(x.city_id))?.city||'',district:lm.get(String(x.city_id))?.district||'',state:lm.get(String(x.city_id))?.state||'',pincode:lm.get(String(x.city_id))?.pincode||'',maps_url:x.maps_url||'',website:x.website||'',notes:x.notes||'',status:x.status||''}))
    }else if(kind==='companies'){
     rows=companies.map(x=>({company_name:x.company_name,legal_name:x.legal_name||'',short_name:x.short_name||'',company_group:gm.get(String(x.company_group_id))?.group_name||'',description:x.description||'',status:x.status||''}))
    }else if(kind==='divisions'){
@@ -114,7 +115,7 @@ export default function AdminTools({onBack}){
    }else if(kind==='distributorships'){
     rows=(await getRows('distributorships')).map(x=>({distributor_name:dm.get(String(x.distributor_id))?.distributor_name||'',company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',location_city:lm.get(String(x.location_id))?.city||'',location_district:lm.get(String(x.location_id))?.district||'',territory:x.territory||'',status:x.status||'',verification_status:x.verification_status||'',verified_date:x.verified_date||'',verification_note:x.verification_note||x.verification_notes||'',source:x.source||''}))
    }
-   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`)
+   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`,true)
    setMessage(`Exported ${rows.length} ${kind} record(s) with readable names as CSV.`)
   }catch(e){setError('Export failed: '+e.message)}
   setBusy('')
