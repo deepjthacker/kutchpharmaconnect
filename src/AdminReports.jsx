@@ -14,7 +14,7 @@ export default function AdminReports({onBack}){
   const [reports,setReports]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState('')
   async function load(){
     setLoading(true);setError('')
-    const {data,error}=await supabase.from('correction_reports').select('*').order('submitted_at',{ascending:false})
+    const {data,error}=await supabase.from('correction_reports').select('id,entity_type,entity_id,issue_type,description,submitted_at,status,admin_notes,resolved_at,resolved_by,reporter_name,reporter_mobile,reporter_email').order('submitted_at',{ascending:false})
     if(error)setError(error.message)
     else setReports(data||[])
     setLoading(false)
