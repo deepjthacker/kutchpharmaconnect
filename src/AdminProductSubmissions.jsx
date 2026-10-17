@@ -13,7 +13,7 @@ export default function AdminProductSubmissions({onBack}){
  async function load(){
   setLoading(true);setError('')
   const [s,c,p,d,v,cat,l]=await Promise.all([
-   supabase.from('product_submissions').select('*').order('submitted_at',{ascending:false}),
+   supabase.from('product_submissions').select('id,distributor_name,mobile,email,distributor_id,product_entries,source,file_name,row_count,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,publish_data').order('submitted_at',{ascending:false}),
    supabase.from('companies').select('id,company_name,legal_name,short_name,status').eq('status','active').order('company_name'),
    supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,category_id,status').eq('status','active').limit(5000),
    supabase.from('distributors').select('id,distributor_name,legal_name,mobile,status').eq('status','active').order('distributor_name'),
@@ -106,7 +106,7 @@ export default function AdminProductSubmissions({onBack}){
       notes:clean(d.notes)
     }
    })
-   const {data,rpcError}=await supabase.rpc('publish_product_submission',{
+   const {data,error:rpcError}=await supabase.rpc('publish_product_submission',{
     p_submission_id:selected.id,
     p_distributor_id:createDistributor?null:(distributorChoice||null),
     p_create_distributor:createDistributor,
