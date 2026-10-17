@@ -61,63 +61,65 @@ export default function AdminDashboard(){
  if(view==='aliases')return <AdminAliases onBack={back}/>
  if(view==='tools')return <AdminTools onBack={back}/>
  if(view==='singleEntry')return <AdminSingleEntry onBack={back}/>
- const work=[
-  ['Distributor Inbox',stats?.submissions,Inbox,'New distributor submissions awaiting review','submissions'],
-  ['Corrections',stats?.reports,Flag,'Public reports that need admin attention','reports'],
-  ['Distributor Reviews',stats?.pendingReviews,MessageSquare,'Approve or reject reviews of distributors','reviews'],
-  ['Website Feedback',stats?.websiteFeedback,MessageSquareWarning,'Check reported problems, ratings and suggestions','websiteFeedback'],
-  ['Review Exceptions',stats?.needsReview,ShieldAlert,'Relationships requiring a re-check','verification']
+ const pending=[
+  ['Distributor Submissions',stats?.submissions,Inbox,'Review new distributor details and company lists','submissions'],
+  ['Corrections',stats?.reports,Flag,'Review reported directory errors','reports'],
+  ['Website Feedback',stats?.websiteFeedback,MessageSquareWarning,'Review site issues and suggestions','websiteFeedback']
  ]
  const directory=[
-  ['Companies',stats?.companies,Building2,'One record per legal/business company','companies'],
   ['Distributors',stats?.distributors,Truck,'Distributor profiles and contact details','distributors'],
-  ['Relationships',stats?.relationships,Link2,'Company–distributor records','relationships'],
-  ['Brands',stats?.brands,Tags,'Brands belong to a parent company','brands']
+  ['Companies',stats?.companies,Building2,'Company records and legal names','companies'],
+  ['Distributorships',stats?.relationships,Link2,'Which companies and divisions each distributor handles','relationships']
  ]
- const data=[
-  ['Manual Single Entry',null,Plus,'Add one distributor, company, or distributorship at a time','singleEntry'],
-  ['Data Health',stats?.missingLocation||0,Database,'Missing location records / data-quality checks','verification'],
-  ['Company Catalog Upload',null,Upload,'Add companies, their divisions and brands only','companyCatalogUpload'],
-  ['Distributor PDF Import',null,Upload,'Read a distributor PDF and send the extracted list to review','documentImport'],
-  ['Import & Export',null,Database,'Controlled distributor/relationship import, export and backup','tools'],
-  ['Aliases',null,Search,'Alternate names used for matching and search','aliases']
+ const toolsList=[
+  ['Company Catalog Upload',null,Upload,'Upload companies, divisions and brands','companyCatalogUpload'],
+  ['Distributor PDF Import',null,Upload,'Extract a distributor list from a PDF for review','documentImport'],
+  ['Manual Single Entry',null,Plus,'Add one directory record at a time','singleEntry'],
+  ['Import & Export',null,Database,'Import data, export separate CSVs or create a backup','tools']
  ]
+ const settings=[
+  ['Divisions',null,GitBranch,'Manage company divisions','divisions'],
+  ['Brands',stats?.brands,Tags,'Manage brands linked to companies','brands'],
+  ['Categories',null,Tags,'Manage directory categories','categories'],
+  ['Locations',null,MapPin,'Manage distributor operating locations','locations'],
+  ['Aliases',null,Search,'Manage alternate names for matching and search','aliases'],
+  ['Data Health & Review Exceptions',stats?.needsReview||0,ShieldAlert,'Check unverified relationships and data-quality gaps','verification']
+ ]
+ const renderLinks=(items)=>items.map(([label,count,Icon,help,target])=><button className="admin-link" key={target} onClick={()=>setView(target)}><Icon size={17}/><span><strong>{label}{count!==null&&count!==undefined&&<b className="admin-count">{count}</b>}</strong><small>{help}</small></span><ArrowRight size={15}/></button>)
  return <div className="admin-page">
   <div className="admin-head">
-   <div><p className="section-kicker">KUTCHPHARMACONNECT ADMIN</p><h1>Control Center</h1><p>Review incoming data first. Manage the directory only when an action is required.</p></div>
+   <div><p className="section-kicker">KUTCHPHARMACONNECT ADMIN</p><h1>Control Center</h1><p>Four clear work areas. Choose a section below to manage the directory.</p></div>
    <button className="admin-refresh" onClick={load} disabled={loading}><RefreshCw size={15}/> Refresh</button>
   </div>
   {error&&<div className="admin-error">{error}</div>}
   {loading?<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading control center…</div>:<>
    <section className="admin-control-summary">
-    <div><strong>{stats.submissions}</strong><span>Action required</span><small>submissions waiting for review</small></div>
+    <div><strong>{stats.submissions}</strong><span>Pending submissions</span><small>awaiting review</small></div>
     <div><strong>{stats.reports}</strong><span>Corrections</span><small>open or reviewing</small></div>
-    <div><strong>{stats.needsReview}</strong><span>Exceptions</span><small>relationships needing review</small></div>
+    <div><strong>{stats.websiteFeedback}</strong><span>Website feedback</span><small>open or reviewing</small></div>
     <div><strong>{stats.companies}</strong><span>Companies</span><small>active directory records</small></div>
     <div><strong>{stats.distributors}</strong><span>Distributors</span><small>active directory records</small></div>
-    <div><strong>{stats.relationships}</strong><span>Relationships</span><small>active company–distributor links</small></div>
+    <div><strong>{stats.relationships}</strong><span>Distributorships</span><small>active company–distributor links</small></div>
    </section>
    <div className="admin-workflow-grid">
     <section className="admin-panel admin-workflow-panel">
-     <div className="admin-panel-heading"><div><p className="section-kicker">WORK</p><h2>Inbox</h2><p>These are the places where admin decisions are required.</p></div><Inbox size={20}/></div>
-     {work.map(([label,count,Icon,help,target])=><button className="admin-link" key={target} onClick={()=>setView(target)}><Icon size={17}/><span><strong>{label}{count>0&&<b className="admin-count">{count}</b>}</strong><small>{help}</small></span><ArrowRight size={15}/></button>)}
+     <div className="admin-panel-heading"><div><p className="section-kicker">01 · PENDING WORK</p><h2>Pending Work</h2><p>Review incoming information and reports first.</p></div><Inbox size={20}/></div>
+     {renderLinks(pending)}
+     <div className="admin-secondary-tools"><strong>Additional review tools</strong>{renderLinks([
+      ['Distributor Reviews',stats?.pendingReviews,MessageSquare,'Approve or reject distributor reviews','reviews']
+     ])}</div>
     </section>
     <section className="admin-panel admin-workflow-panel">
-     <div className="admin-panel-heading"><div><p className="section-kicker">DIRECTORY</p><h2>Manage records</h2><p>Profiles and relationships, without mixing workflow queues.</p></div><Building2 size={20}/></div>
-     {directory.map(([label,count,Icon,help,target])=><button className="admin-link" key={target} onClick={()=>setView(target)}><Icon size={17}/><span><strong>{label}<b className="admin-count">{count}</b></strong><small>{help}</small></span><ArrowRight size={15}/></button>)}
-    </section>
-   </div>
-   <div className="admin-workflow-grid">
-    <section className="admin-panel admin-workflow-panel">
-     <div className="admin-panel-heading"><div><p className="section-kicker">DATA</p><h2>Data health & tools</h2><p>Use these only when maintaining the directory data.</p></div><Database size={20}/></div>
-     {data.map(([label,count,Icon,help,target])=><button className="admin-link" key={target} onClick={()=>setView(target)}><Icon size={17}/><span><strong>{label}{count!==null&&<b className="admin-count">{count}</b>}</strong><small>{help}</small></span><ArrowRight size={15}/></button>)}
+     <div className="admin-panel-heading"><div><p className="section-kicker">02 · DIRECTORY</p><h2>Directory Management</h2><p>Maintain published distributor and company records.</p></div><Building2 size={20}/></div>
+     {renderLinks(directory)}
     </section>
     <section className="admin-panel admin-workflow-panel">
-     <div className="admin-panel-heading"><div><p className="section-kicker">SETTINGS</p><h2>Directory structure</h2><p>Reference data used by the matching and browsing system.</p></div><Settings size={20}/></div>
-     <button className="admin-link" onClick={()=>setView('divisions')}><GitBranch size={17}/><span><strong>Divisions</strong><small>Only actual company divisions; do not use this for brands.</small></span><ArrowRight size={15}/></button>
-     <button className="admin-link" onClick={()=>setView('categories')}><Tags size={17}/><span><strong>Categories</strong><small>A company can belong to multiple categories.</small></span><ArrowRight size={15}/></button>
-     <button className="admin-link" onClick={()=>setView('locations')}><MapPin size={17}/><span><strong>Locations</strong><small>Distributor operating locations in Kutch.</small></span><ArrowRight size={15}/></button>
-     <button className="admin-link" onClick={()=>setView('brands')}><Tags size={17}/><span><strong>Brands</strong><small>One company can own or market many brands.</small></span><ArrowRight size={15}/></button>
+     <div className="admin-panel-heading"><div><p className="section-kicker">03 · DATA TOOLS</p><h2>Upload & Data Tools</h2><p>Bring data in, add records and export what you need.</p></div><Database size={20}/></div>
+     {renderLinks(toolsList)}
+    </section>
+    <section className="admin-panel admin-workflow-panel">
+     <div className="admin-panel-heading"><div><p className="section-kicker">04 · SETTINGS</p><h2>Settings & Data Quality</h2><p>Maintain the reference data used across the directory.</p></div><Settings size={20}/></div>
+     {renderLinks(settings)}
     </section>
    </div>
    <div className="admin-health-strip">
