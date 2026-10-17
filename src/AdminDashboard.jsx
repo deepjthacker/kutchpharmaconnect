@@ -3,6 +3,7 @@ import {Building2,Truck,Link2,Inbox,Flag,ShieldAlert,Database,Upload,Download,Se
 import {supabase} from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
+import AdminProductSubmissions from './AdminProductSubmissions'
 import AdminCompanies from './AdminCompanies'
 import AdminCompanyCatalogUpload from './AdminCompanyCatalogUpload'
 import AdminDocumentImport from './AdminDocumentImport'
@@ -29,6 +30,7 @@ export default function AdminDashboard(){
    supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active'),
    supabase.from('brands').select('id',{count:'exact',head:true}).eq('status','active'),
    supabase.from('distributor_submissions').select('id',{count:'exact',head:true}).in('status',['open','under_review']),
+   supabase.from('product_submissions').select('id',{count:'exact',head:true}).in('status',['open','under_review','ready']),
    supabase.from('correction_reports').select('id',{count:'exact',head:true}).in('status',['open','reviewing']),
    supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active').eq('verification_status','needs_review'),
    supabase.from('distributorships').select('id',{count:'exact',head:true}).eq('status','active').is('location_id',null),
@@ -39,12 +41,13 @@ export default function AdminDashboard(){
   ])
   const bad=qs.find(x=>x.error)
   if(bad)setError(bad.error.message)
-  else setStats({companies:qs[0].count||0,distributors:qs[1].count||0,relationships:qs[2].count||0,brands:qs[3].count||0,submissions:qs[4].count||0,reports:qs[5].count||0,needsReview:qs[6].count||0,missingLocation:qs[7].count||0,unverified:qs[8].count||0,inactiveCompanies:qs[9].count||0,pendingReviews:qs[10].count||0,websiteFeedback:qs[11].count||0})
+  else setStats({companies:qs[0].count||0,distributors:qs[1].count||0,relationships:qs[2].count||0,brands:qs[3].count||0,submissions:qs[4].count||0,reports:qs[5].count||0,needsReview:qs[6].count||0,missingLocation:qs[7].count||0,unverified:qs[8].count||0,inactiveCompanies:qs[9].count||0,pendingReviews:qs[10].count||0,websiteFeedback:qs[12].count||0,productSubmissions:qs[4].count||0})
   setLoading(false)
  }
  useEffect(()=>{load()},[])
  const back=()=>setView('dashboard')
  if(view==='submissions')return <AdminDistributorSubmissions onBack={back}/>
+ if(view==='productSubmissions')return <AdminProductSubmissions onBack={back}/>
  if(view==='reports')return <AdminReports onBack={back}/>
  if(view==='reviews')return <AdminReviews onBack={back}/>
  if(view==='websiteFeedback')return <AdminWebsiteFeedback onBack={back}/>
@@ -63,6 +66,7 @@ export default function AdminDashboard(){
  if(view==='singleEntry')return <AdminSingleEntry onBack={back}/>
  const pending=[
   ['Distributor Submissions',stats?.submissions,Inbox,'Review new distributor details and company lists','submissions'],
+  ['Product / Brand Submissions',stats?.productSubmissions,Tags,'Review submitted product lists and publish approved records','productSubmissions'],
   ['Corrections',stats?.reports,Flag,'Review reported directory errors','reports'],
   ['Website Feedback',stats?.websiteFeedback,MessageSquareWarning,'Review site issues and suggestions','websiteFeedback']
  ]
@@ -88,7 +92,7 @@ export default function AdminDashboard(){
  const renderLinks=(items)=>items.map(([label,count,Icon,help,target])=><button className="admin-link" key={target} onClick={()=>setView(target)}><Icon size={17}/><span><strong>{label}{count!==null&&count!==undefined&&<b className="admin-count">{count}</b>}</strong><small>{help}</small></span><ArrowRight size={15}/></button>)
  return <div className="admin-page">
   <div className="admin-head">
-   <div><p className="section-kicker">KUTCHPHARMACONNECT ADMIN</p><h1>Control Center</h1><p>Four clear work areas. Choose a section below to manage the directory.</p></div>
+   <div><p className="section-kicker">KUTCHPHARMACONNECT ADMIN</p><h1>Control Center</h1><p>One control center for submissions, directory records, data tools and data quality.</p></div>
    <button className="admin-refresh" onClick={load} disabled={loading}><RefreshCw size={15}/> Refresh</button>
   </div>
   {error&&<div className="admin-error">{error}</div>}

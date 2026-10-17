@@ -3,7 +3,7 @@ import { useRef,useState } from 'react'
 import { ArrowLeft,Download,Upload,Database,FileJson,LoaderCircle,Eye } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-const tables=['companies','distributors','divisions','categories','locations','distributorships','search_aliases','company_categories']
+const tables=['companies','distributors','divisions','brands','products','categories','locations','distributorships','search_aliases','company_categories','company_groups','distributor_submissions','product_submissions','correction_reports','profile_reviews','website_feedback']
 
 const importHeaders=[
  'distributor_name','distributor_legal_name','contact_person','mobile','whatsapp','email','address','city','district','state','pincode','maps_url','website',
@@ -16,7 +16,6 @@ const sampleValues=[
  {distributor_name:'Jethalal Odhavji Thacker',company_name:'Zydus Lifesciences',category:'Pharmaceutical',relationship_status:'active',verification_status:'verified',verified_date:'2026-10-01',verification_note:'Sample verified relationship',source:'Sample data'},
  {distributor_name:'Example Distributor',company_name:'Example Company',category:'Surgical',location_city:'Bhuj',relationship_status:'active',verification_status:'needs_review',source:'Sample data'}
 ]
-const sampleRows=Array.from({length:40},()=>Object.fromEntries(importHeaders.map(h=>[h,''])))
 const sampleExampleRows=sampleValues.map(row=>Object.fromEntries(importHeaders.map(h=>[h,row[h]??''])))
 
 function downloadBlob(blob,name){
@@ -65,14 +64,10 @@ export default function AdminTools({onBack}){
  const [busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('')
  const [preview,setPreview]=useState(null)
  const [validation,setValidation]=useState(null)
- const [catalogPreview,setCatalogPreview]=useState(null)
- const [catalogValidation,setCatalogValidation]=useState(null)
- const [catalogBusy,setCatalogBusy]=useState(false)
- const catalogFileRef=useRef(null)
  const fileRef=useRef(null)
 
- async function getRows(name){
-  const r=await supabase.from(name).select('*')
+ async function getRows(name,columns='*'){
+  const r=await supabase.from(name).select(columns)
   if(r.error)throw new Error(name+': '+r.error.message)
   return r.data||[]
  }
@@ -91,11 +86,47 @@ export default function AdminTools({onBack}){
  async function exportDirectory(kind){
   setBusy('export-'+kind);setError('');setMessage('')
   try{
-   const [companies,distributors,divisions,brands,products,categories,locations,groups]=await Promise.all([
-    getRows('companies'),getRows('distributors'),getRows('divisions'),getRows('brands'),getRows('products'),getRows('categories'),getRows('locations'),getRows('company_groups')
-   ])
+   let companies=[],distributors=[],divisions=[],brands=[],products=[],categories=[],locations=[],groups=[],relationships=[]
+   if(kind==='distributors'){
+    ;[distributors,locations]=await Promise.all([
+     getRows('distributors','id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city_id,maps_url,website,notes,status'),
+     getRows('locations','id,city,district,state,pincode')
+    ])
+   }else if(kind==='companies'){
+    ;[companies,groups]=await Promise.all([
+     getRows('companies','id,company_name,legal_name,short_name,company_group_id,description,status'),
+     getRows('company_groups','id,group_name')
+    ])
+   }else if(kind==='divisions'){
+    ;[divisions,companies]=await Promise.all([
+     getRows('divisions','id,company_id,division_name,division_code,description,status'),
+     getRows('companies','id,company_name')
+    ])
+   }else if(kind==='brands'){
+    ;[brands,companies,divisions]=await Promise.all([
+     getRows('brands','id,brand_name,company_id,division_id,normalized_brand_name,description,status'),
+     getRows('companies','id,company_name'),
+     getRows('divisions','id,division_name')
+    ])
+   }else if(kind==='products'){
+    ;[products,companies,divisions,categories]=await Promise.all([
+     getRows('products','id,product_name,company_id,division_id,category_id,generic_name,strength,dosage_form,pack_size,normalized_product_name,status'),
+     getRows('companies','id,company_name'),
+     getRows('divisions','id,division_name'),
+     getRows('categories')
+    ])
+   }else if(kind==='distributorships'){
+    ;[relationships,distributors,companies,divisions,categories,locations]=await Promise.all([
+     getRows('distributorships','id,distributor_id,company_id,division_id,category_id,location_id,territory,status,verification_status,verified_date,verification_note,verification_notes,source'),
+     getRows('distributors','id,distributor_name'),
+     getRows('companies','id,company_name'),
+     getRows('divisions','id,division_name'),
+     getRows('categories'),
+     getRows('locations','id,city,district')
+    ])
+   }else throw new Error('Unsupported export type: '+kind)
    const byId=(rows)=>new Map((rows||[]).map(x=>[String(x.id),x]))
-   const cm=byId(companies),dm=byId(distributors),dvm=byId(divisions),brm=byId(brands),catm=byId(categories),lm=byId(locations),gm=byId(groups)
+   const cm=byId(companies),dm=byId(distributors),dvm=byId(divisions),catm=byId(categories),lm=byId(locations),gm=byId(groups)
    const stamp=new Date().toISOString().slice(0,10)
    let rows=[],filename=kind
    if(kind==='distributors'){
@@ -109,7 +140,7 @@ export default function AdminTools({onBack}){
    }else if(kind==='products'){
     rows=products.map(x=>({product_name:x.product_name,company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',generic_name:x.generic_name||'',strength:x.strength||'',dosage_form:x.dosage_form||'',pack_size:x.pack_size||'',normalized_product_name:x.normalized_product_name||'',status:x.status||''}))
    }else if(kind==='distributorships'){
-    rows=(await getRows('distributorships')).map(x=>({distributor_name:dm.get(String(x.distributor_id))?.distributor_name||'',company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',location_city:lm.get(String(x.location_id))?.city||'',location_district:lm.get(String(x.location_id))?.district||'',territory:x.territory||'',status:x.status||'',verification_status:x.verification_status||'',verified_date:x.verified_date||'',verification_note:x.verification_note||x.verification_notes||'',source:x.source||''}))
+    rows=relationships.map(x=>({distributor_name:dm.get(String(x.distributor_id))?.distributor_name||'',company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',location_city:lm.get(String(x.location_id))?.city||'',location_district:lm.get(String(x.location_id))?.district||'',territory:x.territory||'',status:x.status||'',verification_status:x.verification_status||'',verified_date:x.verified_date||'',verification_note:x.verification_note||x.verification_notes||'',source:x.source||''}))
    }
    downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`,true)
    setMessage(`Exported ${rows.length} ${kind} record(s) with readable names as CSV.`)
@@ -343,157 +374,9 @@ export default function AdminTools({onBack}){
   }
   setBusy('')
  }
- function parseCatalogCsv(text){
-  const rows=parseCsv(text)
-  const allowed=['company_name','company_legal_name','company_short_name','division_name','division_code','brand_name']
-  return rows.map(row=>Object.fromEntries(allowed.map(k=>[k,String(row[k]??'').trim()])))
- }
-
- function validateCatalogRows(rows){
-  const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'')
-  return Promise.all([
-   getRows('companies'),
-   getRows('divisions'),
-   getRows('brands')
-  ]).then(([companies,divisions,brands])=>{
-   const companyMap=new Map()
-   companies.forEach(x=>{
-    ;['company_name','legal_name','short_name'].forEach(f=>{
-     const k=norm(x[f]);if(k&&!companyMap.has(k))companyMap.set(k,x)
-    })
-   })
-   const results=[]
-   const seen=new Set()
-   rows.forEach((row,i)=>{
-    const issues=[],warnings=[]
-    if(!row.company_name)issues.push('Missing company_name')
-    const company=companyMap.get(norm(row.company_name))
-    if(company){
-     if(row.company_legal_name&&norm(row.company_legal_name)!==norm(company.legal_name))warnings.push('Legal name differs from existing company')
-    }
-    const divisionsForCompany=company?divisions.filter(d=>d.company_id===company.id):[]
-    const division=row.division_name
-      ? divisionsForCompany.find(d=>norm(d.division_name)===norm(row.division_name)||norm(d.division_code)===norm(row.division_name))
-      : null
-    if(row.division_name&&!division&&company)warnings.push('New division will be created')
-    if(row.division_name&&!company)warnings.push('Division will be created after the new company')
-    let brand=null
-    if(row.brand_name&&company){
-     brand=brands.find(b=>b.company_id===company.id&&norm(b.brand_name)===norm(row.brand_name))||null
-     if(!brand)warnings.push('New brand will be created')
-    }else if(row.brand_name&&!company)warnings.push('Brand will be created after the new company')
-    if(!row.company_name&&!row.division_name&&!row.brand_name)issues.push('Row contains no catalog data')
-    const key=[norm(row.company_name),norm(row.division_name),norm(row.brand_name)].join('|')
-    if(seen.has(key))issues.push('Duplicate row in upload')
-    seen.add(key)
-    results.push({rowNumber:i+2,row,company,division,brand,issues,warnings})
-   })
-   return results
-  })
- }
-
- async function handleCatalogImport(e){
-  const f=e.target.files?.[0];e.target.value=''
-  if(!f)return
-  setCatalogBusy(true);setError('');setMessage('');setCatalogPreview(null);setCatalogValidation(null)
-  try{
-   if(!f.name.toLowerCase().endsWith('.csv'))throw new Error('Please select a .csv file.')
-   const rows=parseCatalogCsv(await f.text())
-   if(!rows.length)throw new Error('The selected CSV file contains no data rows.')
-   const headers=Object.keys(parseCsv(await f.text())[0]||{})
-   const accepted=['company','company name','company_name','legal name','company legal name','company_legal_name','short name','company short name','company_short_name','division','division name','division_name','division code','division_code','brand','brand name','brand_name']
-   const unexpected=headers.filter(h=>!accepted.includes(String(h||'').trim().toLowerCase().replace(/\\s+/g,' ')))
-   setCatalogPreview({file:f.name,rows,headers,unexpected})
-   setMessage('Loaded '+rows.length+' company/division/brand row(s). No database records were changed.')
-  }catch(e){setError(e.message)}
-  setCatalogBusy(false)
- }
-
- async function validateCatalogImport(){
-  if(!catalogPreview?.rows?.length)return
-  setCatalogBusy(true);setError('');setMessage('')
-  try{
-   const results=await validateCatalogRows(catalogPreview.rows)
-   const blocking=results.filter(x=>x.issues.length).length
-   setCatalogValidation({results,blocking,checkedAt:new Date().toISOString(),approved:false})
-   setMessage(blocking?(`Validation complete: ${blocking} row(s) need correction.`):`Validation complete: ${results.length} row(s) ready for review.`)
-  }catch(e){setError(e.message)}
-  setCatalogBusy(false)
- }
-
- async function executeCatalogImport(){
-  if(!catalogValidation||catalogValidation.blocking>0)return
-  setCatalogBusy(true);setError('');setMessage('')
-  try{
-   const companyCache=new Map()
-   const divisionCache=new Map()
-   const brandCache=new Map()
-   let createdCompanies=0,createdDivisions=0,createdBrands=0
-   const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'')
-   for(const item of catalogValidation.results){
-    const row=item.row
-    let company=item.company
-    const companyKey=norm(row.company_name)
-    if(!company){
-     company=companyCache.get(companyKey)||null
-     if(!company){
-      const ins=await supabase.from('companies').insert({
-       company_name:row.company_name,
-       legal_name:row.company_legal_name||null,
-       short_name:row.company_short_name||null,
-       status:'active'
-      }).select('id,company_name,legal_name,short_name').single()
-      if(ins.error)throw new Error('Company creation failed for "'+row.company_name+'": '+ins.error.message)
-      company=ins.data;companyCache.set(companyKey,company);createdCompanies++
-     }
-    }
-    if(row.division_name){
-     const dKey=company.id+'|'+norm(row.division_name)
-     let division=item.division||divisionCache.get(dKey)||null
-     if(!division){
-      const ins=await supabase.from('divisions').insert({
-       company_id:company.id,
-       division_name:row.division_name,
-       division_code:row.division_code||null
-      }).select('id,company_id,division_name,division_code').single()
-      if(ins.error)throw new Error('Division creation failed for "'+row.division_name+'": '+ins.error.message)
-      division=ins.data;divisionCache.set(dKey,division);createdDivisions++
-     }
-    }
-    if(row.brand_name){
-     const bKey=company.id+'|'+norm(row.brand_name)
-     let brand=item.brand||brandCache.get(bKey)||null
-     if(!brand){
-      const ins=await supabase.from('brands').insert({
-       company_id:company.id,
-       division_id:divisionCache.get(company.id+'|'+norm(row.division_name))?.id||item.division?.id||null,
-       brand_name:row.brand_name,
-       status:'active'
-      }).select('id,company_id,division_id,brand_name').single()
-      if(ins.error)throw new Error('Brand creation failed for "'+row.brand_name+'": '+ins.error.message)
-      brand=ins.data;brandCache.set(bKey,brand);createdBrands++
-     }
-    }
-   }
-   setCatalogValidation(v=>({...v,approved:true,importedAt:new Date().toISOString(),importResult:{createdCompanies,createdDivisions,createdBrands}}))
-   setMessage(`Catalog import completed: ${createdCompanies} company(ies), ${createdDivisions} division(s), ${createdBrands} brand(s) created.`)
-  }catch(e){setError(e.message)}
-  setCatalogBusy(false)
- }
-
- function downloadCatalogSample(){
-  const rows=[
-   {company_name:'Procter & Gamble',company_legal_name:'',company_short_name:'P&G',division_name:'Health Care',division_code:'HC',brand_name:'Vicks'},
-   {company_name:'Procter & Gamble',company_legal_name:'',company_short_name:'P&G',division_name:'Health Care',division_code:'HC',brand_name:'Head & Shoulders'},
-   {company_name:'MSD Pharmaceuticals Private Limited',company_legal_name:'',company_short_name:'MSD',division_name:'',division_code:'',brand_name:'Janumet'},
-   {company_name:'Aristo Pharmaceuticals Private Limited',company_legal_name:'',company_short_name:'Aristo',division_name:'',division_code:'',brand_name:''}
-  ]
-  downloadCsv(rows,'kutchpharmaconnect-company-catalog-sample.csv')
- }
-
  function downloadImportSample(){
   const stamp='kutchpharmaconnect-distributorship-import-sample'
-  downloadCsv(sampleRows,stamp+'.csv')
+  downloadCsv(sampleExampleRows,stamp+'.csv')
  }
 
  async function handleImport(e){
@@ -524,8 +407,8 @@ export default function AdminTools({onBack}){
 
   <div className="admin-tool-grid">
    <section className="admin-panel">
-    <p className="section-kicker">BACKUP</p><h2>Full database export</h2>
-    <p className="admin-help">CSV exports are available for directory tables. JSON remains available as a machine-readable backup.</p>
+    <p className="section-kicker">BACKUP</p><h2>Application data backup</h2>
+    <p className="admin-help">Download a JSON backup of directory records and admin queues. This does not include Supabase Auth users, storage files, or project settings.</p>
     <div className="admin-inline-actions">
      <button className="admin-tool-button" onClick={()=>exportAll('json')} disabled={!!busy}><FileJson size={16}/>{busy==='alljson'?<><LoaderCircle className="spin" size={16}/> Exporting…</>:'Download full JSON backup'}</button>
     </div>
@@ -554,33 +437,6 @@ export default function AdminTools({onBack}){
     <button className="admin-tool-button" onClick={()=>fileRef.current?.click()} disabled={!!busy}><Upload size={16}/>{busy==='import'?<><LoaderCircle className="spin" size={16}/> Reading…</>:'Select CSV file'}</button>
    </section>
 
-   <section className="admin-panel" style={{gridColumn:'1 / -1'}}>
-    <p className="section-kicker">COMPANY DATABASE</p>
-    <h2>Upload Companies + Divisions + Brands</h2>
-    <p className="admin-help"><strong>This is the simple upload you should use for company master data.</strong> It does not ask for distributors, categories, locations, prices or products.</p>
-    <div className="admin-note" style={{margin:'10px 0'}}>
-     <strong>Only 3 columns are needed:</strong> Company &nbsp; | &nbsp; Division &nbsp; | &nbsp; Brand
-     <br/>Use <strong>one row for each combination</strong>. Repeat the company name when it has multiple divisions or brands.
-     <br/>If something does not apply, leave that cell blank.
-    </div>
-    <div style={{overflowX:'auto',margin:'10px 0 14px'}}>
-     <table className="admin-table"><thead><tr><th>Company</th><th>Division</th><th>Brand</th><th>What it means</th></tr></thead>
-      <tbody>
-       <tr><td>Procter &amp; Gamble</td><td>Health Care</td><td>Vicks</td><td>Brand belongs to this division</td></tr>
-       <tr><td>Procter &amp; Gamble</td><td>Health Care</td><td>Head &amp; Shoulders</td><td>Another brand under same division</td></tr>
-       <tr><td>MSD Pharmaceuticals</td><td></td><td>Janumet</td><td>Brand directly under company</td></tr>
-       <tr><td>Aristo Pharmaceuticals</td><td></td><td></td><td>Company only</td></tr>
-      </tbody>
-     </table>
-    </div>
-    <p className="admin-help">Best workflow: <strong>Download Easy Template → fill the 3 columns → save as CSV → Upload Company List → Validate → Confirm &amp; Import.</strong></p>
-    <input ref={catalogFileRef} type="file" accept=".csv" hidden onChange={handleCatalogImport}/>
-    <div className="admin-inline-actions">
-     <button className="admin-tool-button" onClick={downloadCatalogSample} disabled={catalogBusy}><Download size={16}/> Download Easy Template</button>
-     <button className="admin-tool-button" onClick={()=>catalogFileRef.current?.click()} disabled={catalogBusy}><Upload size={16}/>{catalogBusy?'Reading…':'Upload Company List (CSV)'}</button>
-    </div>
-   </section>
-
    <section className="admin-panel">
     <p className="section-kicker">SAMPLE FILES</p><h2>Distributorship import sample</h2>
     <p className="admin-help">Use these samples as the standard import structure for distributor ↔ company relationships.</p>
@@ -589,23 +445,6 @@ export default function AdminTools({onBack}){
     </div>
    </section>
   </div>
-
-  {catalogPreview&&<section className="admin-panel" style={{marginTop:16}}>
-   <div className="admin-inline-actions" style={{justifyContent:'space-between'}}>
-    <div><p className="section-kicker">COMPANY CATALOG PREVIEW</p><h2>{catalogPreview.file}</h2></div>
-    <div className="admin-inline-actions"><button className="admin-tool-button" onClick={validateCatalogImport} disabled={catalogBusy}>Validate catalog</button><button className="admin-tool-button" onClick={()=>{setCatalogPreview(null);setCatalogValidation(null)}}>Close</button></div>
-   </div>
-   <p className="admin-help">{catalogPreview.rows.length} row(s). The upload uses the simple columns <strong>Company, Division, Brand</strong>. Extra legacy company fields are optional and will be ignored unless supplied.</p>
-   {catalogPreview.unexpected.length>0&&<div className="admin-error">Unknown columns: {catalogPreview.unexpected.join(', ')}. They will be ignored.</div>}
-   <div style={{overflowX:'auto'}}><table className="admin-table"><thead><tr>{catalogPreview.headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{catalogPreview.rows.slice(0,20).map((row,i)=><tr key={i}>{catalogPreview.headers.map(h=><td key={h}>{String(row[h]??'')}</td>)}</tr>)}</tbody></table></div>
-   {catalogPreview.rows.length>20&&<p className="admin-help">Showing first 20 rows only.</p>}
-   {catalogValidation&&<div style={{marginTop:14}}>
-    <p className="admin-help"><strong>{catalogValidation.results.length}</strong> rows checked · <strong>{catalogValidation.blocking}</strong> blocking</p>
-    <div style={{overflowX:'auto'}}><table className="admin-table"><thead><tr><th>Row</th><th>Company</th><th>Division</th><th>Brand</th><th>Result</th><th>Details</th></tr></thead><tbody>{catalogValidation.results.map(x=><tr key={x.rowNumber}><td>{x.rowNumber}</td><td>{x.row.company_name||'—'}</td><td>{x.row.division_name||'—'}</td><td>{x.row.brand_name||'—'}</td><td>{x.issues.length?'BLOCKED':x.warnings.length?'WARNING':'READY'}</td><td>{[...x.issues,...x.warnings].join(' · ')||'Passed validation'}</td></tr>)}</tbody></table></div>
-    {catalogValidation.blocking===0&&!catalogValidation.approved&&<button className="report-submit" style={{marginTop:12}} onClick={executeCatalogImport} disabled={catalogBusy}>{catalogBusy?'Importing…':'Confirm & Import Company Catalog'}</button>}
-    {catalogValidation.approved&&<div className="admin-message" style={{marginTop:12}}>Imported at {new Date(catalogValidation.importedAt).toLocaleString()}. {catalogValidation.importResult.createdCompanies} company(ies), {catalogValidation.importResult.createdDivisions} division(s), {catalogValidation.importResult.createdBrands} brand(s) created.</div>}
-   </div>}
-  </section>}
 
   {preview&&<section className="admin-panel" style={{marginTop:16}}>
    <div className="admin-inline-actions" style={{justifyContent:'space-between'}}>
