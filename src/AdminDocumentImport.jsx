@@ -115,7 +115,7 @@ export default function AdminDocumentImport({onBack,onOpenSubmissions}){
   function reset(){setFile(null);setPages([]);setSelectedPages([]);setRows([]);setError('');setMessage('');setStep(1)}
   return <div className="admin-page">
     <div className="admin-head">
-      <div><button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button><p className="section-kicker">BULK IMPORT</p><h1>Distributor Document Import</h1><p>Upload a distributor PDF, extract company names, then send them to the existing review workflow.</p></div>
+      <div><button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Data Workspace</button><p className="section-kicker">BULK IMPORT</p><h1>Distributor Document Import</h1><p>Upload a distributor PDF, extract company names, then send them to the existing review workflow.</p></div>
       <button className="admin-refresh" onClick={reset}>Start New Import</button>
     </div>
     {error&&<div className="admin-error"><AlertTriangle size={16}/>{error}</div>}
