@@ -6,7 +6,6 @@ const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
-import ProfileRatingSummary from './ProfileRatingSummary'
 import SiteFeedback from './SiteFeedback'
 
 const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
@@ -548,9 +547,7 @@ export default function App(){
                       <span className="verified-badge" title="At least one current Kutch distributorship relationship has been verified.">
                         <ShieldCheck size={14}/> Verified
                       </span>
-                    )}
-                    {profile.type === 'distributor' && <ProfileRatingSummary distributorId={profile.entity?.id} />}
-                  </div>
+                    )}                  </div>
                 </div>
                 <ProfileShareActions profile={profile} siteUrl={KPC_WEBSITE} />
               </div>
