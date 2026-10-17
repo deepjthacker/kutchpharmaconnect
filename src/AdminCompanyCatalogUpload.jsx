@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { ArrowLeft, CheckCircle2, Download, FileUp, LoaderCircle, Upload, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Download, FileUp, LoaderCircle, Upload, XCircle, Trash2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const TEMPLATE = [
@@ -68,6 +68,16 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
     setRows(mapped)
     setSourceName(name)
     setError('')
+    setResult(null)
+  }
+
+  function updateRow(index, field, value) {
+    setRows(current => current.map((row, i) => i === index ? { ...row, [field]: value } : row))
+    setResult(null)
+  }
+
+  function removeRow(index) {
+    setRows(current => current.filter((_, i) => i !== index))
     setResult(null)
   }
 
@@ -189,22 +199,28 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
             </div>
             <CheckCircle2 size={20}/>
           </div>
-          <div style={{overflowX:'auto',marginTop:'12px'}}>
-            <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead><tr><th style={{textAlign:'left',padding:'8px'}}>Row</th><th style={{textAlign:'left',padding:'8px'}}>Company</th><th style={{textAlign:'left',padding:'8px'}}>Division</th><th style={{textAlign:'left',padding:'8px'}}>Brand</th></tr></thead>
-              <tbody>
-                {rows.slice(0, 100).map(r => (
-                  <tr key={r._row}>
-                    <td style={{padding:'8px'}}>{r._row}</td>
-                    <td style={{padding:'8px'}}>{r.company_name || <span style={{opacity:.55}}>Missing</span>}</td>
-                    <td style={{padding:'8px'}}>{r.division_name || '—'}</td>
-                    <td style={{padding:'8px'}}>{r.brand_name || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="admin-catalog-rows">
+            {rows.slice(0, 100).map((r, index) => (
+              <div className="admin-catalog-row" key={r._row ?? index}>
+                <div className="admin-catalog-row-head">
+                  <span>Row {r._row ?? index + 1}</span>
+                  <button type="button" className="admin-catalog-remove" onClick={() => removeRow(index)} aria-label={`Remove row ${r._row ?? index + 1}`}>
+                    <Trash2 size={14} /> Remove
+                  </button>
+                </div>
+                <label>Company Name
+                  <input value={r.company_name} onChange={e => updateRow(index, 'company_name', e.target.value)} placeholder="Company name" />
+                </label>
+                <label>Division <span className="admin-catalog-optional">optional</span>
+                  <input value={r.division_name} onChange={e => updateRow(index, 'division_name', e.target.value)} placeholder="Division name" />
+                </label>
+                <label>Brand Name <span className="admin-catalog-optional">optional</span>
+                  <input value={r.brand_name} onChange={e => updateRow(index, 'brand_name', e.target.value)} placeholder="Brand name" />
+                </label>
+              </div>
+            ))}
           </div>
-          {rows.length > 100 && <p className="report-help">Showing first 100 rows. All {rows.length} rows will be imported.</p>}
+          {rows.length > 100 && <p className="report-help">Showing the first 100 rows for review. All {rows.length} rows will be imported unless removed before importing.</p>}
           <button className="report-submit" type="button" onClick={importRows} disabled={!validRows.length || busy} style={{marginTop:'14px'}}>
             {busy ? <><LoaderCircle className="spin" size={16}/> Importing…</> : <><Upload size={16}/> Import {validRows.length} Rows</>}
           </button>
