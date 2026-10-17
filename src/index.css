@@ -1311,18 +1311,3 @@ html[data-theme="dark"] .site-feedback-trigger,html[data-theme="dark"] .site-fee
 html[data-theme="dark"] .profile-relationship-search{background:#111c2e;border-color:#334155}
 html[data-theme="dark"] .profile-relationship-search input{color:#f1f5f9}
 
-
-/* Compact, star-only distributor ratings */
-.profile-rating-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px;color:#9a6a00;font-size:12px;font-weight:700}
-.profile-rating-stars{display:inline-flex;align-items:center;gap:2px;color:#e3a008}
-.profile-rating-label{color:#65738a;font-size:11px;font-weight:650}
-.profile-rating-only{margin-top:24px}
-.profile-rating-only .profile-reviews-heading{margin-bottom:12px}
-.profile-rating-only .profile-reviews-heading p:not(.profile-kicker){margin:5px 0 0;color:#69758a;font-size:13px}
-.profile-rating-only .review-rating-picker{display:flex;align-items:center;gap:6px;margin:10px 0 14px}
-.profile-rating-only .review-rating-picker button{display:grid;place-items:center;border:0;background:transparent;padding:3px;color:#c5ccd7;border-radius:6px}
-.profile-rating-only .review-rating-picker button.selected{color:#e3a008}
-.profile-rating-only .review-rating-picker button:focus-visible{outline:2px solid #3159a8;outline-offset:2px}
-.profile-rating-only .review-rating-picker span{margin-left:7px;color:#65738a;font-size:12px;font-weight:700}
-.profile-rating-only .profile-review-submit{display:inline-flex;align-items:center;gap:7px}
-.profile-rating-only .profile-review-note{margin:10px 0 0;color:#7b8699;font-size:11px}
