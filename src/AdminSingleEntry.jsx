@@ -101,7 +101,7 @@ export default function AdminSingleEntry({onBack}){
  }
  const tabs=[['distributor','Distributor',Truck],['company','Company',Building2],['relationship','Distributorship',Link2]]
  return <div className="admin-page">
-  <div className="admin-head"><div><button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button><p className="section-kicker">ADMINISTRATION</p><h1>Manual Single Entry</h1><p>Add one distributor, one company, or one company–distributor relationship at a time.</p></div><button className="admin-refresh" onClick={loadOptions} disabled={loading}><LoaderCircle className={loading?'spin':''} size={15}/> Refresh options</button></div>
+  <div className="admin-head"><div><button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Data Workspace</button><p className="section-kicker">ADMINISTRATION</p><h1>Manual Single Entry</h1><p>Add one distributor, one company, or one company–distributor relationship at a time.</p></div><button className="admin-refresh" onClick={loadOptions} disabled={loading}><LoaderCircle className={loading?'spin':''} size={15}/> Refresh options</button></div>
   <div className="admin-single-entry-tabs">{tabs.map(([id,label,Icon])=><button type="button" key={id} className={tab===id?'selected':''} onClick={()=>{setTab(id);setError('');setSuccess('')}}><Icon size={16}/>{'Add '+label}</button>)}</div>
   {error&&<div className="admin-error" role="alert">{error}</div>}
   {success&&<div className="admin-success" role="status"><CheckCircle2 size={17}/>{success}</div>}
