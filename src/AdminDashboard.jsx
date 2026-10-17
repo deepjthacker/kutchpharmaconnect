@@ -41,7 +41,7 @@ export default function AdminDashboard(){
   ])
   const bad=qs.find(x=>x.error)
   if(bad)setError(bad.error.message)
-  else setStats({companies:qs[0].count||0,distributors:qs[1].count||0,relationships:qs[2].count||0,brands:qs[3].count||0,submissions:qs[4].count||0,reports:qs[5].count||0,needsReview:qs[6].count||0,missingLocation:qs[7].count||0,unverified:qs[8].count||0,inactiveCompanies:qs[9].count||0,pendingReviews:qs[10].count||0,websiteFeedback:qs[12].count||0,productSubmissions:qs[4].count||0})
+  else setStats({companies:qs[0].count||0,distributors:qs[1].count||0,relationships:qs[2].count||0,brands:qs[3].count||0,submissions:qs[4].count||0,productSubmissions:qs[5].count||0,reports:qs[6].count||0,needsReview:qs[7].count||0,missingLocation:qs[8].count||0,unverified:qs[9].count||0,inactiveCompanies:qs[10].count||0,pendingReviews:qs[11].count||0,websiteFeedback:qs[12].count||0})
   setLoading(false)
  }
  useEffect(()=>{load()},[])
