@@ -46,7 +46,7 @@ export default function App(){
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null)
   const navigationHistoryRef=useRef(false)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -443,6 +443,7 @@ export default function App(){
   }
 
   async function openProfile(type,id,options={}){
+    setRelationshipSearch('')
     if(options.history!==false)pushRoute('profile',{type,id})
     setProfileLoading(true);setError('')
     trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
@@ -504,6 +505,12 @@ export default function App(){
   }
 
   function renderProfile(){
+    const relationshipQuery = relationshipSearch.trim().toLowerCase()
+    const visibleRelationships = (profile?.relationships || []).filter(rel => {
+      if (profile?.type !== 'distributor' || !relationshipQuery) return true
+      return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name]
+        .some(value => String(value || '').toLowerCase().includes(relationshipQuery))
+    })
     return (
       <section className="profile-section">
         <div className="container profile-container">
@@ -599,8 +606,16 @@ export default function App(){
                   {profile.type === 'company' ? 'Currently handled by' : 'Currently handles'}
                 </div>
 
-                {profile.relationships.length > 0 ? (
-                  profile.relationships.map(rel => (
+                {profile.type === 'distributor' && profile.relationships.length > 0 && (
+                  <label className="profile-relationship-search">
+                    <Search size={16} aria-hidden="true" />
+                    <input type="search" value={relationshipSearch} onChange={e => setRelationshipSearch(e.target.value)} placeholder="Search companies, divisions or brands…" aria-label="Search this distributor's companies, divisions or brands" />
+                    {relationshipSearch && <button type="button" onClick={() => setRelationshipSearch('')} aria-label="Clear distributorship search"><X size={15}/></button>}
+                  </label>
+                )}
+
+                {visibleRelationships.length > 0 ? (
+                  visibleRelationships.map(rel => (
                     <div className="profile-rel" key={rel.id}>
                       <div>
                         {profile.type === 'company' ? (
@@ -655,7 +670,7 @@ export default function App(){
                     </div>
                   ))
                 ) : (
-                  <div className="result-state">No active distributorships found.</div>
+                  <div className="result-state">{profile.relationships.length === 0 ? 'No active distributorships found.' : 'No companies, divisions or brands match your search.'}</div>
                 )}
               </div>
 
