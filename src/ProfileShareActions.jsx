@@ -34,8 +34,16 @@ const slug = (value) => String(value || 'business')
 const getShareUrl = (profile, siteUrl) => {
   const base = String(siteUrl || absoluteSiteUrl()).replace(/\/$/, '')
   const entity = profile?.entity || {}
-  const kind = profile?.type === 'company' ? 'companies' : 'distributors'
-  return entity.id ? `${base}/${kind}/${slug(getName(profile))}-${String(entity.id).slice(0, 8)}/` : (typeof window !== 'undefined' ? window.location.href : base)
+  if (!entity.id || !['company', 'distributor'].includes(profile?.type)) {
+    return typeof window !== 'undefined' ? window.location.href : base
+  }
+  // Use the app's supported deep-link route so shared links open the same
+  // interactive profile instead of a separately generated static SEO page.
+  const url = new URL(`${base}/`)
+  url.searchParams.set('view', 'profile')
+  url.searchParams.set('type', profile.type)
+  url.searchParams.set('id', entity.id)
+  return url.toString()
 }
 const safeFileName = (value) => String(value || 'directory-profile')
   .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'directory-profile'
