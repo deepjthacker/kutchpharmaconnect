@@ -1300,3 +1300,13 @@ html[data-theme="dark"] .site-feedback-trigger,html[data-theme="dark"] .site-fee
 .admin-success{display:flex;align-items:flex-start;gap:9px;padding:12px 14px;border:1px solid #b9dfc7;background:#f0faf3;color:#21623a;border-radius:10px;font-size:13px;margin:12px 0}
 .admin-success svg{flex:none}
 @media(max-width:650px){.admin-single-entry-panel{padding:16px}.admin-single-entry-form{grid-template-columns:1fr}.admin-category-checks>div{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-single-entry-tabs button{flex:1 1 100%}}
+
+
+/* Search within an individual distributor's distributorship list */
+.profile-relationship-search{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border,#dce5eb);border-radius:10px;background:var(--surface,#fff);color:var(--muted,#64748b)}
+.profile-relationship-search>svg{flex:none;color:#3159a8}
+.profile-relationship-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--text,#172033);font:inherit;font-size:13px}
+.profile-relationship-search button{display:grid;place-items:center;flex:none;border:0;border-radius:6px;padding:5px;background:transparent;color:var(--muted,#64748b)}
+.profile-relationship-search button:hover{background:var(--surface-soft,#f1f5f9);color:var(--text,#172033)}
+html[data-theme="dark"] .profile-relationship-search{background:#111c2e;border-color:#334155}
+html[data-theme="dark"] .profile-relationship-search input{color:#f1f5f9}
