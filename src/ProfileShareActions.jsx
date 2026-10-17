@@ -264,7 +264,7 @@ export default function ProfileShareActions({ profile, siteUrl }) {
     <div className="profile-share-wrap">
       <div className="profile-share-actions">
         <button type="button" className="profile-share-primary" onClick={shareProfile} disabled={busy}>
-          <Share2 size={16} /> {busy ? 'Preparing…' : 'Share Profile'}
+          <Share2 size={16} /> {busy ? 'Preparing…' : 'Share'}
         </button>
         <button type="button" className="profile-share-secondary" onClick={downloadImage} disabled={busy}>
           <ImageIcon size={16} /> Download Screenshot
