@@ -6,8 +6,6 @@ const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
-import ProfileReviews from './ProfileReviews'
-import ProfileRatingSummary from './ProfileRatingSummary'
 import ProfileRatingSummary from './ProfileRatingSummary'
 import SiteFeedback from './SiteFeedback'
 
@@ -552,7 +550,6 @@ export default function App(){
                       </span>
                     )}
                     {profile.type === 'distributor' && <ProfileRatingSummary distributorId={profile.entity?.id} />}
-                    {profile.type === 'distributor' && <ProfileRatingSummary distributorId={profile.entity?.id} />}
                   </div>
                 </div>
                 <ProfileShareActions profile={profile} siteUrl={KPC_WEBSITE} />
@@ -678,7 +675,6 @@ export default function App(){
                 )}
               </div>
 
-              {profile.type === 'distributor' && <ProfileReviews profile={profile} />}
             </div>
           )}
         </div>
