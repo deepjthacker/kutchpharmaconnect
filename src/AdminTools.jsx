@@ -28,10 +28,6 @@ function csvEscape(value){
  const s=String(value??'')
  return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s
 }
-function downloadBlob(blob,name){
- const url=URL.createObjectURL(blob)
- const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)
-}
 function downloadCsv(rows,name,vertical=false){
  const data=rows||[]
  let output=data
