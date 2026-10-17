@@ -47,7 +47,9 @@ export default function AdminSingleEntry({onBack}){
   e.preventDefault();if(busy)return
   setBusy(true);setError('');setSuccess('')
   const name=company.company_name.trim()
-  const duplicate=companies.find(x=>x.company_name.trim().toLowerCase()===name.toLowerCase())
+  const duplicateRows=await supabase.from('companies').select('company_name')
+  if(duplicateRows.error){setError(duplicateRows.error.message);setBusy(false);return}
+  const duplicate=(duplicateRows.data||[]).some(x=>x.company_name.trim().toLowerCase()===name.toLowerCase())
   if(duplicate){setError('A company with this exact name already exists. Select Companies to edit the existing record instead.');setBusy(false);return}
   const r=await supabase.from('companies').insert({company_name:name,legal_name:optional(company.legal_name),short_name:optional(company.short_name),description:optional(company.description),status:company.status}).select('id,company_name,status').single()
   if(r.error){setError(r.error.message);setBusy(false);return}
@@ -62,7 +64,9 @@ export default function AdminSingleEntry({onBack}){
   e.preventDefault();if(busy)return
   setBusy(true);setError('');setSuccess('')
   const name=distributor.distributor_name.trim()
-  const duplicate=distributors.find(x=>x.distributor_name.trim().toLowerCase()===name.toLowerCase())
+  const duplicateRows=await supabase.from('distributors').select('distributor_name')
+  if(duplicateRows.error){setError(duplicateRows.error.message);setBusy(false);return}
+  const duplicate=(duplicateRows.data||[]).some(x=>x.distributor_name.trim().toLowerCase()===name.toLowerCase())
   if(duplicate){setError('A distributor with this exact name already exists. Open Distributors to edit the existing record instead.');setBusy(false);return}
   const payload={distributor_name:name,legal_name:optional(distributor.legal_name),contact_person:optional(distributor.contact_person),mobile:optional(distributor.mobile),whatsapp:optional(distributor.whatsapp),email:optional(distributor.email),address:optional(distributor.address),city_id:distributor.city_id||null,maps_url:optional(distributor.maps_url),website:optional(distributor.website),notes:optional(distributor.notes),status:distributor.status}
   const r=await supabase.from('distributors').insert(payload).select('id,distributor_name,status').single()
@@ -77,10 +81,10 @@ export default function AdminSingleEntry({onBack}){
    const selectedDivision=divisions.find(x=>x.id===relationship.division_id)
    if(!selectedDivision||selectedDivision.company_id!==relationship.company_id){setError('The selected division does not belong to the selected company.');setBusy(false);return}
   }
-  const duplicateQuery=supabase.from('distributorships').select('id').eq('company_id',relationship.company_id).eq('distributor_id',relationship.distributor_id).eq('category_id',relationship.category_id).eq('location_id',relationship.location_id).eq('handled_as',relationship.handled_as).eq('status','active')
+  const duplicateQuery=supabase.from('distributorships').select('id,division_id').eq('company_id',relationship.company_id).eq('distributor_id',relationship.distributor_id).eq('category_id',relationship.category_id).eq('location_id',relationship.location_id).eq('handled_as',relationship.handled_as).eq('status','active')
   const duplicate=await duplicateQuery
   if(duplicate.error){setError(duplicate.error.message);setBusy(false);return}
-  const existing=(duplicate.data||[]).find(x=>!relationship.division_id||x.division_id===relationship.division_id)
+  const existing=(duplicate.data||[]).find(x=>(x.division_id||null)===(relationship.division_id||null))
   if(existing){setError('An active relationship with these details already exists. Check the Distributorships page before adding another.');setBusy(false);return}
   const payload={company_id:relationship.company_id,division_id:relationship.division_id||null,brand_id:null,handled_as:relationship.handled_as,distributor_id:relationship.distributor_id,category_id:relationship.category_id,location_id:relationship.location_id,territory:optional(relationship.territory),status:'active',verification_status:'unverified',verification_note:null,verified_date:null,verification_notes:optional(relationship.verification_notes),source:optional(relationship.source)||'Manual admin entry'}
   const r=await supabase.from('distributorships').insert(payload).select('id').single()
