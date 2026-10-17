@@ -54,7 +54,7 @@ function parseCsvLine(line){
  values.push(value);return values
 }
 function parseCsv(text){
- const lines=String(text||'').replace(/^\\uFEFF/,'').split(/\\r?\\n/).filter(line=>line.trim())
+ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim())
  if(!lines.length)return []
  const headers=parseCsvLine(lines[0]).map(x=>x.trim())
  return lines.slice(1).map(line=>{const values=parseCsvLine(line),row={};headers.forEach((h,i)=>row[h]=values[i]??'');return row})
