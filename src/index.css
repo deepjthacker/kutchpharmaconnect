@@ -1279,3 +1279,24 @@ html[data-theme="dark"] .site-feedback-trigger,html[data-theme="dark"] .site-fee
     padding: 7px 9px;
   }
 }
+
+
+.admin-single-entry-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px}
+.admin-single-entry-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #dbe1ea;border-radius:10px;background:#fff;color:#334057;padding:11px 14px;font-size:13px;font-weight:750}
+.admin-single-entry-tabs button.selected{background:#173a8f;border-color:#173a8f;color:#fff}
+.admin-single-entry-panel{margin-top:14px;padding:22px}
+.admin-single-entry-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.admin-single-entry-form>label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:750;color:#39475e;min-width:0}
+.admin-single-entry-form input,.admin-single-entry-form select,.admin-single-entry-form textarea{width:100%;min-width:0;border:1px solid #cfd6e2;border-radius:9px;padding:11px 12px;background:#fff;color:#172033;font:inherit;font-size:14px;outline:none}
+.admin-single-entry-form input:focus,.admin-single-entry-form select:focus,.admin-single-entry-form textarea:focus{border-color:#7895d0;box-shadow:0 0 0 3px rgba(49,89,168,.1)}
+.admin-single-entry-form .report-submit{grid-column:1/-1;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:4px}
+.admin-category-checks{grid-column:1/-1;min-width:0;border:1px solid #dfe5ee;border-radius:10px;padding:12px 14px}
+.admin-category-checks legend{font-size:12px;font-weight:800;color:#39475e;padding:0 5px}
+.admin-category-checks p{font-size:12px;color:#748096;margin:0 0 10px}
+.admin-category-checks>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.admin-category-checks>div label{display:flex;align-items:center;gap:7px;font-size:12px;color:#39475e;font-weight:600}
+.admin-category-checks input{width:auto}
+.admin-entry-note{grid-column:1/-1;border:1px solid #e0e7f2;background:#f5f8ff;color:#4b5b76;border-radius:9px;padding:12px;font-size:12px;line-height:1.5}
+.admin-success{display:flex;align-items:flex-start;gap:9px;padding:12px 14px;border:1px solid #b9dfc7;background:#f0faf3;color:#21623a;border-radius:10px;font-size:13px;margin:12px 0}
+.admin-success svg{flex:none}
+@media(max-width:650px){.admin-single-entry-panel{padding:16px}.admin-single-entry-form{grid-template-columns:1fr}.admin-category-checks>div{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-single-entry-tabs button{flex:1 1 100%}}
