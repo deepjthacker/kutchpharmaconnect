@@ -415,7 +415,7 @@ export default function AdminTools({onBack}){
 
  return <div className="admin-page">
   <div className="admin-head"><div>
-   <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button>
+   <button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Data Workspace</button>
    <p className="section-kicker">DATA TOOLS</p><h1>Import, Export & Backup</h1>
    <p>Use CSV for directory data. Imports are previewed before any production write.</p>
   </div></div>
