@@ -45,8 +45,13 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
+  const [previewPage, setPreviewPage] = useState(1)
+  const pageSize = 50
+  const pageStart = (previewPage - 1) * pageSize
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize))
+  const visibleRows = rows.slice(pageStart, pageStart + pageSize)
 
-  const validRows = useMemo(() => rows.filter(r => r.company_name), [rows])
+  const validRows = useMemo(() => rows.filter(r => String(r.company_name || '').trim()), [rows])
 
   function loadText(text, name = '') {
     const parsed = parseDelimited(text)
@@ -66,6 +71,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
       brand_name: brandIndex >= 0 ? (r[brandIndex] || '').trim() : ''
     })).filter(r => r.company_name || r.division_name || r.brand_name)
     setRows(mapped)
+    setPreviewPage(1)
     setSourceName(name)
     setError('')
     setResult(null)
@@ -78,6 +84,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
 
   function removeRow(index) {
     setRows(current => current.filter((_, i) => i !== index))
+    setPreviewPage(currentPage => Math.min(currentPage, Math.max(1, Math.ceil((rows.length - 1) / pageSize))))
     setResult(null)
   }
 
@@ -176,7 +183,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
           <button className="report-submit" type="button" onClick={() => inputRef.current?.click()}>
             <FileUp size={16}/> Choose CSV File
           </button>
-          <button className="admin-refresh" type="button" onClick={() => { setRows([]); setSourceName(''); setResult(null); setError('') }}>
+          <button className="admin-refresh" type="button" onClick={() => { setRows([]); setPreviewPage(1); setSourceName(''); setResult(null); setError('') }}>
             <XCircle size={15}/> Clear
           </button>
         </div>
@@ -200,27 +207,35 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
             <CheckCircle2 size={20}/>
           </div>
           <div className="admin-catalog-rows">
-            {rows.slice(0, 100).map((r, index) => (
-              <div className="admin-catalog-row" key={r._row ?? index}>
-                <div className="admin-catalog-row-head">
-                  <span>Row {r._row ?? index + 1}</span>
-                  <button type="button" className="admin-catalog-remove" onClick={() => removeRow(index)} aria-label={`Remove row ${r._row ?? index + 1}`}>
-                    <Trash2 size={14} /> Remove
-                  </button>
+            {visibleRows.map((r, index) => {
+              const rowIndex = pageStart + index
+              return (
+                <div className="admin-catalog-row" key={r._row ?? rowIndex}>
+                  <div className="admin-catalog-row-head">
+                    <span>Row {r._row ?? rowIndex + 1}</span>
+                    <button type="button" className="admin-catalog-remove" onClick={() => removeRow(rowIndex)} aria-label={`Remove row ${r._row ?? rowIndex + 1}`}>
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  </div>
+                  <label>Company Name
+                    <input value={r.company_name} onChange={e => updateRow(rowIndex, 'company_name', e.target.value)} placeholder="Company name" />
+                  </label>
+                  <label>Division <span className="admin-catalog-optional">optional</span>
+                    <input value={r.division_name} onChange={e => updateRow(rowIndex, 'division_name', e.target.value)} placeholder="Division name" />
+                  </label>
+                  <label>Brand Name <span className="admin-catalog-optional">optional</span>
+                    <input value={r.brand_name} onChange={e => updateRow(rowIndex, 'brand_name', e.target.value)} placeholder="Brand name" />
+                  </label>
                 </div>
-                <label>Company Name
-                  <input value={r.company_name} onChange={e => updateRow(index, 'company_name', e.target.value)} placeholder="Company name" />
-                </label>
-                <label>Division <span className="admin-catalog-optional">optional</span>
-                  <input value={r.division_name} onChange={e => updateRow(index, 'division_name', e.target.value)} placeholder="Division name" />
-                </label>
-                <label>Brand Name <span className="admin-catalog-optional">optional</span>
-                  <input value={r.brand_name} onChange={e => updateRow(index, 'brand_name', e.target.value)} placeholder="Brand name" />
-                </label>
-              </div>
-            ))}
+              )
+            })}
           </div>
-          {rows.length > 100 && <p className="report-help">Showing the first 100 rows for review. All {rows.length} rows will be imported unless removed before importing.</p>}
+          {rows.length > pageSize && <div className="admin-catalog-pagination">
+            <button type="button" onClick={() => setPreviewPage(p => Math.max(1, p - 1))} disabled={previewPage <= 1}>Previous</button>
+            <span>Page {previewPage} of {pageCount} · Rows {pageStart + 1}–{Math.min(pageStart + pageSize, rows.length)} of {rows.length}</span>
+            <button type="button" onClick={() => setPreviewPage(p => Math.min(pageCount, p + 1))} disabled={previewPage >= pageCount}>Next</button>
+          </div>}
+          {rows.length !== validRows.length && <p className="report-help">{rows.length - validRows.length} row(s) have no company name and will be skipped. Add a company name or remove those rows.</p>}
           <button className="report-submit" type="button" onClick={importRows} disabled={!validRows.length || busy} style={{marginTop:'14px'}}>
             {busy ? <><LoaderCircle className="spin" size={16}/> Importing…</> : <><Upload size={16}/> Import {validRows.length} Rows</>}
           </button>
