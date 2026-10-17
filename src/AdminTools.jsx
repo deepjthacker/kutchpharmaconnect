@@ -78,6 +78,35 @@ export default function AdminTools({onBack}){
   setBusy('')
  }
 
+ async function exportDirectory(kind){
+  setBusy('export-'+kind);setError('');setMessage('')
+  try{
+   const [companies,distributors,divisions,brands,products,categories,locations,groups]=await Promise.all([
+    getRows('companies'),getRows('distributors'),getRows('divisions'),getRows('brands'),getRows('products'),getRows('categories'),getRows('locations'),getRows('company_groups')
+   ])
+   const byId=(rows)=>new Map((rows||[]).map(x=>[String(x.id),x]))
+   const cm=byId(companies),dm=byId(distributors),dvm=byId(divisions),brm=byId(brands),catm=byId(categories),lm=byId(locations),gm=byId(groups)
+   const stamp=new Date().toISOString().slice(0,10)
+   let rows=[],filename=kind
+   if(kind==='distributors'){
+    rows=distributors.map(x=>({distributor_name:x.distributor_name,legal_name:x.legal_name||'',contact_person:x.contact_person||'',mobile:x.mobile||'',whatsapp:x.whatsapp||'',email:x.email||'',address:x.address||'',city:lm.get(String(x.city_id))?.city||'',district:lm.get(String(x.city_id))?.district||'',state:lm.get(String(x.city_id))?.state||'',pincode:lm.get(String(x.city_id))?.pincode||'',maps_url:x.maps_url||'',website:x.website||'',notes:x.notes||'',status:x.status||''}))
+   }else if(kind==='companies'){
+    rows=companies.map(x=>({company_name:x.company_name,legal_name:x.legal_name||'',short_name:x.short_name||'',company_group:gm.get(String(x.company_group_id))?.group_name||'',description:x.description||'',status:x.status||''}))
+   }else if(kind==='divisions'){
+    rows=divisions.map(x=>({company_name:cm.get(String(x.company_id))?.company_name||'',division_name:x.division_name,division_code:x.division_code||'',description:x.description||'',status:x.status||''}))
+   }else if(kind==='brands'){
+    rows=brands.map(x=>({brand_name:x.brand_name,company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',normalized_brand_name:x.normalized_brand_name||'',description:x.description||'',status:x.status||''}))
+   }else if(kind==='products'){
+    rows=products.map(x=>({product_name:x.product_name,company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',generic_name:x.generic_name||'',strength:x.strength||'',dosage_form:x.dosage_form||'',pack_size:x.pack_size||'',normalized_product_name:x.normalized_product_name||'',status:x.status||''}))
+   }else if(kind==='distributorships'){
+    rows=(await getRows('distributorships')).map(x=>({distributor_name:dm.get(String(x.distributor_id))?.distributor_name||'',company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',location_city:lm.get(String(x.location_id))?.city||'',location_district:lm.get(String(x.location_id))?.district||'',territory:x.territory||'',status:x.status||'',verification_status:x.verification_status||'',verified_date:x.verified_date||'',verification_note:x.verification_note||x.verification_notes||'',source:x.source||''}))
+   }
+   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`)
+   setMessage(`Exported ${rows.length} ${kind} record(s) with readable names as CSV.`)
+  }catch(e){setError('Export failed: '+e.message)}
+  setBusy('')
+ }
+
  async function exportAll(){
   setBusy('alljson');setError('');setMessage('')
   try{
@@ -493,11 +522,18 @@ export default function AdminTools({onBack}){
    </section>
 
    <section className="admin-panel">
-    <p className="section-kicker">EXPORT</p><h2>Individual tables</h2>
-    <p className="admin-help">Export companies, distributors, divisions and other directory tables as CSV.</p>
-    {tables.map(t=><div className="admin-tool-row" key={t}>
-     <span>{t}</span>
-     <span className="admin-inline-actions"><button onClick={()=>exportTable(t)} disabled={!!busy} title="CSV"><Download size={14}/></button></span>
+    <p className="section-kicker">EXPORT DIRECTORY DATA</p><h2>Choose what to export</h2>
+    <p className="admin-help">Each file is a separate CSV with readable company, division, distributor and location names instead of database IDs.</p>
+    {[
+     ['distributors','Distributors','Names, contact person, phone, WhatsApp, email, address, city, maps and status'],
+     ['companies','Companies','Company names, legal names, short names, group and status'],
+     ['divisions','Divisions','Company and division names, division code and status'],
+     ['brands','Brands','Brand, company and division names'],
+     ['products','Products','Product, company, division, category, generic name, strength, dosage form and pack size'],
+     ['distributorships','Distributorships','Distributor ↔ company links, division, location and verification status']
+    ].map(([key,label,help])=><div className="admin-tool-row" key={key}>
+     <span><strong>{label}</strong><small style={{display:'block',color:'var(--muted,#64748b)',marginTop:3}}>{help}</small></span>
+     <span className="admin-inline-actions"><button onClick={()=>exportDirectory(key)} disabled={!!busy} title={'Export '+label}><Download size={14}/>{busy==='export-'+key?'Exporting…':'Export CSV'}</button></span>
     </div>)}
    </section>
 
