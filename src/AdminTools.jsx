@@ -3,7 +3,7 @@ import { useRef,useState } from 'react'
 import { ArrowLeft,Download,Upload,Database,FileJson,LoaderCircle,Eye } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
-const tables=['companies','distributors','divisions','brands','products','categories','locations','distributorships','search_aliases','company_categories','company_groups','distributor_submissions','product_submissions','correction_reports','profile_reviews','website_feedback']
+const tables=['companies','distributors','divisions','brands','products','categories','locations','distributorships','search_aliases','company_categories','company_groups','distributor_submissions','product_submissions','product_submission_publish_audits','correction_reports','profile_reviews','website_feedback','verification_records','import_distributors','import_companies','import_divisions','import_distributorships','import_aliases','import_locations']
 
 const importHeaders=[
  'distributor_name','distributor_legal_name','contact_person','mobile','whatsapp','email','address','city','district','state','pincode','maps_url','website',
@@ -67,9 +67,18 @@ export default function AdminTools({onBack}){
  const fileRef=useRef(null)
 
  async function getRows(name,columns='*'){
-  const r=await supabase.from(name).select(columns)
-  if(r.error)throw new Error(name+': '+r.error.message)
-  return r.data||[]
+  const pageSize=1000
+  const rows=[]
+  let start=0
+  while(true){
+   const r=await supabase.from(name).select(columns).range(start,start+pageSize-1)
+   if(r.error)throw new Error(name+': '+r.error.message)
+   const batch=r.data||[]
+   rows.push(...batch)
+   if(batch.length<pageSize)break
+   start+=pageSize
+  }
+  return rows
  }
 
  async function exportTable(name){
@@ -142,7 +151,7 @@ export default function AdminTools({onBack}){
    }else if(kind==='distributorships'){
     rows=relationships.map(x=>({distributor_name:dm.get(String(x.distributor_id))?.distributor_name||'',company_name:cm.get(String(x.company_id))?.company_name||'',division_name:dvm.get(String(x.division_id))?.division_name||'',category:catm.get(String(x.category_id))?.category_name||catm.get(String(x.category_id))?.name||'',location_city:lm.get(String(x.location_id))?.city||'',location_district:lm.get(String(x.location_id))?.district||'',territory:x.territory||'',status:x.status||'',verification_status:x.verification_status||'',verified_date:x.verified_date||'',verification_note:x.verification_note||x.verification_notes||'',source:x.source||''}))
    }
-   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`,true)
+   downloadCsv(rows,`kutchpharmaconnect-${filename}-${stamp}.csv`)
    setMessage(`Exported ${rows.length} ${kind} record(s) with readable names as CSV.`)
   }catch(e){setError('Export failed: '+e.message)}
   setBusy('')
@@ -408,7 +417,7 @@ export default function AdminTools({onBack}){
   <div className="admin-tool-grid">
    <section className="admin-panel">
     <p className="section-kicker">BACKUP</p><h2>Application data backup</h2>
-    <p className="admin-help">Download a JSON backup of directory records and admin queues. This does not include Supabase Auth users, storage files, or project settings.</p>
+    <p className="admin-help">Download a JSON snapshot of directory records, verification records, import-staging tables and review queues. It excludes Supabase Auth users, storage files, project settings and admin account configuration.</p>
     <div className="admin-inline-actions">
      <button className="admin-tool-button" onClick={()=>exportAll('json')} disabled={!!busy}><FileJson size={16}/>{busy==='alljson'?<><LoaderCircle className="spin" size={16}/> Exporting…</>:'Download full JSON backup'}</button>
     </div>
