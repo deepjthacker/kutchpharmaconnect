@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Building2, Truck, Link2, Inbox, Flag, ShieldAlert, Database, Settings, Search, RefreshCw, ArrowRight, LoaderCircle, Tags, MapPin, GitBranch, MessageSquare, MessageSquareWarning, Plus, FileText } from 'lucide-react'
+import { Building2, Truck, Link2, Inbox, Flag, ShieldAlert, Database, Settings, Search, RefreshCw, ArrowRight, LoaderCircle, Tags, MapPin, GitBranch, MessageSquare, MessageSquareWarning, Plus } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
-import AdminProductSubmissions from './AdminProductSubmissions'
 import AdminCompanies from './AdminCompanies'
 import AdminDataWorkspace from './AdminDataWorkspace'
 import AdminDistributors from './AdminDistributors'
@@ -34,7 +33,6 @@ export default function AdminDashboard() {
         supabase.from('distributors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributorships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributor_submissions').select('id', { count: 'exact', head: true }).in('status', ['open', 'under_review']),
-        supabase.from('product_submissions').select('id', { count: 'exact', head: true }).in('status', ['open', 'under_review', 'ready']),
         supabase.from('correction_reports').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing']),
         supabase.from('website_feedback').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing'])
       ])
@@ -45,9 +43,8 @@ export default function AdminDashboard() {
         distributors: qs[1].count ?? 0,
         relationships: qs[2].count ?? 0,
         submissions: qs[3].count ?? 0,
-        productSubmissions: qs[4].count ?? 0,
-        reports: qs[5].count ?? 0,
-        websiteFeedback: qs[6].count ?? 0
+        reports: qs[4].count ?? 0,
+        websiteFeedback: qs[5].count ?? 0
       })
     } catch (e) {
       setStats(null)
@@ -61,7 +58,6 @@ export default function AdminDashboard() {
   const back = () => setView('dashboard')
 
   if (view === 'submissions') return <AdminDistributorSubmissions onBack={back} />
-  if (view === 'productSubmissions') return <AdminProductSubmissions onBack={back} />
   if (view === 'reports') return <AdminReports onBack={back} />
   if (view === 'reviews') return <AdminReviews onBack={back} />
   if (view === 'websiteFeedback') return <AdminWebsiteFeedback onBack={back} />
@@ -78,7 +74,6 @@ export default function AdminDashboard() {
 
   const pending = [
     ['Distributor Submissions', stats?.submissions, Inbox, 'Match submitted companies and publish only after review', 'submissions'],
-    ['Product / Brand Submissions', stats?.productSubmissions, Tags, 'Review product lists and publish approved records', 'productSubmissions'],
     ['Corrections', stats?.reports, Flag, 'Review reported directory errors', 'reports'],
     ['Website Feedback', stats?.websiteFeedback, MessageSquareWarning, 'Review site issues and suggestions', 'websiteFeedback'],
     ['Distributor Reviews', null, MessageSquare, 'Approve or reject distributor profile reviews', 'reviews']
@@ -126,7 +121,7 @@ export default function AdminDashboard() {
       ) : (
         <>
           <section className="admin-control-summary">
-            <div><strong>{stats.submissions + stats.productSubmissions}</strong><span>Pending submissions</span><small>distributor and product lists</small></div>
+            <div><strong>{stats.submissions}</strong><span>Pending submissions</span><small>distributor and product lists</small></div>
             <div><strong>{stats.reports}</strong><span>Corrections</span><small>open or reviewing</small></div>
             <div><strong>{stats.websiteFeedback}</strong><span>Website feedback</span><small>open or reviewing</small></div>
             <div><strong>{stats.companies}</strong><span>Companies</span><small>active directory records</small></div>
