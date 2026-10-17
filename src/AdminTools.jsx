@@ -26,13 +26,13 @@ function downloadBlob(blob,name){
 
 function csvEscape(value){
  const s=String(value??'')
- return /[",\\n\\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s
+ return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s
 }
 function downloadCsv(rows,name){
  const data=rows||[]
  const headers=data.length?Object.keys(data[0]):[]
- const csv=[headers.map(csvEscape).join(','),...data.map(row=>headers.map(h=>csvEscape(row[h])).join(','))].join('\\r\\n')
- downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),name)
+ const csv=[headers.map(csvEscape).join(','),...data.map(row=>headers.map(h=>csvEscape(row[h])).join(','))].join('\r\n')
+ downloadBlob(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}),name)
 }
 function parseCsvLine(line){
  const values=[];let value='';let quoted=false
@@ -89,7 +89,20 @@ export default function AdminTools({onBack}){
    const stamp=new Date().toISOString().slice(0,10)
    let rows=[],filename=kind
    if(kind==='distributors'){
-    rows=distributors.map(x=>({distributor_name:x.distributor_name,legal_name:x.legal_name||'',contact_person:x.contact_person||'',mobile:x.mobile||'',whatsapp:x.whatsapp||'',email:x.email||'',address:x.address||'',city:lm.get(String(x.city_id))?.city||'',district:lm.get(String(x.city_id))?.district||'',state:lm.get(String(x.city_id))?.state||'',pincode:lm.get(String(x.city_id))?.pincode||'',maps_url:x.maps_url||'',website:x.website||'',notes:x.notes||'',status:x.status||''}))
+    const fields=[
+     ['Distributor name',x=>x.distributor_name],['Legal name',x=>x.legal_name],['Contact person',x=>x.contact_person],['Mobile',x=>x.mobile],['WhatsApp',x=>x.whatsapp],['Email',x=>x.email],['Address',x=>x.address],['City',x=>lm.get(String(x.city_id))?.city],['District',x=>lm.get(String(x.city_id))?.district],['State',x=>lm.get(String(x.city_id))?.state],['Pincode',x=>lm.get(String(x.city_id))?.pincode],['Google Maps URL',x=>x.maps_url],['Website',x=>x.website],['Notes',x=>x.notes],['Status',x=>x.status]
+    ]
+    rows=[{Field:'Distributor record',Details:''}]
+    distributors.forEach((x,i)=>{
+     if(i)rows.push({Field:'',Details:''})
+     rows.push({Field:'Distributor '+(i+1),Details:x.distributor_name||''})
+     fields.forEach(([label,get])=>rows.push({Field:label,Details:get(x)||''}))
+    })
+    downloadCsv(rows,'kutchpharmaconnect-distributors-'+stamp+'.csv')
+    setMessage('Exported '+distributors.length+' distributor record(s) in easy-to-read vertical format.')
+    setBusy('')
+    return
+   }
    }else if(kind==='companies'){
     rows=companies.map(x=>({company_name:x.company_name,legal_name:x.legal_name||'',short_name:x.short_name||'',company_group:gm.get(String(x.company_group_id))?.group_name||'',description:x.description||'',status:x.status||''}))
    }else if(kind==='divisions'){
