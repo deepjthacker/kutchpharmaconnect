@@ -1442,3 +1442,8 @@ html[data-theme="dark"] .wizard-csv-hint{background:#172235;border-color:#334155
 .admin-catalog-remove{display:inline-flex;align-items:center;gap:5px;border:1px solid #e5caca;border-radius:7px;background:#fff;color:#a53e3e;padding:6px 8px;font-size:10px;font-weight:800;cursor:pointer}
 .admin-catalog-remove:hover{background:#fff3f3}
 @media(max-width:640px){.admin-catalog-row{grid-template-columns:1fr;padding:10px}.admin-catalog-row-head{grid-column:1}}
+
+.admin-catalog-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:10px 0;color:#69758a;font-size:11px}
+.admin-catalog-pagination button{border:1px solid #d8e0eb;border-radius:7px;background:#fff;color:#3159a8;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer}
+.admin-catalog-pagination button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:480px){.admin-catalog-pagination{flex-wrap:wrap}.admin-catalog-pagination span{order:-1;width:100%;text-align:center}}
