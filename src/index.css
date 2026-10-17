@@ -1429,3 +1429,16 @@ html[data-theme="dark"] .wizard-csv-hint{background:#172235;border-color:#334155
 .admin-reference-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .admin-reference-links .admin-link{min-width:0}
 @media(max-width:680px){.admin-workspace-grid,.admin-reference-links{grid-template-columns:1fr}.admin-workspace-card{padding:15px}.admin-reference-panel>summary strong{font-size:16px}}
+
+
+/* Editable, mobile-friendly company catalogue review */
+.admin-catalog-rows{display:grid;gap:10px;margin-top:12px}
+.admin-catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #dfe5ed;border-radius:10px;background:#fff}
+.admin-catalog-row-head{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#69758a;font-size:11px;font-weight:850}
+.admin-catalog-row label{display:flex;flex-direction:column;gap:5px;color:#25344b;font-size:11px;font-weight:800}
+.admin-catalog-row input{width:100%;min-width:0;border:1px solid #d8e0eb;border-radius:7px;padding:9px 10px;background:#fff;color:#25344b;font:inherit;font-weight:500}
+.admin-catalog-row input:focus{outline:2px solid rgba(49,89,168,.18);border-color:#7392c8}
+.admin-catalog-optional{color:#8a95a6;font-size:9px;font-weight:600}
+.admin-catalog-remove{display:inline-flex;align-items:center;gap:5px;border:1px solid #e5caca;border-radius:7px;background:#fff;color:#a53e3e;padding:6px 8px;font-size:10px;font-weight:800;cursor:pointer}
+.admin-catalog-remove:hover{background:#fff3f3}
+@media(max-width:640px){.admin-catalog-row{grid-template-columns:1fr;padding:10px}.admin-catalog-row-head{grid-column:1}}
