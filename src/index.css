@@ -1390,3 +1390,14 @@ html[data-theme="dark"] .wizard-csv-hint{background:#172235;border-color:#334155
  .wizard-footer .report-submit,.wizard-footer .submission-secondary{justify-content:center;width:100%}
  .wizard-company-tools>*{flex:1 1 100%;justify-content:center}
 }
+
+/* Simplified four-section admin navigation */
+.admin-workflow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.admin-workflow-panel .admin-panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:13px}
+.admin-panel-heading h2{font-size:19px;margin:0 0 5px}
+.admin-panel-heading p:not(.section-kicker){font-size:11px;color:#69758a;line-height:1.45;margin:0}
+.admin-panel-heading>svg{color:#3159a8;flex:none;margin-top:3px}
+.admin-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;margin-left:7px;padding:2px 6px;border-radius:999px;background:#eef3ff;color:#3159a8;font-size:10px}
+.admin-secondary-tools{border-top:1px solid #edf0f4;margin-top:12px;padding-top:12px}
+.admin-secondary-tools>strong{display:block;font-size:10px;color:#69758a;margin-bottom:8px}
+@media(max-width:700px){.admin-workflow-grid{grid-template-columns:1fr;gap:10px}.admin-workflow-panel{padding:13px}.admin-panel-heading h2{font-size:18px}}
