@@ -56,14 +56,34 @@ export default function AdminDistributorSubmissions({onBack}){
   function matchCompany(entry){
     const q=norm(entry.company_name)
     if(!q)return {kind:'incomplete',label:'Company missing'}
-    const exact=companies.find(c=>norm(c.company_name)===q)
-    if(exact)return {kind:'matched',label:exact.company_name,company:exact,method:'Exact'}
-    const alias=aliases.find(a=>norm(a.normalized_alias||a.alias)===q)
-    if(alias){const c=companies.find(x=>x.id===alias.entity_id);if(c)return {kind:'matched',label:c.company_name,company:c,method:'Alias',aliasUsed:alias.alias}}
-    const candidates=companies.filter(c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean).some(v=>{const n=norm(v);return n.includes(q)||q.includes(n)})).slice(0,5)
-    if(candidates.length===1)return {kind:'suggested',label:candidates[0].company_name,company:candidates[0],candidates,method:'Possible match'}
-    if(candidates.length>1)return {kind:'review',label:candidates.map(c=>c.company_name).join(' / '),candidates,method:'Multiple matches'}
-    return {kind:'new',label:'No existing company match',method:'New / review'}
+
+    // Only unambiguous identity matches are treated as matched automatically.
+    // Fuzzy/partial matches remain suggestions for the administrator to confirm.
+    const identityFields=c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean)
+    const exact=companies.filter(c=>identityFields(c).some(value=>norm(value)===q))
+    const exactUnique=[...new Map(exact.map(c=>[c.id,c])).values()]
+    if(exactUnique.length===1){
+      const company=exactUnique[0]
+      const field=identityFields(company).some(value=>norm(value)===q)
+      return {kind:'matched',label:company.company_name,company,method:norm(company.company_name)===q?'Exact company name':'Exact legal/short name'}
+    }
+    if(exactUnique.length>1)return {kind:'review',label:exactUnique.map(c=>c.company_name).join(' / '),candidates:exactUnique.slice(0,5),method:'Conflicting exact names'}
+
+    const aliasMatches=aliases.filter(a=>norm(a.normalized_alias||a.alias)===q)
+      .map(a=>({alias:a,company:companies.find(c=>c.id===a.entity_id)}))
+      .filter(x=>x.company)
+    const aliasCompanies=[...new Map(aliasMatches.map(x=>[x.company.id,x])).values()]
+    if(aliasCompanies.length===1)return {kind:'matched',label:aliasCompanies[0].company.company_name,company:aliasCompanies[0].company,method:'Verified alias',aliasUsed:aliasCompanies[0].alias.alias}
+    if(aliasCompanies.length>1)return {kind:'review',label:aliasCompanies.map(x=>x.company.company_name).join(' / '),candidates:aliasCompanies.map(x=>x.company).slice(0,5),method:'Alias maps to multiple companies'}
+
+    // Avoid meaningless partial matches for short strings such as "IP" or "AB".
+    const candidates=companies.filter(c=>identityFields(c).some(value=>{
+      const n=norm(value)
+      return q.length>=4&&(n.startsWith(q)||q.startsWith(n)||n.includes(q)||q.includes(n))
+    })).slice(0,5)
+    if(candidates.length===1)return {kind:'suggested',label:candidates[0].company_name,company:candidates[0],candidates,method:'Possible match — confirm before publishing'}
+    if(candidates.length>1)return {kind:'review',label:candidates.map(c=>c.company_name).join(' / '),candidates,method:'Multiple possible matches — choose manually'}
+    return {kind:'new',label:'No exact match — create or map after review',method:'New / review'}
   }
 
   function divisionFor(entry,companyId){
