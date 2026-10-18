@@ -13,10 +13,23 @@ export default function AdminDistributorSubmissions({onBack}){
   const [companies,setCompanies]=useState([]),[distributors,setDistributors]=useState([]),[aliases,setAliases]=useState([]),[divisions,setDivisions]=useState([]),[brands,setBrands]=useState([]),[categories,setCategories]=useState([]),[locations,setLocations]=useState([])
   const [mappings,setMappings]=useState({}),[selectedDistributor,setSelectedDistributor]=useState(''),[selectedLocation,setSelectedLocation]=useState(''),[companySearches,setCompanySearches]=useState({}),[adminNotes,setAdminNotes]=useState('')
 
+  const [referenceDataLoaded,setReferenceDataLoaded]=useState(false)
+  const [loadingReferenceData,setLoadingReferenceData]=useState(false)
+
   async function load(){
     setLoading(true);setError('')
-    const [subRes,companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes]=await Promise.all([
-      supabase.from('distributor_submissions').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city,district,state,maps_url,website,companies_handled,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,company_entries,bulk_source,bulk_file_name,bulk_row_count').order('submitted_at',{ascending:false}),
+    const subRes=await supabase.from('distributor_submissions')
+      .select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city,district,state,maps_url,website,companies_handled,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,company_entries,bulk_source,bulk_file_name,bulk_row_count')
+      .order('submitted_at',{ascending:false})
+    if(subRes.error)setError(subRes.error.message)
+    else setRows(subRes.data||[])
+    setLoading(false)
+  }
+
+  async function loadReviewReferenceData(){
+    if(referenceDataLoaded)return true
+    setLoadingReferenceData(true);setError('')
+    const [companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes]=await Promise.all([
       supabase.from('companies').select('id,company_name,legal_name,short_name,status').eq('status','active').order('company_name'),
       supabase.from('distributors').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,status').eq('status','active').order('distributor_name'),
       supabase.from('search_aliases').select('entity_type,entity_id,alias,normalized_alias').eq('entity_type','company'),
@@ -25,10 +38,11 @@ export default function AdminDistributorSubmissions({onBack}){
       supabase.from('categories').select('id,name,status').eq('status','active').order('name'),
       supabase.from('locations').select('id,city,district,state,pincode,status').eq('status','active').order('city')
     ])
-    const bad=[subRes,companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes].find(x=>x.error)
-    if(bad)setError(bad.error.message)
-    else{setRows(subRes.data||[]);setCompanies(companyRes.data||[]);setDistributors(distributorRes.data||[]);setAliases(aliasRes.data||[]);setDivisions(divisionRes.data||[]);setBrands(brandRes.data||[]);setCategories(categoryRes.data||[]);setLocations(locationRes.data||[])}
-    setLoading(false)
+    const bad=[companyRes,distributorRes,aliasRes,divisionRes,brandRes,categoryRes,locationRes].find(x=>x.error)
+    if(bad){setError('Could not load matching data: '+bad.error.message);setLoadingReferenceData(false);return false}
+    setCompanies(companyRes.data||[]);setDistributors(distributorRes.data||[]);setAliases(aliasRes.data||[])
+    setDivisions(divisionRes.data||[]);setBrands(brandRes.data||[]);setCategories(categoryRes.data||[]);setLocations(locationRes.data||[])
+    setReferenceDataLoaded(true);setLoadingReferenceData(false);return true
   }
   useEffect(()=>{load()},[])
 
@@ -103,7 +117,9 @@ export default function AdminDistributorSubmissions({onBack}){
     return distributors.find(d=>norm(d.distributor_name)===q || (mobile&&String(d.mobile||'').replace(/\\D/g,'')===mobile))||null
   }
 
-  function prepareReview(row){
+  async function prepareReview(row){
+    const ready=await loadReviewReferenceData()
+    if(!ready)return
     const next={}
     entriesOf(row).forEach((e,i)=>{
       const m=matchCompany(e)
