@@ -5,7 +5,34 @@ import { supabase } from './lib/supabase'
 export default function AdminDistributorships({onBack}){
  const [rows,setRows]=useState([]),[companies,setCompanies]=useState([]),[distributors,setDistributors]=useState([]),[divisions,setDivisions]=useState([]),[brands,setBrands]=useState([]),[categories,setCategories]=useState([]),[locations,setLocations]=useState([])
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[q,setQ]=useState(''),[status,setStatus]=useState('active'),[verification,setVerification]=useState('all'),[categoryFilter,setCategoryFilter]=useState('all'),[locationFilter,setLocationFilter]=useState('all'),[selected,setSelected]=useState(null),[form,setForm]=useState({}),[busy,setBusy]=useState(false)
- async function load(){setLoading(true);setError('');const [r,c,d,v,b,k,l]=await Promise.all([supabase.from('distributorships').select('id,company_id,division_id,brand_id,handled_as,distributor_id,category_id,location_id,territory,status,verification_status,verification_note,verified_date,verification_notes,source').order('created_at',{ascending:false}),supabase.from('companies').select('id,company_name').eq('status','active').order('company_name'),supabase.from('distributors').select('id,distributor_name').eq('status','active').order('distributor_name'),supabase.from('divisions').select('id,division_name,company_id').eq('status','active').order('division_name'),supabase.from('brands').select('id,brand_name,company_id').eq('status','active').order('brand_name'),supabase.from('categories').select('*').order('id'),supabase.from('locations').select('id,city,district,state,pincode').order('city')]);const bad=[r,c,d,v,b,k,l].find(x=>x.error);if(bad)setError(bad.error.message);else{setRows(r.data||[]);setCompanies(c.data||[]);setDistributors(d.data||[]);setDivisions(v.data||[]);setBrands(b.data||[]);setCategories(k.data||[]);setLocations(l.data||[])}setLoading(false)}
+ async function load(){
+  setLoading(true);setError('')
+  const relationshipRows=[]
+  let start=0
+  let relationshipError=null
+  while(true){
+   const page=await supabase.from('distributorships')
+    .select('id,company_id,division_id,brand_id,handled_as,distributor_id,category_id,location_id,territory,status,verification_status,verification_note,verified_date,verification_notes,source,created_at')
+    .order('created_at',{ascending:false}).range(start,start+499)
+   if(page.error){relationshipError=page.error;break}
+   const batch=page.data||[]
+   relationshipRows.push(...batch)
+   if(batch.length<500)break
+   start+=500
+  }
+  const [c,d,v,b,k,l]=await Promise.all([
+   supabase.from('companies').select('id,company_name').eq('status','active').order('company_name'),
+   supabase.from('distributors').select('id,distributor_name').eq('status','active').order('distributor_name'),
+   supabase.from('divisions').select('id,division_name,company_id').eq('status','active').order('division_name'),
+   supabase.from('brands').select('id,brand_name,company_id').eq('status','active').order('brand_name'),
+   supabase.from('categories').select('id,name,status').order('id'),
+   supabase.from('locations').select('id,city,district,state,pincode').order('city')
+  ])
+  const bad=relationshipError||[c,d,v,b,k,l].find(x=>x.error)?.error
+  if(bad)setError(bad.message)
+  else{setRows(relationshipRows);setCompanies(c.data||[]);setDistributors(d.data||[]);setDivisions(v.data||[]);setBrands(b.data||[]);setCategories(k.data||[]);setLocations(l.data||[])}
+  setLoading(false)
+ }
  useEffect(()=>{load()},[])
  const cm=new Map(companies.map(x=>[x.id,x.company_name])),dm=new Map(distributors.map(x=>[x.id,x.distributor_name])),vm=new Map(divisions.map(x=>[x.id,x.division_name])),bm=new Map(brands.map(x=>[x.id,x.brand_name])),km=new Map(categories.map(x=>[x.id,x.category_name||x.name])),lm=new Map(locations.map(x=>[x.id,[x.city,x.district].filter(Boolean).join(', ')]))
  const filtered=useMemo(()=>rows.filter(x=>(status==='all'||x.status===status)&&(verification==='all'||x.verification_status===verification)&&(categoryFilter==='all'||String(x.category_id)===categoryFilter)&&(locationFilter==='all'||String(x.location_id)===locationFilter)&&(!q.trim()||[cm.get(x.company_id),dm.get(x.distributor_id),vm.get(x.division_id),bm.get(x.brand_id),km.get(x.category_id),x.territory].filter(Boolean).some(v=>String(v).toLowerCase().includes(q.toLowerCase())))),[rows,q,status,verification,categoryFilter,locationFilter,companies,distributors,divisions,categories,locations])
