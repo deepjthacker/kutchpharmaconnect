@@ -204,9 +204,9 @@ export default function AdminDistributorSubmissions({onBack}){
           <p><strong>Companies:</strong> {es.length}{r.bulk_source&&<> · <strong>Source:</strong> {r.bulk_source==='manual'?'Manual':r.bulk_source==='paste'?'Pasted list':'CSV'}</>}</p>
           {r.notes&&<p><strong>Notes:</strong> {r.notes}</p>}
           <div className="admin-actions">
-            {(r.status==='open'||r.status==='under_review')&&<button onClick={()=>prepareReview(r)}><Eye size={14}/> Review & Match</button>}
+            {(r.status==='open'||r.status==='under_review')&&<button onClick={()=>prepareReview(r)} disabled={loadingReferenceData}><Eye size={14}/>{loadingReferenceData?'Loading match data…':' Review & Match'}</button>}
             {r.status==='open'&&<button onClick={()=>updateStatus(r.id,'under_review')} disabled={saving===r.id}>Mark Under Review</button>}
-            {r.status!=='approved'&&<button className="primary" onClick={()=>prepareReview(r)} disabled={saving===r.id}><CheckCircle2 size={14}/> Review & Publish</button>}
+            {r.status!=='approved'&&<button className="primary" onClick={()=>prepareReview(r)} disabled={saving===r.id||loadingReferenceData}><CheckCircle2 size={14}/> Review & Publish</button>}
             {r.status!=='rejected'&&<button onClick={()=>updateStatus(r.id,'rejected')} disabled={saving===r.id}>Reject</button>}
             <button className="danger" onClick={()=>deleteSubmission(r)} disabled={saving===r.id}>Delete</button>
             {r.status!=='open'&&<button onClick={()=>updateStatus(r.id,'open')} disabled={saving===r.id}>Reopen</button>}
