@@ -56,6 +56,9 @@ function companyNameScore(query,candidate){
   }
   const similarity=editSimilarity(qc,nc)
   if(similarity>=0.82)return Math.min(0.86,similarity)
+  // Compare a submitted short name against distinctive words inside a longer legal name.
+  const tokenSimilarity=Math.max(0,...meaningfulTokens(n).map(token=>editSimilarity(qc,compactNorm(token))))
+  if(tokenSimilarity>=0.82)return Math.min(0.88,tokenSimilarity)
   return 0
 }
 function entriesOf(row){
