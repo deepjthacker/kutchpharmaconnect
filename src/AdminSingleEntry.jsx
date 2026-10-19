@@ -11,6 +11,7 @@ const optional=v=>String(v??'').trim()||null
 export default function AdminSingleEntry({onBack}){
  const [tab,setTab]=useState('distributor')
  const [companies,setCompanies]=useState([])
+ const [companyAliases,setCompanyAliases]=useState([])
  const [distributors,setDistributors]=useState([])
  const [divisions,setDivisions]=useState([])
  const [brands,setBrands]=useState([])
@@ -42,8 +43,9 @@ export default function AdminSingleEntry({onBack}){
   setLoading(false)
  }
  useEffect(()=>{loadOptions()},[])
+ useEffect(()=>{let active=true;supabase.from('search_aliases').select('entity_id,entity_type,alias,normalized_alias').eq('entity_type','company').then(({data,error})=>{if(active&&!error)setCompanyAliases(data||[])});return()=>{active=false}},[])
  const categoryName=x=>x.category_name||x.name||'Unnamed category'
- const manualCompanyMatches=useMemo(()=>findCompanyCandidates(company.company_name,companies,[],0.56),[company.company_name,companies])
+ const manualCompanyMatches=useMemo(()=>findCompanyCandidates(company.company_name,companies,companyAliases,0.56),[company.company_name,companies])
  const setCompanyField=updater=>{setCompany(updater);setCompanyMatchDecision('')}
  const filteredDivisions=useMemo(()=>divisions.filter(x=>!relationship.company_id||x.company_id===relationship.company_id),[divisions,relationship.company_id])
  const filteredBrands=useMemo(()=>brands.filter(x=>!relationship.company_id||x.company_id===relationship.company_id),[brands,relationship.company_id])
