@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react'
-import {CheckCircle2,Eye,LoaderCircle,RefreshCw,ShieldAlert,Truck,X,Search,Building2,AlertTriangle,Check,Send} from 'lucide-react'
+import {CheckCircle2,Eye,LoaderCircle,RefreshCw,ShieldAlert,Truck,X,Search,Building2,AlertTriangle,Check,Send,FileText} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
 function norm(v){
@@ -77,7 +77,7 @@ export default function AdminDistributorSubmissions({onBack}){
   async function load(){
     setLoading(true);setError('')
     const subRes=await supabase.from('distributor_submissions')
-      .select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city,district,state,maps_url,website,companies_handled,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,company_entries,bulk_source,bulk_file_name,bulk_row_count')
+      .select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city,district,state,maps_url,website,companies_handled,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,company_entries,bulk_source,bulk_file_name,bulk_file_path,bulk_row_count')
       .order('submitted_at',{ascending:false})
     if(subRes.error)setError(subRes.error.message)
     else setRows(subRes.data||[])
@@ -103,6 +103,15 @@ export default function AdminDistributorSubmissions({onBack}){
     setReferenceDataLoaded(true);setLoadingReferenceData(false);return true
   }
   useEffect(()=>{load()},[])
+
+  async function openUploadedFile(row){
+    if(!row?.bulk_file_path){setError('No uploaded file is attached to this submission.');return}
+    setSaving('file:'+row.id);setError('')
+    const {data,error}=await supabase.storage.from('distributor-submission-files').createSignedUrl(row.bulk_file_path,300)
+    if(error){setError('Could not open the uploaded file: '+error.message);setSaving('');return}
+    window.open(data.signedUrl,'_blank','noopener,noreferrer')
+    setSaving('')
+  }
 
   async function deleteSubmission(row){
     if(!row?.id)return
@@ -297,6 +306,7 @@ export default function AdminDistributorSubmissions({onBack}){
         <button className="report-close" onClick={closeReview} aria-label="Close"><X size={18}/></button>
         <p className="section-kicker">SUBMISSION REVIEW</p>
         <h2>{selected.distributor_name}</h2>
+        {selected.bulk_file_path&&<div className="admin-publish-section" style={{marginBottom:'14px'}}><div className="admin-publish-section-head"><h3>Uploaded source file</h3><span>{selected.bulk_file_name||'Distributor company list'} · {selected.bulk_row_count||0} detected company rows</span></div><button type="button" className="report-submit" onClick={()=>openUploadedFile(selected)} disabled={saving==='file:'+selected.id}>{saving==='file:'+selected.id?<><LoaderCircle className="spin" size={15}/> Opening file…</>:<><FileText size={15}/> Open uploaded {String(selected.bulk_source||'').toUpperCase()} file</>}</button></div>}
         <p className="report-help">Nothing is published until you confirm the distributor, company, brand/division classification, category and distributor location. Approve & Publish automatically records the relationship as Verified.</p>
 
         <div className="admin-publish-summary">
