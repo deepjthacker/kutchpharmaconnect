@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react'
-import {CheckCircle2,Download,LoaderCircle,Send,Upload,X,Edit3,Trash2,ChevronRight,ClipboardCheck,ArrowLeft,Building2,FileSpreadsheet} from 'lucide-react'
+import {CheckCircle2,Download,LoaderCircle,Send,Upload,X,Edit3,ChevronRight,ClipboardCheck,ArrowLeft,Building2,FileSpreadsheet} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
 const CATEGORIES=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
@@ -51,6 +51,8 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
     if(!rows.length){setError('No usable rows found. Please use the six-column sample CSV.');return}
     const invalid=rows.findIndex(r=>!clean(r.company_name)||!CATEGORIES.includes(clean(r.category)||'Pharmaceutical'))
     if(invalid>=0){setError(`Please check row ${invalid+2}: Company Name is required and Category must match a listed category.`);return}
+    const messy=rows.findIndex(r=>clean(r.company_name).length>100||/[;,\n\r]/.test(clean(r.company_name))||/\b(all|every)\s+(the\s+)?generic\s+companies\b/i.test(clean(r.company_name)))
+    if(messy>=0){setError(`Please correct row ${messy+2}: enter only one official company name in the Company Name column. Do not combine multiple companies, product names, or general descriptions in one cell. Put divisions in the Division column and brands in the Brand column.`);return}
     setEntries(rows.map(r=>({...blankEntry(),...r,category:clean(r.category)||'Pharmaceutical'})));setDraft(blankEntry());setEditingIndex(null);setBulkInfo({source,fileName,count:rows.length});setError('')
   }
   async function handleFile(e){
@@ -101,7 +103,7 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
             <div className="wizard-footer"><span><strong>Step 1 of 3</strong><small>Your company list comes next.</small></span><button className="report-submit" type="submit">Continue to companies <ChevronRight size={16}/></button></div>
           </form>}
           {step===2&&<section className="submission-section wizard-section wizard-company-step">
-            <div className="submission-section-heading"><span className="submission-section-number">2</span><div><h3>Companies You Handle</h3><p>Upload many records at once, or add a company manually. Subsidiary, division, brand and product are optional.</p></div></div>
+            <div className="submission-section-heading"><span className="submission-section-number">2</span><div><h3>Companies You Handle</h3><p>Upload your company list as a CSV file. Enter one company per row; our admin team will verify the details before publication.</p></div></div>
             <div className="company-tools wizard-company-tools">
               <button type="button" className="submission-tool-button" onClick={downloadSample}><Download size={15}/> Download sample CSV</button>
               <label className="submission-tool-button"><Upload size={15}/> Upload CSV<input type="file" accept=".csv,text/csv" onChange={handleFile} hidden/></label>
@@ -109,20 +111,8 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
             </div>
             <div className="wizard-csv-hint"><FileSpreadsheet size={17}/><span><strong>Use these six columns, in this order:</strong> Company Name, Category, Subsidiary, Division, Brand, Product. Category must match the dropdown options. Leave optional cells blank when details aren't available.</span></div>
             {bulkInfo&&<div className="bulk-loaded"><ClipboardCheck size={15}/><span><strong>{bulkInfo.count} rows loaded</strong> from {bulkInfo.fileName}. Review the list below before continuing.</span></div>}
-            <div className="wizard-manual-entry">
-              <div className="company-editor-heading"><div><strong>{editingIndex===null?'Add a company manually':'Edit company entry'}</strong><span>Only enter information you know. Products are optional.</span></div>{editingIndex!==null&&<button type="button" onClick={()=>{setEditingIndex(null);setDraft(blankEntry())}}>Cancel edit</button>}</div>
-              <div className="wizard-entry-grid">
-                <label>Company Name <span className="required">*</span><input value={draft.company_name} onChange={e=>updateDraft('company_name',e.target.value)} placeholder="e.g. Example Pharma Ltd"/></label>
-                <label>Category <span className="required">*</span><select value={draft.category} onChange={e=>updateDraft('category',e.target.value)}>{CATEGORIES.map(x=><option key={x}>{x}</option>)}</select></label>
-                <label>Subsidiary<input value={draft.subsidiary} onChange={e=>updateDraft('subsidiary',e.target.value)} placeholder="Optional"/></label>
-                <label>Division<input value={draft.division} onChange={e=>updateDraft('division',e.target.value)} placeholder="Optional"/></label>
-                <label>Brand<input value={draft.brand} onChange={e=>updateDraft('brand',e.target.value)} placeholder="Optional"/></label>
-                <label>Product<input value={draft.product} onChange={e=>updateDraft('product',e.target.value)} placeholder="Optional — no need to list all products"/></label>
-              </div>
-              <button type="button" className="save-company-button" onClick={saveDraft}><CheckCircle2 size={15}/>{editingIndex===null?'Add company row':'Save row changes'}</button>
-            </div>
             <div className="wizard-company-list-heading"><div><h4>Company list</h4><p>{entries.length} {entries.length===1?'row':'rows'} ready for review</p></div>{entries.length>0&&<span className="wizard-row-count">{entries.length} rows</span>}</div>
-            {entries.length===0?<div className="company-empty"><Building2 size={24}/><strong>No company rows yet</strong><span>Upload your CSV or add the first company above.</span></div>:
+            {entries.length===0?<div className="company-empty"><Building2 size={24}/><strong>No company rows yet</strong><span>Upload a CSV file with one company per row to begin.</span></div>:
               <div className="wizard-table-wrap"><table className="wizard-company-table"><thead><tr><th>#</th>{FIELDS.map(([,label])=><th key={label}>{label}</th>)}<th>Actions</th></tr></thead><tbody>{entries.map((r,i)=><tr key={i}><td>{i+1}</td>{FIELDS.map(([key])=><td key={key}>{r[key]||<span className="wizard-empty-cell">—</span>}</td>)}<td><div className="company-review-actions"><button type="button" onClick={()=>editEntry(i)} aria-label={'Edit row '+(i+1)}><Edit3 size={14}/> Edit</button><button type="button" className="danger" onClick={()=>deleteEntry(i)} aria-label={'Delete row '+(i+1)}><Trash2 size={14}/> Delete</button></div></td></tr>)}</tbody></table></div>}
             {error&&<div className="report-error">{error}</div>}
             <div className="wizard-footer wizard-footer-split"><button type="button" className="submission-secondary" onClick={()=>{setStep(1);setError('')}}><ArrowLeft size={15}/> Back to business details</button><button type="button" className="report-submit" onClick={continueToReview}>Review submission <ChevronRight size={16}/></button></div>
