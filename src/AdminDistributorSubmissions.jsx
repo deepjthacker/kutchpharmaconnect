@@ -228,7 +228,9 @@ export default function AdminDistributorSubmissions({onBack}){
         .sort((a,b)=>b.score-a.score||a.company.company_name.localeCompare(b.company.company_name))
         .slice(0,12).map(x=>x.company)
     }else{
-      base=auto.candidates||((auto.company)?[auto.company]:[])
+      // With an empty search, expose the complete active company master rather than only auto-suggested candidates.
+      // This lets admins deliberately replace a suggested match with any other existing company.
+      base=[...companies].sort((a,b)=>a.company_name.localeCompare(b.company_name))
     }
     const unique=[];const seen=new Set()
     base.forEach(c=>{if(c&&!seen.has(c.id)){seen.add(c.id);unique.push(c)}})
