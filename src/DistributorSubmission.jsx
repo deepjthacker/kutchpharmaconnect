@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react'
-import {CheckCircle2,Download,LoaderCircle,Send,Upload,X,Edit3,ChevronRight,ClipboardCheck,ArrowLeft,Building2,FileSpreadsheet} from 'lucide-react'
+import {CheckCircle2,Download,LoaderCircle,Send,Upload,X,Edit3,ChevronRight,ClipboardCheck,ArrowLeft,Building2,FileSpreadsheet,FileText} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
 const CATEGORIES=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
@@ -32,10 +32,10 @@ function downloadCurrent(entries){
 }
 
 export default function DistributorSubmission({open=false,onClose=()=>{}}){
-  const [form,setForm]=useState(initial),[entries,setEntries]=useState([]),[draft,setDraft]=useState(blankEntry()),[editingIndex,setEditingIndex]=useState(null)
+  const [form,setForm]=useState(initial),[entries,setEntries]=useState([]),[selectedFile,setSelectedFile]=useState(null)
   const [step,setStep]=useState(1),[busy,setBusy]=useState(false),[sent,setSent]=useState(false),[error,setError]=useState(''),[bulkInfo,setBulkInfo]=useState(null)
   useEffect(()=>{if(!open)return;const onKeyDown=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',onKeyDown);return()=>document.removeEventListener('keydown',onKeyDown)},[open])
-  function reset(){setForm(initial);setEntries([]);setDraft(blankEntry());setEditingIndex(null);setStep(1);setSent(false);setError('');setBusy(false);setBulkInfo(null)}
+  function reset(){setForm(initial);setEntries([]);setSelectedFile(null);setStep(1);setSent(false);setError('');setBusy(false);setBulkInfo(null)}
   function close(){onClose();reset()}
   function update(key,value){setForm(x=>({...x,[key]:value}))}
   function updateDraft(key,value){setDraft(x=>({...x,[key]:value}))}
@@ -55,18 +55,50 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
     if(messy>=0){setError(`Please correct row ${messy+2}: enter only one official company name in the Company Name column. Do not combine multiple companies, product names, or general descriptions in one cell. Put divisions in the Division column and brands in the Brand column.`);return}
     setEntries(rows.map(r=>({...blankEntry(),...r,category:clean(r.category)||'Pharmaceutical'})));setDraft(blankEntry());setEditingIndex(null);setBulkInfo({source,fileName,count:rows.length});setError('')
   }
+  async function ensureXlsx(){
+    if(window.XLSX)return window.XLSX
+    await new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-kpc-xlsx]')
+      if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return}
+      const script=document.createElement('script');script.dataset.kpcXlsx='1'
+      script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+      script.onload=resolve;script.onerror=()=>reject(new Error('Could not load the Excel reader.'))
+      document.head.appendChild(script)
+    })
+    if(!window.XLSX)throw new Error('Excel reader did not initialize.')
+    return window.XLSX
+  }
   async function handleFile(e){
     const file=e.target.files?.[0];e.target.value='';if(!file)return
-    if(!file.name.toLowerCase().endsWith('.csv')){setError('Please upload a CSV file.');return}
-    try{applyBulk(rowsFromSheet(parseCsv(await file.text())),'csv',file.name)}catch{setError('Could not read this file. Please use the KutchPharmaConnect sample CSV format.')}
+    const ext=file.name.toLowerCase().split('.').pop()
+    if(!['csv','xls','xlsx','pdf'].includes(ext)){setError('Please upload a CSV, Excel (.xls/.xlsx), or PDF file.');return}
+    if(file.size>15*1024*1024){setError('The file must be 15 MB or smaller.');return}
+    setError('');setSelectedFile(file);setBulkInfo({source:ext==='pdf'?'pdf':ext==='csv'?'csv':'excel',fileName:file.name,count:0})
+    if(ext==='pdf'){setEntries([]);return}
+    try{
+      let rows
+      if(ext==='csv')rows=rowsFromSheet(parseCsv(await file.text()))
+      else{
+        const XLSX=await ensureXlsx()
+        const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'})
+        rows=rowsFromSheet(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:'',raw:false}))
+      }
+      applyBulk(rows,ext==='csv'?'csv':'excel',file.name)
+    }catch(err){setError(err?.message||'Could not read this file. Please check the column headings and try again.')}
   }
   function continueFromBusiness(e){e.preventDefault();if(!clean(form.distributor_name)||!clean(form.mobile)){setError('Distributor name and mobile are required.');return}setError('');setStep(2)}
-  function continueToReview(){if(!entries.length){setError('Please add or upload at least one company you handle.');return}setError('');setStep(3)}
+  function continueToReview(){if(!selectedFile){setError('Please upload your company list as a CSV, Excel, or PDF file.');return}if(bulkInfo?.source!=='pdf'&&!entries.length){setError('No company rows were detected. Please check the file and try again.');return}setError('');setStep(3)}
   async function submit(){
+    if(!selectedFile){setError('Please select a file before submitting.');return}
     setBusy(true);setError('')
     const cleaned=entries.map(r=>({company_name:clean(r.company_name),category:clean(r.category)||'Pharmaceutical',subsidiary:clean(r.subsidiary),division:clean(r.division),brand:clean(r.brand),product:clean(r.product),handled_as:clean(r.product)?'product':clean(r.brand)?'brand':clean(r.division)?'division':'company'})).filter(r=>r.company_name)
+    const ext=selectedFile.name.toLowerCase().split('.').pop()
+    const safeName=selectedFile.name.replace(/[^a-zA-Z0-9._-]+/g,'_').slice(-120)
+    const filePath='incoming/'+crypto.randomUUID()+'-'+safeName
+    const {error:uploadError}=await supabase.storage.from('distributor-submission-files').upload(filePath,selectedFile,{contentType:selectedFile.type||'application/octet-stream',upsert:false})
+    if(uploadError){setError('The file could not be uploaded: '+uploadError.message);setBusy(false);return}
     const companies_handled=cleaned.map(r=>[r.company_name,r.subsidiary,r.division,r.brand,r.product].filter(Boolean).join(' — ')).join('\n')
-    const payload={...form,distributor_name:clean(form.distributor_name),mobile:clean(form.mobile),whatsapp:clean(form.whatsapp),companies_handled,email:clean(form.email)||null,company_entries:cleaned,bulk_source:bulkInfo?.source||'manual',bulk_file_name:bulkInfo?.fileName||null,bulk_row_count:cleaned.length}
+    const payload={...form,distributor_name:clean(form.distributor_name),mobile:clean(form.mobile),whatsapp:clean(form.whatsapp),companies_handled,email:clean(form.email)||null,company_entries:cleaned,bulk_source:bulkInfo?.source||ext,bulk_file_name:selectedFile.name,bulk_file_path:filePath,bulk_row_count:cleaned.length,notes:[clean(form.notes),'Uploaded company list: '+selectedFile.name+'. File type: '+ext.toUpperCase()+'.'].filter(Boolean).join('\n')}
     const {error}=await supabase.from('distributor_submissions').insert(payload)
     if(error){setError(error.message);setBusy(false);return}setSent(true);setBusy(false)
   }
@@ -103,17 +135,15 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
             <div className="wizard-footer"><span><strong>Step 1 of 3</strong><small>Your company list comes next.</small></span><button className="report-submit" type="submit">Continue to companies <ChevronRight size={16}/></button></div>
           </form>}
           {step===2&&<section className="submission-section wizard-section wizard-company-step">
-            <div className="submission-section-heading"><span className="submission-section-number">2</span><div><h3>Companies You Handle</h3><p>Upload your company list as a CSV file. Enter one company per row; our admin team will verify the details before publication.</p></div></div>
+            <div className="submission-section-heading"><span className="submission-section-number">2</span><div><h3>Upload Your Company List</h3><p>Do not type company names manually. Upload your existing CSV, Excel, or PDF list. Our admin team will review it before anything is published.</p></div></div>
             <div className="company-tools wizard-company-tools">
               <button type="button" className="submission-tool-button" onClick={downloadSample}><Download size={15}/> Download sample CSV</button>
-              <label className="submission-tool-button"><Upload size={15}/> Upload CSV<input type="file" accept=".csv,text/csv" onChange={handleFile} hidden/></label>
-              {entries.length>0&&<button type="button" className="submission-tool-button" onClick={()=>downloadCurrent(entries)}><Download size={15}/> Export current list</button>}
+              <label className="submission-tool-button"><Upload size={15}/> Choose CSV / Excel / PDF<input type="file" accept=".csv,.xls,.xlsx,.pdf,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleFile} hidden/></label>
             </div>
-            <div className="wizard-csv-hint"><FileSpreadsheet size={17}/><span><strong>Use these six columns, in this order:</strong> Company Name, Category, Subsidiary, Division, Brand, Product. Category must match the dropdown options. Leave optional cells blank when details aren't available.</span></div>
-            {bulkInfo&&<div className="bulk-loaded"><ClipboardCheck size={15}/><span><strong>{bulkInfo.count} rows loaded</strong> from {bulkInfo.fileName}. Review the list below before continuing.</span></div>}
-            <div className="wizard-company-list-heading"><div><h4>Company list</h4><p>{entries.length} {entries.length===1?'row':'rows'} ready for review</p></div>{entries.length>0&&<span className="wizard-row-count">{entries.length} rows</span>}</div>
-            {entries.length===0?<div className="company-empty"><Building2 size={24}/><strong>No company rows yet</strong><span>Upload a CSV file with one company per row to begin.</span></div>:
-              <div className="wizard-table-wrap"><table className="wizard-company-table"><thead><tr><th>#</th>{FIELDS.map(([,label])=><th key={label}>{label}</th>)}<th>Actions</th></tr></thead><tbody>{entries.map((r,i)=><tr key={i}><td>{i+1}</td>{FIELDS.map(([key])=><td key={key}>{r[key]||<span className="wizard-empty-cell">—</span>}</td>)}<td><div className="company-review-actions"><button type="button" onClick={()=>editEntry(i)} aria-label={'Edit row '+(i+1)}><Edit3 size={14}/> Edit</button><button type="button" className="danger" onClick={()=>deleteEntry(i)} aria-label={'Delete row '+(i+1)}><Trash2 size={14}/> Delete</button></div></td></tr>)}</tbody></table></div>}
+            <div className="wizard-csv-hint"><FileSpreadsheet size={17}/><span><strong>CSV / Excel format:</strong> use columns Company Name, Category, Subsidiary, Division, Brand, Product. One company per row. PDF files can be uploaded as received; our admin team will check the document.</span></div>
+            <div className="wizard-csv-hint"><FileText size={17}/><span><strong>File requirements:</strong> CSV, Excel (.xls/.xlsx), or PDF; maximum 15 MB. Please upload the original company/distributorship list, not a paragraph combining multiple companies and products.</span></div>
+            {selectedFile&&<div className="bulk-loaded"><ClipboardCheck size={15}/><span><strong>{selectedFile.name}</strong><br/>{bulkInfo?.source==='pdf'?'PDF attached for admin review. Company names will be checked from the document.':entries.length+' company rows detected. The original file will also be attached for admin review.'}</span></div>}
+            {entries.length>0&&<><div className="wizard-company-list-heading"><div><h4>Detected company rows</h4><p>{entries.length} rows ready for review</p></div><span className="wizard-row-count">{entries.length} rows</span></div><div className="wizard-table-wrap"><table className="wizard-company-table"><thead><tr>{FIELDS.map(([,label])=><th key={label}>{label}</th>)}</tr></thead><tbody>{entries.slice(0,100).map((r,i)=><tr key={i}>{FIELDS.map(([key])=><td key={key}>{r[key]||<span className="wizard-empty-cell">—</span>}</td>)}</tr>)}</tbody></table>{entries.length>100&&<p className="report-help">Showing the first 100 of {entries.length} detected rows. The full file is attached for admin review.</p>}</div></>}
             {error&&<div className="report-error">{error}</div>}
             <div className="wizard-footer wizard-footer-split"><button type="button" className="submission-secondary" onClick={()=>{setStep(1);setError('')}}><ArrowLeft size={15}/> Back to business details</button><button type="button" className="report-submit" onClick={continueToReview}>Review submission <ChevronRight size={16}/></button></div>
           </section>}
@@ -121,8 +151,9 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
             <section className="final-review-section"><div className="final-review-heading"><div><h3>Business details</h3><span>Step 1</span></div><button type="button" onClick={()=>{setStep(1);setError('')}}><Edit3 size={13}/> Edit</button></div>
               <div className="final-review-grid">{[['Distributor name',form.distributor_name],['Legal name',form.legal_name],['Contact person',form.contact_person],['Mobile',form.mobile],['WhatsApp',form.whatsapp],['Email',form.email],['City',form.city],['Address',form.address],['Google Maps',form.maps_url],['Website',form.website],['Additional notes',form.notes]].map(([k,v])=><div key={k}><small>{k}</small><strong>{v||'—'}</strong></div>)}</div>
             </section>
-            <section className="final-review-section"><div className="final-review-heading"><div><h3>Companies submitted</h3><span>{entries.length} {entries.length===1?'row':'rows'} · Step 2</span></div><button type="button" onClick={()=>{setStep(2);setError('')}}><Edit3 size={13}/> Edit</button></div>
-              <div className="wizard-review-table-wrap"><table className="wizard-company-table"><thead><tr>{FIELDS.map(([,label])=><th key={label}>{label}</th>)}</tr></thead><tbody>{entries.map((r,i)=><tr key={i}>{FIELDS.map(([key])=><td key={key}>{r[key]||<span className="wizard-empty-cell">—</span>}</td>)}</tr>)}</tbody></table></div>
+            <section className="final-review-section"><div className="final-review-heading"><div><h3>Uploaded company list</h3><span>{selectedFile?.name||'No file selected'} · Step 2</span></div><button type="button" onClick={()=>{setStep(2);setError('')}}><Edit3 size={13}/> Edit upload</button></div>
+              <p className="report-help">{bulkInfo?.source==='pdf'?'Your PDF will be attached to the submission for the admin team to review.':'The original file will be attached. '+entries.length+' company rows were detected for easier review.'}</p>
+              {entries.length>0&&<div className="wizard-review-table-wrap"><table className="wizard-company-table"><thead><tr>{FIELDS.map(([,label])=><th key={label}>{label}</th>)}</tr></thead><tbody>{entries.slice(0,100).map((r,i)=><tr key={i}>{FIELDS.map(([key])=><td key={key}>{r[key]||<span className="wizard-empty-cell">—</span>}</td>)}</tr>)}</tbody></table></div>}
             </section>
             {error&&<div className="report-error">{error}</div>}
             <div className="wizard-footer wizard-footer-split"><button type="button" className="submission-secondary" onClick={()=>{setStep(2);setError('')}}><ArrowLeft size={15}/> Back to companies</button><button type="button" className="report-submit" onClick={submit} disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Sending…</>:<><Send size={16}/> Submit for review</>}</button></div>
