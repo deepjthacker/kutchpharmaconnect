@@ -1,6 +1,7 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CheckCircle2, Download, FileUp, LoaderCircle, Upload, XCircle, Trash2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { findCompanyCandidates } from './lib/companyMatching'
 
 const TEMPLATE = [
   ['Company Name', 'Division', 'Brand Name'],
@@ -46,12 +47,40 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
   const [previewPage, setPreviewPage] = useState(1)
+  const [companyRecords, setCompanyRecords] = useState([])
+  const [companyAliases, setCompanyAliases] = useState([])
+  const [matchingLoadError, setMatchingLoadError] = useState('')
+  const [matchingDataReady, setMatchingDataReady] = useState(false)
   const pageSize = 50
   const pageStart = (previewPage - 1) * pageSize
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize))
   const visibleRows = rows.slice(pageStart, pageStart + pageSize)
 
   const validRows = useMemo(() => rows.filter(r => String(r.company_name || '').trim()), [rows])
+  useEffect(() => {
+    let active = true
+    async function loadCompanyMatchData() {
+      const [companiesResult, aliasesResult] = await Promise.all([
+        supabase.from('companies').select('id,company_name,legal_name,short_name,status').order('company_name'),
+        supabase.from('search_aliases').select('entity_id,entity_type,alias,normalized_alias').eq('entity_type','company')
+      ])
+      if (!active) return
+      if (companiesResult.error) setMatchingLoadError('Could not load the company master for duplicate checking: ' + companiesResult.error.message)
+      else setCompanyRecords(companiesResult.data || [])
+      if (aliasesResult.error) {
+        // Company names remain searchable if aliases are unavailable.
+        setCompanyAliases([])
+      } else setCompanyAliases(aliasesResult.data || [])
+      setMatchingDataReady(!companiesResult.error)
+    }
+    loadCompanyMatchData()
+    return () => { active = false }
+  }, [])
+  const rowMatches = useMemo(() => rows.map(row => findCompanyCandidates(row.company_name, companyRecords, companyAliases, 0.56)), [rows, companyRecords, companyAliases])
+  const unresolvedMatches = validRows.filter(row => {
+    const index = rows.indexOf(row)
+    return (rowMatches[index] || []).length > 0 && !row._matchDecision
+  })
 
   function loadText(text, name = '') {
     const parsed = parseDelimited(text)
@@ -118,6 +147,8 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
 
   async function importRows() {
     if (!validRows.length || busy) return
+    if (!matchingDataReady) { setError('Company matching is not ready yet. Wait for the company master to load before importing.'); return }
+    if (unresolvedMatches.length) { setError('Review the suggested existing-company matches first. Choose Use Existing or Keep as New for every flagged row.'); return }
     setBusy(true); setError(''); setResult(null)
     const { data, error: rpcError } = await supabase.rpc('admin_bulk_upsert_company_catalog', {
       p_rows: validRows.map(r => ({
@@ -147,6 +178,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
       </div>
 
       {error && <div className="admin-error">{error}</div>}
+      {matchingLoadError && <div className="admin-error">{matchingLoadError}</div>}
 
       <div className="admin-panel" style={{marginBottom:'16px'}}>
         <div className="admin-panel-heading">
@@ -202,7 +234,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
             <div>
               <p className="section-kicker">STEP 3</p>
               <h2>Check before importing</h2>
-              <p>{validRows.length} usable rows. Existing companies, divisions and brands will be reused instead of duplicated.</p>
+              <p>{validRows.length} usable rows. Review any possible company matches before importing. Existing companies, divisions and brands will be reused when their names match.</p>
             </div>
             <CheckCircle2 size={20}/>
           </div>
@@ -223,6 +255,27 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
                   <label>Division <span className="admin-catalog-optional">optional</span>
                     <input value={r.division_name} onChange={e => updateRow(rowIndex, 'division_name', e.target.value)} placeholder="Division name" />
                   </label>
+                  {((rowMatches[rowIndex] || []).length > 0) && (
+                    <div className="admin-note" style={{marginTop:'10px'}}>
+                      <strong>Possible existing company match</strong>
+                      <p style={{margin:'6px 0'}}>Choose an existing record if this is the same company, or explicitly keep the submitted name as a new company.</p>
+                      {(rowMatches[rowIndex] || []).map(({company,score,exact}) => (
+                        <div key={company.id} style={{display:'flex',gap:'8px',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',padding:'7px 0'}}>
+                          <span><strong>{company.company_name}</strong><small style={{display:'block'}}>{exact ? 'Normalized name match' : 'Possible name match'} · {Math.round(score*100)}% similarity</small></span>
+                          <button type="button" className="admin-refresh" onClick={() => {
+                            setRows(current => current.map((item,i) => i===rowIndex ? {...item,company_name:company.company_name,_matchDecision:'existing',_matchedCompanyId:company.id} : item))
+                            setError('')
+                          }}>Use Existing</button>
+                        </div>
+                      ))}
+                      <button type="button" className="admin-refresh" onClick={() => {
+                        setRows(current => current.map((item,i) => i===rowIndex ? {...item,_matchDecision:'new',_matchedCompanyId:''} : item))
+                        setError('')
+                      }}>Keep as New Company</button>
+                      {r._matchDecision === 'existing' && <p style={{marginTop:'6px'}}>Using existing company: {r.company_name}</p>}
+                      {r._matchDecision === 'new' && <p style={{marginTop:'6px'}}>Marked to create a separate company. Confirm the names are genuinely different.</p>}
+                    </div>
+                  )}
                   <label>Brand Name <span className="admin-catalog-optional">optional</span>
                     <input value={r.brand_name} onChange={e => updateRow(rowIndex, 'brand_name', e.target.value)} placeholder="Brand name" />
                   </label>
@@ -236,8 +289,8 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
             <button type="button" onClick={() => setPreviewPage(p => Math.min(pageCount, p + 1))} disabled={previewPage >= pageCount}>Next</button>
           </div>}
           {rows.length !== validRows.length && <p className="report-help">{rows.length - validRows.length} row(s) have no company name and will be skipped. Add a company name or remove those rows.</p>}
-          <button className="report-submit" type="button" onClick={importRows} disabled={!validRows.length || busy || !!result} style={{marginTop:'14px'}}>
-            {busy ? <><LoaderCircle className="spin" size={16}/> Importing…</> : result ? <><CheckCircle2 size={16}/> Import completed</> : <><Upload size={16}/> Import {validRows.length} Rows</>}
+          <button className="report-submit" type="button" onClick={importRows} disabled={!validRows.length || busy || !!result || !matchingDataReady || unresolvedMatches.length > 0} style={{marginTop:'14px'}}>
+            {busy ? <><LoaderCircle className="spin" size={16}/> Importing…</> : !matchingDataReady ? <><LoaderCircle className="spin" size={16}/> Checking companies…</> : unresolvedMatches.length ? <><Upload size={16}/> Review {unresolvedMatches.length} Match(es) First</> : result ? <><CheckCircle2 size={16}/> Import completed</> : <><Upload size={16}/> Import {validRows.length} Rows</>}
           </button>
         </div>
       )}
