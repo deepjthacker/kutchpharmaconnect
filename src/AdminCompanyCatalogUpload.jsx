@@ -107,7 +107,7 @@ export default function AdminCompanyCatalogUpload({ onBack }) {
   }
 
   function updateRow(index, field, value) {
-    setRows(current => current.map((row, i) => i === index ? { ...row, [field]: value } : row))
+    setRows(current => current.map((row, i) => i === index ? (field === 'company_name' ? { ...row, company_name: value, _matchDecision: '', _matchedCompanyId: '' } : { ...row, [field]: value }) : row))
     setResult(null)
   }
 
