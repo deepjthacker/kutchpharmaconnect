@@ -41,8 +41,11 @@ function companyNameScore(query,candidate){
   if(q===n)return 1
   const qc=compactNorm(q),nc=compactNorm(n)
   if(qc===nc)return 0.99
-  if(Math.min(qc.length,nc.length)>=5&&
-    ((nc.includes(qc)&&qc.length/nc.length>=0.45)||(qc.includes(nc)&&nc.length/qc.length>=0.45)))return 0.93
+  if(Math.min(qc.length,nc.length)>=5&&(
+    nc.startsWith(qc)||qc.startsWith(nc)||
+    (nc.includes(qc)&&qc.length/nc.length>=0.55)||
+    (qc.includes(nc)&&nc.length/qc.length>=0.55)
+  ))return 0.93
   const qt=meaningfulTokens(q),nt=meaningfulTokens(n)
   const shared=qt.filter(t=>nt.includes(t))
   if(shared.length){
