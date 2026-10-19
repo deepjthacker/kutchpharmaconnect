@@ -106,10 +106,12 @@ export default function AdminDistributorSubmissions({onBack}){
 
   async function openUploadedFile(row){
     if(!row?.bulk_file_path){setError('No uploaded file is attached to this submission.');return}
+    const popup=window.open('about:blank','_blank')
     setSaving('file:'+row.id);setError('')
     const {data,error}=await supabase.storage.from('distributor-submission-files').createSignedUrl(row.bulk_file_path,300)
-    if(error){setError('Could not open the uploaded file: '+error.message);setSaving('');return}
-    window.open(data.signedUrl,'_blank','noopener,noreferrer')
+    if(error){if(popup)popup.close();setError('Could not open the uploaded file: '+error.message);setSaving('');return}
+    if(popup)popup.location.href=data.signedUrl
+    else window.location.href=data.signedUrl
     setSaving('')
   }
 
