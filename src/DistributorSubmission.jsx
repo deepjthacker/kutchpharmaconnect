@@ -63,7 +63,7 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
     const ext=file.name.toLowerCase().split('.').pop()
     if(!['csv','xls','xlsx','pdf'].includes(ext)){setError('Please upload a CSV, Excel (.xls/.xlsx), or PDF file.');return}
     if(file.size>15*1024*1024){setError('The file must be 15 MB or smaller.');return}
-    setError('');setSelectedFile(file);setBulkInfo({source:ext==='pdf'?'pdf':ext==='csv'?'csv':'excel',fileName:file.name,count:0})
+    setError('');setEntries([]);setSelectedFile(file);setBulkInfo({source:ext==='pdf'?'pdf':ext==='csv'?'csv':'excel',fileName:file.name,count:0})
     if(ext==='pdf'){setEntries([]);return}
     try{
       let rows
