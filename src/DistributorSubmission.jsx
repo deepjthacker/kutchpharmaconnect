@@ -3,7 +3,6 @@ import {CheckCircle2,Download,LoaderCircle,Send,Upload,X,Edit3,ChevronRight,Clip
 import {supabase} from './lib/supabase'
 
 const CATEGORIES=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
-const blankEntry=()=>({company_name:'',category:'Pharmaceutical',subsidiary:'',division:'',brand:'',product:''})
 const initial={distributor_name:'',legal_name:'',contact_person:'',mobile:'',whatsapp:'',email:'',address:'',city:'',district:'Kutch',state:'Gujarat',maps_url:'',website:'',notes:''}
 const FIELDS=[['company_name','Company Name'],['category','Category'],['subsidiary','Subsidiary'],['division','Division'],['brand','Brand'],['product','Product']]
 function clean(v){return String(v??'').trim()}
@@ -38,15 +37,6 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
   function reset(){setForm(initial);setEntries([]);setSelectedFile(null);setStep(1);setSent(false);setError('');setBusy(false);setBulkInfo(null)}
   function close(){onClose();reset()}
   function update(key,value){setForm(x=>({...x,[key]:value}))}
-  function updateDraft(key,value){setDraft(x=>({...x,[key]:value}))}
-  function saveDraft(){
-    const company=clean(draft.company_name);if(!company){setError('Company Name is required.');return}
-    const next={company_name:company,category:clean(draft.category)||'Pharmaceutical',subsidiary:clean(draft.subsidiary),division:clean(draft.division),brand:clean(draft.brand),product:clean(draft.product)}
-    if(editingIndex===null)setEntries(x=>[...x,next]);else setEntries(x=>x.map((r,i)=>i===editingIndex?next:r))
-    setDraft(blankEntry());setEditingIndex(null);setError('')
-  }
-  function editEntry(i){setDraft({...entries[i]});setEditingIndex(i);setError('')}
-  function deleteEntry(i){setEntries(x=>x.filter((_,n)=>n!==i));if(editingIndex===i){setEditingIndex(null);setDraft(blankEntry())}setError('')}
   function applyBulk(rows,source,fileName){
     if(!rows.length){setError('No usable rows found. Please use the six-column sample CSV.');return}
     const invalid=rows.findIndex(r=>!clean(r.company_name)||!CATEGORIES.includes(clean(r.category)||'Pharmaceutical'))
