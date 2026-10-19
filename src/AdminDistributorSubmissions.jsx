@@ -2,7 +2,59 @@ import React,{useEffect,useMemo,useState} from 'react'
 import {CheckCircle2,Eye,LoaderCircle,RefreshCw,ShieldAlert,Truck,X,Search,Building2,AlertTriangle,Check,Send} from 'lucide-react'
 import {supabase} from './lib/supabase'
 
-function norm(v){return String(v||'').toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim().replace(/\\s+/g,' ')}
+function norm(v){
+  return String(v||'').toLowerCase().normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/&/g,' and ')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim().replace(/\s+/g,' ')
+}
+function compactNorm(v){return norm(v).replace(/[^a-z0-9]/g,'')}
+const GENERIC_COMPANY_WORDS=new Set([
+  'a','an','and','the','of','for','in','on','at','to',
+  'pharma','pharmaceutical','pharmaceuticals','healthcare','health','medical',
+  'industries','industry','private','limited','ltd','pvt','inc','incorporated',
+  'company','co','corporation','corp','india','indian','international',
+  'enterprise','enterprises','trading','agency','agencies','distributor',
+  'distributors','wholesale','wholesaler','group','llp','llc','plc'
+])
+function meaningfulTokens(v){
+  return [...new Set(norm(v).split(' ').filter(t=>t.length>1&&!GENERIC_COMPANY_WORDS.has(t)))]
+}
+function editSimilarity(a,b){
+  if(!a||!b)return 0
+  if(a===b)return 1
+  if(Math.min(a.length,b.length)<5)return 0
+  let prev=Array.from({length:b.length+1},(_,i)=>i)
+  for(let i=1;i<=a.length;i++){
+    const cur=[i]
+    for(let j=1;j<=b.length;j++){
+      cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1))
+    }
+    prev=cur
+  }
+  return 1-prev[b.length]/Math.max(a.length,b.length)
+}
+function companyNameScore(query,candidate){
+  const q=norm(query), n=norm(candidate)
+  if(!q||!n)return 0
+  if(q===n)return 1
+  const qc=compactNorm(q),nc=compactNorm(n)
+  if(qc===nc)return 0.99
+  if(Math.min(qc.length,nc.length)>=5&&
+    ((nc.includes(qc)&&qc.length/nc.length>=0.45)||(qc.includes(nc)&&nc.length/qc.length>=0.45)))return 0.93
+  const qt=meaningfulTokens(q),nt=meaningfulTokens(n)
+  const shared=qt.filter(t=>nt.includes(t))
+  if(shared.length){
+    const coverage=shared.length/Math.max(1,Math.min(qt.length,nt.length))
+    const distinctive=shared.some(t=>t.length>=5)
+    if(distinctive)return Math.min(0.88,0.62+0.14*coverage+0.04*Math.min(shared.length-1,2))
+    if(shared.length>=2)return Math.min(0.78,0.56+0.12*coverage)
+  }
+  const similarity=editSimilarity(qc,nc)
+  if(similarity>=0.82)return Math.min(0.86,similarity)
+  return 0
+}
 function entriesOf(row){
   if(Array.isArray(row.company_entries)&&row.company_entries.length)return row.company_entries
   return String(row.companies_handled||'').split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean).map(company_name=>({company_name,handled_as:'company',brand:'',division:'',category:'Pharmaceutical'}))
@@ -68,38 +120,44 @@ export default function AdminDistributorSubmissions({onBack}){
   }
 
   function matchCompany(entry){
-    const q=norm(entry.company_name)
+    const q=norm(entry.company_name), qc=compactNorm(entry.company_name)
     if(!q)return {kind:'incomplete',label:'Company missing'}
 
-    // Only unambiguous identity matches are treated as matched automatically.
-    // Fuzzy/partial matches remain suggestions for the administrator to confirm.
     const identityFields=c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean)
-    const exact=companies.filter(c=>identityFields(c).some(value=>norm(value)===q))
+    const exact=companies.filter(c=>identityFields(c).some(value=>norm(value)===q||compactNorm(value)===qc))
     const exactUnique=[...new Map(exact.map(c=>[c.id,c])).values()]
     if(exactUnique.length===1){
       const company=exactUnique[0]
-      const field=identityFields(company).some(value=>norm(value)===q)
-      return {kind:'matched',label:company.company_name,company,method:norm(company.company_name)===q?'Exact company name':'Exact legal/short name'}
+      const method=norm(company.company_name)===q?'Exact company name':
+        compactNorm(company.company_name)===qc?'Exact name ignoring spacing/punctuation':'Exact legal/short name'
+      return {kind:'matched',label:company.company_name,company,candidates:[company],method}
     }
-    if(exactUnique.length>1)return {kind:'review',label:exactUnique.map(c=>c.company_name).join(' / '),candidates:exactUnique.slice(0,5),method:'Conflicting exact names'}
+    if(exactUnique.length>1)return {kind:'review',label:exactUnique.map(c=>c.company_name).join(' / '),candidates:exactUnique.slice(0,5),method:'Conflicting normalized names'}
 
-    const aliasMatches=aliases.filter(a=>norm(a.normalized_alias||a.alias)===q)
+    const aliasMatches=aliases.filter(a=>norm(a.normalized_alias||a.alias)===q||compactNorm(a.normalized_alias||a.alias)===qc)
       .map(a=>({alias:a,company:companies.find(c=>c.id===a.entity_id)}))
       .filter(x=>x.company)
     const aliasCompanies=[...new Map(aliasMatches.map(x=>[x.company.id,x])).values()]
-    if(aliasCompanies.length===1)return {kind:'matched',label:aliasCompanies[0].company.company_name,company:aliasCompanies[0].company,method:'Verified alias',aliasUsed:aliasCompanies[0].alias.alias}
+    if(aliasCompanies.length===1)return {kind:'matched',label:aliasCompanies[0].company.company_name,company:aliasCompanies[0].company,candidates:[aliasCompanies[0].company],method:'Verified alias',aliasUsed:aliasCompanies[0].alias.alias}
     if(aliasCompanies.length>1)return {kind:'review',label:aliasCompanies.map(x=>x.company.company_name).join(' / '),candidates:aliasCompanies.map(x=>x.company).slice(0,5),method:'Alias maps to multiple companies'}
 
-    // Avoid meaningless partial matches for short strings such as "IP" or "AB".
-    const candidates=companies.filter(c=>identityFields(c).some(value=>{
-      const n=norm(value)
-      return q.length>=4&&(n.startsWith(q)||q.startsWith(n)||n.includes(q)||q.includes(n))
-    })).slice(0,5)
-    if(candidates.length===1)return {kind:'suggested',label:candidates[0].company_name,company:candidates[0],candidates,method:'Possible match — confirm before publishing'}
-    if(candidates.length>1)return {kind:'review',label:candidates.map(c=>c.company_name).join(' / '),candidates,method:'Multiple possible matches — choose manually'}
-    return {kind:'new',label:'No exact match — create or map after review',method:'New / review'}
+    // Rank every active company by its strongest company/legal/short-name or alias match.
+    // Distinctive partial names and spacing differences become suggestions, never silent merges.
+    const ranked=companies.map(company=>{
+      const fields=identityFields(company)
+      const aliasNames=aliases.filter(a=>a.entity_id===company.id).flatMap(a=>[a.alias,a.normalized_alias]).filter(Boolean)
+      const score=Math.max(0,...[...fields,...aliasNames].map(value=>companyNameScore(entry.company_name,value)))
+      return {company,score}
+    }).filter(x=>x.score>=0.56)
+      .sort((a,b)=>b.score-a.score||a.company.company_name.localeCompare(b.company.company_name))
+    const candidates=ranked.slice(0,5).map(x=>x.company)
+    if(!ranked.length)return {kind:'new',label:'No close existing match found — check before creating',method:'No strong candidate'}
+    const top=ranked[0], second=ranked[1]
+    if(top.score>=0.90&&(!second||top.score-second.score>=0.10)){
+      return {kind:'suggested',label:top.company.company_name,company:top.company,candidates,method:'Strong name similarity — confirm before publishing'}
+    }
+    return {kind:'review',label:candidates.map(c=>c.company_name).join(' / '),candidates,company:null,method:'Partial or fuzzy match — choose the correct company'}
   }
-
   function divisionFor(entry,companyId){
     const q=norm(entry.division)
     if(!q)return null
@@ -151,13 +209,25 @@ export default function AdminDistributorSubmissions({onBack}){
   function setCompanySearch(i,value){setCompanySearches(x=>({...x,[i]:value}))}
 
   function companyOptions(i,auto){
-    const q=norm(companySearches[i]||'')
-    const base=q?companies.filter(c=>[c.company_name,c.legal_name,c.short_name].filter(Boolean).some(v=>norm(v).includes(q))).slice(0,12):(auto.candidates||((auto.company)?[auto.company]:[]))
+    const raw=String(companySearches[i]||'').trim()
+    const q=norm(raw)
+    let base
+    if(q){
+      base=companies.map(company=>{
+        const fields=[company.company_name,company.legal_name,company.short_name].filter(Boolean)
+        const aliasNames=aliases.filter(a=>a.entity_id===company.id).flatMap(a=>[a.alias,a.normalized_alias]).filter(Boolean)
+        const score=Math.max(0,...[...fields,...aliasNames].map(value=>companyNameScore(raw,value)))
+        return {company,score}
+      }).filter(x=>x.score>=0.45)
+        .sort((a,b)=>b.score-a.score||a.company.company_name.localeCompare(b.company.company_name))
+        .slice(0,12).map(x=>x.company)
+    }else{
+      base=auto.candidates||((auto.company)?[auto.company]:[])
+    }
     const unique=[];const seen=new Set()
     base.forEach(c=>{if(c&&!seen.has(c.id)){seen.add(c.id);unique.push(c)}})
     return unique
   }
-
   const reviewEntries=selected?entriesOf(selected):[]
   const summary=useMemo(()=>{
     let matched=0,create=0,review=0
