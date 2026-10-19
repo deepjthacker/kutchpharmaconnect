@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react'
 import {ArrowLeft,Building2,Truck,Link2,Plus,LoaderCircle,CheckCircle2} from 'lucide-react'
 import {supabase} from './lib/supabase'
+import {findCompanyCandidates} from './lib/companyMatching'
 
 const blankCompany={company_name:'',legal_name:'',short_name:'',description:'',status:'active'}
 const blankDistributor={distributor_name:'',legal_name:'',contact_person:'',mobile:'',whatsapp:'',email:'',address:'',city_id:'',maps_url:'',website:'',notes:'',status:'active'}
@@ -17,6 +18,7 @@ export default function AdminSingleEntry({onBack}){
  const [locations,setLocations]=useState([])
  const [company,setCompany]=useState(blankCompany)
  const [companyCategories,setCompanyCategories]=useState([])
+ const [companyMatchDecision,setCompanyMatchDecision]=useState('')
  const [distributor,setDistributor]=useState(blankDistributor)
  const [relationship,setRelationship]=useState(blankRelationship)
  const [loading,setLoading]=useState(true)
@@ -27,7 +29,7 @@ export default function AdminSingleEntry({onBack}){
  async function loadOptions(){
   setLoading(true);setError('')
   const [c,d,v,b,k,l]=await Promise.all([
-   supabase.from('companies').select('id,company_name,status').eq('status','active').order('company_name'),
+   supabase.from('companies').select('id,company_name,legal_name,short_name,status').order('company_name'),
    supabase.from('distributors').select('id,distributor_name,status').eq('status','active').order('distributor_name'),
    supabase.from('divisions').select('id,company_id,division_name,status').eq('status','active').order('division_name'),
    supabase.from('brands').select('id,company_id,brand_name,status').eq('status','active').order('brand_name'),
@@ -41,6 +43,8 @@ export default function AdminSingleEntry({onBack}){
  }
  useEffect(()=>{loadOptions()},[])
  const categoryName=x=>x.category_name||x.name||'Unnamed category'
+ const manualCompanyMatches=useMemo(()=>findCompanyCandidates(company.company_name,companies,[],0.56),[company.company_name,companies])
+ const setCompanyField=updater=>{setCompany(updater);setCompanyMatchDecision('')}
  const filteredDivisions=useMemo(()=>divisions.filter(x=>!relationship.company_id||x.company_id===relationship.company_id),[divisions,relationship.company_id])
  const filteredBrands=useMemo(()=>brands.filter(x=>!relationship.company_id||x.company_id===relationship.company_id),[brands,relationship.company_id])
  const field=(label,key,value,setter,opts={})=><label key={key}>{label}{opts.required&&<span className="required"> *</span>}{opts.multiline?<textarea rows={3} required={opts.required} value={value||''} placeholder={opts.placeholder||''} onChange={e=>setter(s=>({...s,[key]:e.target.value}))}/>:<input type={opts.type||'text'} required={opts.required} value={value||''} placeholder={opts.placeholder||''} onChange={e=>setter(s=>({...s,[key]:e.target.value}))}/>}</label>
@@ -50,6 +54,7 @@ export default function AdminSingleEntry({onBack}){
   e.preventDefault();if(busy)return
   setBusy(true);setError('');setSuccess('')
   const name=company.company_name.trim()
+  if(manualCompanyMatches.length && !companyMatchDecision){setError('Possible existing companies were found. Review the matches below and choose Use Existing Name or explicitly Keep as New Company.');setBusy(false);return}
   const duplicateRows=await supabase.from('companies').select('company_name')
   if(duplicateRows.error){setError(duplicateRows.error.message);setBusy(false);return}
   const duplicate=(duplicateRows.data||[]).some(x=>x.company_name.trim().toLowerCase()===name.toLowerCase())
@@ -58,10 +63,10 @@ export default function AdminSingleEntry({onBack}){
   if(r.error){setError(r.error.message);setBusy(false);return}
   if(companyCategories.length){
    const linked=await supabase.from('company_categories').insert(companyCategories.map(category_id=>({company_id:r.data.id,category_id})))
-   if(linked.error){setError('Company was created, but category links could not be saved: '+linked.error.message);setSuccess('Company created: '+r.data.company_name);setCompanies(prev=>[...prev,r.data].sort((a,b)=>a.company_name.localeCompare(b.company_name)));setCompany(blankCompany);setCompanyCategories([]);setBusy(false);return}
+   if(linked.error){setError('Company was created, but category links could not be saved: '+linked.error.message);setSuccess('Company created: '+r.data.company_name);setCompanies(prev=>[...prev,r.data].sort((a,b)=>a.company_name.localeCompare(b.company_name)));setCompany(blankCompany);setCompanyCategories([]);setCompanyMatchDecision('');setBusy(false);return}
   }
   setCompanies(prev=>[...prev,r.data].sort((a,b)=>a.company_name.localeCompare(b.company_name)))
-  setCompany(blankCompany);setCompanyCategories([]);setSuccess('Company added successfully: '+r.data.company_name);setBusy(false)
+  setCompany(blankCompany);setCompanyCategories([]);setCompanyMatchDecision('');setSuccess('Company added successfully: '+r.data.company_name);setBusy(false)
  }
  async function saveDistributor(e){
   e.preventDefault();if(busy)return
@@ -107,7 +112,17 @@ export default function AdminSingleEntry({onBack}){
   {success&&<div className="admin-success" role="status"><CheckCircle2 size={17}/>{success}</div>}
   {loading?<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading companies, distributors, categories and locations…</div>:<>
    {tab==='company'&&<section className="admin-panel admin-single-entry-panel"><div className="admin-panel-heading"><div><p className="section-kicker">NEW RECORD</p><h2>Add a Company</h2><p>Enter the company once. Divisions and brands can be added separately.</p></div><Building2 size={20}/></div><form className="admin-single-entry-form" onSubmit={saveCompany}>
-    {field('Company name','company_name',company.company_name,setCompany,{required:true,placeholder:'e.g. Sun Pharmaceutical Industries'})}
+    {field('Company name','company_name',company.company_name,setCompanyField,{required:true,placeholder:'e.g. Sun Pharmaceutical Industries'})}
+    {manualCompanyMatches.length>0&&<div className="admin-note" style={{marginBottom:'12px'}}>
+     <strong>Possible existing company matches</strong>
+     <p style={{margin:'6px 0'}}>Check these before creating a new record. Selecting an existing name will stop a duplicate being created.</p>
+     {manualCompanyMatches.map(({company:match,score,exact})=><div key={match.id} style={{display:'flex',gap:'8px',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',padding:'7px 0'}}>
+      <span><strong>{match.company_name}</strong><small style={{display:'block'}}>{exact?'Normalized name match':'Possible name match'} · {Math.round(score*100)}% similarity</small></span>
+      <button type="button" className="admin-refresh" onClick={()=>{setCompany(s=>({...s,company_name:match.company_name}));setCompanyMatchDecision('existing')}}>Use Existing Name</button>
+     </div>)}
+     <button type="button" className="admin-refresh" onClick={()=>setCompanyMatchDecision('new')}>Keep as New Company</button>
+     {companyMatchDecision==='new'&&<p style={{marginTop:'6px'}}>Marked as a separate company. Confirm it is not already represented above.</p>}
+    </div>}
     {field('Legal name','legal_name',company.legal_name,setCompany,{placeholder:'Optional'})}
     {field('Short name','short_name',company.short_name,setCompany,{placeholder:'Optional'})}
     {field('Description','description',company.description,setCompany,{multiline:true,placeholder:'Optional notes about the company'})}
