@@ -28,6 +28,8 @@ function editSimilarity(a, b) {
   if (!a || !b) return 0
   if (a === b) return 1
   if (Math.min(a.length, b.length) < 5) return 0
+  if (Math.abs(a.length - b.length) / Math.max(a.length, b.length) > 0.3) return 0
+  if (a[0] !== b[0]) return 0
   let previous = Array.from({ length: b.length + 1 }, (_, i) => i)
   for (let i = 1; i <= a.length; i++) {
     const current = [i]
