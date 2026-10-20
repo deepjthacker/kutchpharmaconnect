@@ -65,6 +65,8 @@ export default function App(){
     if(view==='companies'||view==='distributors'||view==='locations'){
       return {kpc:'browse',type:view,category:url.searchParams.get('category')||null}
     }
+    const distributorSlug=url.searchParams.get('d')
+    if(distributorSlug)return {kpc:'distributorSlug',slug:distributorSlug}
     if(view==='profile'){
       return {kpc:'profile',type:url.searchParams.get('type'),id:url.searchParams.get('id')}
     }
@@ -79,6 +81,8 @@ export default function App(){
       setBrowse(initial.type||'companies');setBrowseCategory(initial.category||null)
     }else if(initial.kpc==='profile'&&initial.type&&initial.id){
       openProfile(initial.type,initial.id,{history:false})
+    }else if(initial.kpc==='distributorSlug'&&initial.slug){
+      resolveDistributorSlug(initial.slug)
     }else if(initial.kpc==='admin'){
       setAdmin(true)
     }else if(initial.q){
@@ -93,6 +97,8 @@ export default function App(){
         setBrowse(route.type||'companies');setBrowseCategory(route.category||null)
       }else if(route.kpc==='profile'&&route.type&&route.id){
         openProfile(route.type,route.id,{history:false})
+      }else if(route.kpc==='distributorSlug'&&route.slug){
+        resolveDistributorSlug(route.slug)
       }else{
         setQ(route.q||'')
         setSearched(Boolean(route.q))
@@ -441,6 +447,20 @@ export default function App(){
     setLoading(false)
   }
 
+  async function resolveDistributorSlug(slug){
+    setProfile(null);setProfileLoading(true);setError('')
+    const {data,error}=await supabase.from('distributors').select('id,distributor_name').eq('status','active')
+    if(error){setError(error.message);setProfileLoading(false);return}
+    const normalize=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')
+    const match=(data||[]).find(item=>normalize(item.distributor_name)===slug)
+    if(!match){setError('Distributor link not found. Please open the distributor from the directory.');setProfileLoading(false);return}
+    const url=new URL(window.location.href)
+    url.searchParams.delete('d')
+    url.searchParams.set('view','profile');url.searchParams.set('type','distributor');url.searchParams.set('id',match.id)
+    window.history.replaceState({kpc:'profile',type:'distributor',id:match.id},'',url.pathname+url.search+url.hash)
+    await openProfile('distributor',match.id,{history:false})
+  }
+
   async function openProfile(type,id,options={}){
     setRelationshipSearch('')
     if(options.history!==false)pushRoute('profile',{type,id})
@@ -481,8 +501,9 @@ export default function App(){
         rememberRecent('distributor',id,distRes.data.distributor_name)
         // Keep a readable distributor slug in the shareable URL while the stable ID remains the lookup key.
         const profileUrl=new URL(window.location.href)
-        profileUrl.searchParams.set('name',String(distRes.data.distributor_name||'distributor').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''))
-        window.history.replaceState(window.history.state, '', profileUrl.pathname+profileUrl.search+profileUrl.hash)
+        profileUrl.search=''
+        profileUrl.searchParams.set('d',String(distRes.data.distributor_name||'distributor').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''))
+        window.history.replaceState({kpc:'distributorSlug',slug:profileUrl.searchParams.get('d')}, '', profileUrl.pathname+profileUrl.search+profileUrl.hash)
       }
       const companyIds=[...new Set(rels.map(x=>x.company_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
