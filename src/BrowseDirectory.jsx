@@ -66,13 +66,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
         const companyRows = categoryCompanyIds ? (data || []).filter(x => categoryCompanyIds.includes(x.id)) : (data || [])
         const ids = companyRows.map(x => x.id)
-        const { data: rels, error: relError } = ids.length
-          ? await supabase
-              .from('distributorships')
-              .select('company_id,distributor_id,location_id,category_id,verification_status')
-              .eq('status', 'active')
-              .in('company_id', ids)
-          : { data: [], error: null }
+        // Fetch active relationships without sending hundreds of company IDs in one URL.
+        // A large `.in('company_id', ids)` filter can exceed request URL limits and return Bad Request.
+        const { data: rels, error: relError } = await supabase
+          .from('distributorships')
+          .select('company_id,distributor_id,location_id,category_id,verification_status')
+          .eq('status', 'active')
 
         if (relError) {
           if (!cancelled) { setError(relError.message); setLoading(false) }
