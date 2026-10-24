@@ -156,13 +156,26 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         }
 
         const ids = (data || []).map(x => x.id)
-        const { data: rels, error: relError } = ids.length
-          ? await supabase
+        // Supabase returns at most 1,000 rows per request by default. Fetch all
+        // active relationships in pages so distributors later in the result set
+        // do not incorrectly appear to have zero relationships.
+        let rels = []
+        let relError = null
+        if (ids.length) {
+          const pageSize = 1000
+          for (let from = 0; ; from += pageSize) {
+            const result = await supabase
               .from('distributorships')
               .select('distributor_id,location_id,category_id,verification_status')
               .eq('status', 'active')
               .in('distributor_id', ids)
-          : { data: [], error: null }
+              .range(from, from + pageSize - 1)
+            if (result.error) { relError = result.error; break }
+            const page = result.data || []
+            rels.push(...page)
+            if (page.length < pageSize) break
+          }
+        }
 
         if (relError) {
           if (!cancelled) { setError(relError.message); setLoading(false) }
