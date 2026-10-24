@@ -62,11 +62,12 @@ export default function App(){
   const routeFromLocation=()=>{
     const url=new URL(window.location.href)
     const view=url.searchParams.get('view')
+    // Specific entity routes must take precedence over generic directory views.
+    const distributorSlug=url.searchParams.get('d')
+    if(distributorSlug)return {kpc:'distributorSlug',slug:distributorSlug}
     if(view==='companies'||view==='distributors'||view==='locations'){
       return {kpc:'browse',type:view,category:url.searchParams.get('category')||null}
     }
-    const distributorSlug=url.searchParams.get('d')
-    if(distributorSlug)return {kpc:'distributorSlug',slug:distributorSlug}
     if(view==='profile'){
       return {kpc:'profile',type:url.searchParams.get('type'),id:url.searchParams.get('id')}
     }
@@ -484,7 +485,7 @@ export default function App(){
         brandIds.length?supabase.from('brands').select('id,brand_name').in('id',brandIds).eq('status','active'):Promise.resolve({data:[],error:null}),
         locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds).eq('status','active'):Promise.resolve({data:[],error:null})
       ])
-      if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error).message);setProfileLoading(false);return}
+      if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
@@ -515,7 +516,7 @@ export default function App(){
         locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null}),
         brandIds.length?supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',brandIds).eq('status','active'):Promise.resolve({data:[],error:null})
       ])
-      if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error).message);setProfileLoading(false);return}
+      if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
@@ -570,9 +571,9 @@ export default function App(){
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
                     <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
-                    {profile.relationships.some(rel=>rel.verification_status==='verified') && (
-                      <span className="verified-badge" title="At least one current Kutch distributorship relationship has been verified.">
-                        <ShieldCheck size={14}/> Verified
+                    {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
+                      <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
+                        <ShieldCheck size={14}/> Relationship Verified
                       </span>
                     )}                  </div>
                 </div>
