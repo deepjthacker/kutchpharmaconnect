@@ -25,6 +25,19 @@ const mapsLink=entity=>{
   return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:null
 }
 
+// Supabase REST responses are capped at 1,000 rows by default. Page every
+// relationship query that contributes to public directory counts and locations.
+async function fetchAllPages(makeQuery, pageSize = 1000) {
+  const rows = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await makeQuery().range(from, from + pageSize - 1)
+    if (error) return { data: null, error }
+    const page = data || []
+    rows.push(...page)
+    if (page.length < pageSize) return { data: rows, error: null }
+  }
+}
+
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile, onReport }) {
   const isCompanies = type === 'companies'
   const isLocations = type === 'locations'
@@ -68,10 +81,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         const ids = companyRows.map(x => x.id)
         // Fetch active relationships without sending hundreds of company IDs in one URL.
         // A large `.in('company_id', ids)` filter can exceed request URL limits and return Bad Request.
-        const { data: rels, error: relError } = await supabase
+        const relationshipResult = await fetchAllPages(() => supabase
           .from('distributorships')
           .select('company_id,distributor_id,location_id,category_id,verification_status')
-          .eq('status', 'active')
+          .eq('status', 'active'))
+        const rels = relationshipResult.data
+        const relError = relationshipResult.error
 
         if (relError) {
           if (!cancelled) { setError(relError.message); setLoading(false) }
@@ -116,9 +131,11 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').eq('status','active').order('city')
         if (locationError) { if (!cancelled) { setError(locationError.message); setLoading(false) }; return }
         const ids = (locations || []).map(x => x.id)
-        const { data: rels, error: relError } = ids.length
-          ? await supabase.from('distributorships').select('location_id,company_id,distributor_id').eq('status','active').in('location_id', ids)
+        const locationRelationshipResult = ids.length
+          ? await fetchAllPages(() => supabase.from('distributorships').select('location_id,company_id,distributor_id').eq('status','active').in('location_id', ids))
           : { data: [], error: null }
+        const rels = locationRelationshipResult.data
+        const relError = locationRelationshipResult.error
         if (relError) { if (!cancelled) { setError(relError.message); setLoading(false) }; return }
         const companyIds=[...new Set((rels||[]).map(x=>x.company_id).filter(Boolean))]
         const distributorIds=[...new Set((rels||[]).map(x=>x.distributor_id).filter(Boolean))]
