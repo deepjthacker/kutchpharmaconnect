@@ -322,9 +322,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                       {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
                       {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
                       <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
-                      {item.verifiedCount > 0 && <span className="verified-badge verified-badge-small" title="At least one current Kutch distributorship relationship has been independently verified.">✓ Verified</span>}
-                      {item.verifiedCount === 0 && item.reviewCount > 0 && <span className="status-badge status-review">Under Review</span>}
-                      {item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Current relationships are listed from supplied directory data but have not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
+                      {isCompanies && item.verifiedCount > 0 && <span className="verified-badge verified-badge-small" title="At least one current company–distributor relationship has been independently verified.">✓ Relationship Verified</span>}
+                      {isCompanies && item.verifiedCount === 0 && item.reviewCount > 0 && <span className="status-badge status-review">Under Review</span>}
+                      {isCompanies && item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Company relationship data has not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
                           {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={14}/><span>Call</span></a>}
