@@ -1430,6 +1430,35 @@ html[data-theme="dark"] .wizard-csv-hint{background:#172235;border-color:#334155
 .admin-reference-links .admin-link{min-width:0}
 @media(max-width:680px){.admin-workspace-grid,.admin-reference-links{grid-template-columns:1fr}.admin-workspace-card{padding:15px}.admin-reference-panel>summary strong{font-size:16px}}
 
+/* Small-screen home refinements: keep navigation readable and controls out of the way. */
+@media(max-width:560px){
+  .header-inner{gap:7px}
+  .brand{min-width:0;flex:1 1 auto}
+  .brand-text{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:clamp(14px,3.5vw,17px)}
+  .header-nav{min-width:0;flex:0 0 auto;gap:1px}
+  .header-nav button{padding-inline:4px;font-size:9px}
+  .header-nav button:nth-child(3){display:none!important}
+  .header-nav .admin-nav-button{max-width:78px;padding-inline:6px;white-space:nowrap}
+  .theme-toggle{padding:6px!important}
+}
+@media(max-width:420px){
+  .header-nav button:nth-child(-n+2){display:none!important}
+  .brand-text{max-width:calc(100vw - 112px)}
+  .header-nav .admin-nav-button{max-width:none}
+}
+@media(max-width:700px){
+  .report-floating{
+    position:static!important;
+    right:auto!important;
+    bottom:auto!important;
+    display:flex;
+    width:max-content;
+    max-width:calc(100% - 24px);
+    justify-content:center;
+    margin:14px auto 92px;
+  }
+}
+
 
 /* Editable, mobile-friendly company catalogue review */
 .admin-catalog-rows{display:grid;gap:10px;margin-top:12px}

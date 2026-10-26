@@ -50,18 +50,28 @@ function pageHtml({ title, description, canonical, body, schema }) {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
+<meta property="og:image" content="${siteUrl}/kutchpharma-connect-logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${siteUrl}/kutchpharma-connect-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <script type="application/ld+json">${JSON.stringify(schema).replace(/</g, '\\u003c')}</script>
 <style>
-:root{color-scheme:light;--ink:#172b3a;--muted:#526575;--line:#dce5e9;--brand:#087f8c;--soft:#f2f8f8}
-*{box-sizing:border-box}body{margin:0;font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:#fff}
-header,main,footer{max-width:900px;margin:auto;padding:22px}header{border-bottom:1px solid var(--line)}a{color:var(--brand)}.brand{font-weight:750;text-decoration:none;font-size:1.15rem}
-main{padding-top:34px;padding-bottom:48px}h1{font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.15;margin:.3em 0}h2{margin-top:2rem;font-size:1.25rem}.eyebrow{color:var(--muted);font-weight:650}.card{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}.muted{color:var(--muted)}.pill{display:inline-block;border-radius:999px;padding:3px 10px;background:var(--soft);font-size:.82rem}.cta{display:inline-block;background:var(--brand);color:white;text-decoration:none;border-radius:9px;padding:10px 15px;margin:6px 8px 6px 0}.notice{background:var(--soft);border-left:4px solid var(--brand);padding:12px 15px;border-radius:5px}footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+:root{color-scheme:light;--ink:#14283b;--muted:#627486;--line:#dbe7e7;--brand:#173a8f;--brand-dark:#102b41;--soft:#eef3ff}
+*{box-sizing:border-box}body{margin:0;font:16px/1.65 "DM Sans",Inter,ui-sans-serif,system-ui,sans-serif;color:var(--ink);background:#f7fafb}
+header{background:#fff;border-bottom:1px solid var(--line)}.header-inner,main,footer{max-width:1080px;margin:auto;padding:22px}.header-inner{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-weight:850;text-decoration:none;font-size:1.13rem;letter-spacing:-.04em;color:var(--brand-dark)}.brand span{color:var(--brand)}nav{display:flex;gap:18px}nav a{color:#536679;text-decoration:none;font-size:.82rem;font-weight:750}nav a:hover{color:var(--brand)}
+main{padding-top:42px;padding-bottom:56px}h1,h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400}h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.12;letter-spacing:-.035em;margin:.3em 0}h2{margin-top:2rem;font-size:1.3rem;letter-spacing:-.025em}.eyebrow{color:var(--brand);font-weight:750;font-size:.83rem}.card{border:1px solid var(--line);border-radius:15px;padding:18px;margin:13px 0;background:#fff;box-shadow:0 3px 12px rgba(20,50,66,.035)}.muted{color:var(--muted)}a{color:var(--brand)}.pill{display:inline-block;border-radius:999px;padding:3px 10px;background:var(--soft);color:#3159a8;font-size:.78rem;font-weight:700}.cta{display:inline-block;background:var(--brand);color:white;text-decoration:none;border-radius:10px;padding:11px 16px;margin:6px 8px 6px 0;font-size:.85rem;font-weight:750}.cta:hover{background:#123276}.notice{background:var(--soft);border:1px solid #dce6ff;border-left:4px solid var(--brand);padding:13px 16px;border-radius:10px}
+footer{border-top:1px solid #2b485b;color:#c4d4dd;background:var(--brand-dark);max-width:none;font-size:.82rem}footer .footer-inner{max-width:1080px;margin:auto;padding:24px 22px;line-height:1.7}footer a{color:#b7ceef}
+@media(max-width:600px){.header-inner{align-items:flex-start;flex-direction:column;gap:8px}nav{gap:14px;flex-wrap:wrap}.header-inner,main{padding-left:16px;padding-right:16px}}
 </style>
 </head>
 <body>
-<header><a class="brand" href="${siteUrl}/">KutchPharmaConnect</a><div class="muted">Kutch Pharmaceutical &amp; Healthcare Directory</div></header>
-<main>${body}<p><a class="cta" href="${siteUrl}/">Search the directory</a><a href="${siteUrl}/">Return to KutchPharmaConnect</a></p></main>
-<footer>Business information is provided for directory discovery. Confirm current details and distributorships directly with the business before relying on them. <a href="${siteUrl}/">KutchPharmaConnect</a></footer>
+<header><div class="header-inner"><a class="brand" href="${siteUrl}/">Kutch<span>Pharma</span>Connect</a><nav aria-label="Directory"><a href="${siteUrl}/?view=companies">Companies</a><a href="${siteUrl}/?view=distributors">Distributors</a><a href="${siteUrl}/?view=locations">Locations</a></nav></div></header>
+<main>${body}<p><a class="cta" href="${siteUrl}/">Search the directory</a><a href="${siteUrl}/?view=companies">Browse companies</a></p></main>
+<footer><div class="footer-inner">Business information is provided for directory discovery. Confirm current details and distributorships directly with the business before relying on them. <a href="${siteUrl}/">KutchPharmaConnect</a></div></footer>
 </body></html>`
 }
 
