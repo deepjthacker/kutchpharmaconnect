@@ -2,6 +2,7 @@ import React from 'react'
 import { useEffect,useMemo,useState } from 'react'
 import { ArrowLeft,Truck,Edit3,LoaderCircle,Search,Save,X,Phone,Trash2,MessageCircle,MapPin,Mail } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { fetchAllPages } from './lib/queryHelpers'
 
 export default function AdminDistributors({onBack}){
  const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[q,setQ]=useState(''),[status,setStatus]=useState('active'),[selected,setSelected]=useState(null),[busy,setBusy]=useState(false)
@@ -12,7 +13,7 @@ export default function AdminDistributors({onBack}){
   if(error){setError(error.message);setRows([])} else {
    const ids=(data||[]).map(x=>x.id)
    let counts={}
-   if(ids.length){const r=await supabase.from('distributorships').select('distributor_id').in('distributor_id',ids).eq('status','active');if(r.error){setError(r.error.message)};(r.data||[]).forEach(x=>counts[x.distributor_id]=(counts[x.distributor_id]||0)+1)}
+   if(ids.length){const r=await fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id').in('distributor_id',ids).eq('status','active').order('id'));if(r.error){setError(r.error.message);setRows([]);setLoading(false);return};(r.data||[]).forEach(x=>counts[x.distributor_id]=(counts[x.distributor_id]||0)+1)}
    setRows((data||[]).map(x=>({...x,relationship_count:counts[x.id]||0})))
   }
   setLoading(false)

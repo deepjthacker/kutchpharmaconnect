@@ -2,9 +2,23 @@ import React from 'react'
 import { useEffect,useState } from 'react'
 import { ArrowLeft,ShieldCheck,Clock3,LoaderCircle,RefreshCw } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 export default function AdminVerification({onBack}){
  const [rows,setRows]=useState([]),[filter,setFilter]=useState('needs_review'),[loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState('')
- async function load(){setLoading(true);const r=await supabase.from('distributorships').select('id,company_id,distributor_id,division_id,territory,verification_status,verification_note,verification_notes').eq('status','active').order('created_at',{ascending:false});if(r.error){setError(r.error.message);setLoading(false);return}const idsC=[...new Set((r.data||[]).map(x=>x.company_id))],idsD=[...new Set((r.data||[]).map(x=>x.distributor_id))],idsV=[...new Set((r.data||[]).map(x=>x.division_id).filter(Boolean))];const [c,d,v]=await Promise.all([idsC.length?supabase.from('companies').select('id,company_name').in('id',idsC):Promise.resolve({data:[],error:null}),idsD.length?supabase.from('distributors').select('id,distributor_name').in('id',idsD):Promise.resolve({data:[],error:null}),idsV.length?supabase.from('divisions').select('id,division_name').in('id',idsV):Promise.resolve({data:[],error:null})]);if(c.error||d.error||v.error){setError((c.error||d.error||v.error).message)}else{const cm=new Map((c.data||[]).map(x=>[x.id,x.company_name])),dm=new Map((d.data||[]).map(x=>[x.id,x.distributor_name])),vm=new Map((v.data||[]).map(x=>[x.id,x.division_name]));setRows((r.data||[]).map(x=>({...x,company_name:cm.get(x.company_id),distributor_name:dm.get(x.distributor_id),division_name:x.division_id?vm.get(x.division_id):null})))}setLoading(false)}
+ async function load(){
+  setLoading(true);setError('')
+  const r=await fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,territory,verification_status,verification_note,verification_notes,created_at').eq('status','active').order('created_at',{ascending:false}).order('id'))
+  if(r.error){setError(r.error.message);setLoading(false);return}
+  const idsC=[...new Set((r.data||[]).map(x=>x.company_id))],idsD=[...new Set((r.data||[]).map(x=>x.distributor_id))],idsV=[...new Set((r.data||[]).map(x=>x.division_id).filter(Boolean))]
+  const [c,d,v]=await Promise.all([
+   fetchByIds(idsC,ids=>supabase.from('companies').select('id,company_name').in('id',ids)),
+   fetchByIds(idsD,ids=>supabase.from('distributors').select('id,distributor_name').in('id',ids)),
+   fetchByIds(idsV,ids=>supabase.from('divisions').select('id,division_name').in('id',ids))
+  ])
+  if(c.error||d.error||v.error){setError((c.error||d.error||v.error).message)}
+  else{const cm=new Map((c.data||[]).map(x=>[x.id,x.company_name])),dm=new Map((d.data||[]).map(x=>[x.id,x.distributor_name])),vm=new Map((v.data||[]).map(x=>[x.id,x.division_name]));setRows((r.data||[]).map(x=>({...x,company_name:cm.get(x.company_id),distributor_name:dm.get(x.distributor_id),division_name:x.division_id?vm.get(x.division_id):null})))}
+  setLoading(false)
+ }
  useEffect(()=>{load()},[])
  async function setStatus(id,status){setSaving(id);const now=status==='verified'?new Date().toISOString().slice(0,10):null;const r=await supabase.from('distributorships').update({verification_status:status,verified_date:now,verified_at:status==='verified'?new Date().toISOString():null}).eq('id',id);if(r.error)setError(r.error.message);else setRows(x=>x.map(v=>v.id===id?{...v,verification_status:status,verified_date:now}:v));setSaving('')}
  const shown=rows.filter(x=>filter==='all'||x.verification_status===filter)

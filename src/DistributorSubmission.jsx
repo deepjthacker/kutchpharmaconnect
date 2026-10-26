@@ -43,7 +43,7 @@ export default function DistributorSubmission({open=false,onClose=()=>{}}){
     if(invalid>=0){setError(`Please check row ${invalid+2}: Company Name is required and Category must match a listed category.`);return}
     const messy=rows.findIndex(r=>clean(r.company_name).length>100||/[;,\n\r]/.test(clean(r.company_name))||/\b(all|every)\s+(the\s+)?generic\s+companies\b/i.test(clean(r.company_name)))
     if(messy>=0){setError(`Please correct row ${messy+2}: enter only one official company name in the Company Name column. Do not combine multiple companies, product names, or general descriptions in one cell. Put divisions in the Division column and brands in the Brand column.`);return}
-    setEntries(rows.map(r=>({company_name:'',category:'Pharmaceutical',subsidiary:'',division:'',brand:'',product:'',...r,category:clean(r.category)||'Pharmaceutical'})));setBulkInfo({source,fileName,count:rows.length});setError('')
+    setEntries(rows.map(r=>({company_name:'',subsidiary:'',division:'',brand:'',product:'',...r,category:clean(r.category)||'Pharmaceutical'})));setBulkInfo({source,fileName,count:rows.length});setError('')
   }
   async function ensureXlsx(){
     if(window.XLSX)return window.XLSX

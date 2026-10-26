@@ -2,6 +2,7 @@ import React from 'react'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle, Flag } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { fetchByIds } from './lib/queryHelpers'
 
 const browseCache = new Map()
 
@@ -63,7 +64,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           category
             ? supabase.from('categories').select('id,name').ilike('name', category).eq('status', 'active').maybeSingle()
             : Promise.resolve({data:null,error:null}),
-          supabase.from('companies').select('id,company_name,short_name').eq('status', 'active').order('company_name')
+          fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name').eq('status', 'active').order('company_name').order('id'))
         ])
         if (categoryResult.error || companyResult.error) {
           if (!cancelled) { setError((categoryResult.error || companyResult.error).message); setLoading(false) }
@@ -71,7 +72,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         }
         if (category) {
           if (!categoryResult.data) { if (!cancelled) { setError('Category not found.'); setLoading(false) }; return }
-          const { data: categoryLinks, error: categoryLinkError } = await supabase.from('company_categories').select('company_id').eq('category_id', categoryResult.data.id)
+          const { data: categoryLinks, error: categoryLinkError } = await fetchAllPages(() => supabase.from('company_categories').select('company_id').eq('category_id', categoryResult.data.id).order('company_id'))
           if (categoryLinkError) { if (!cancelled) { setError(categoryLinkError.message); setLoading(false) }; return }
           categoryCompanyIds = [...new Set((categoryLinks || []).map(x => x.company_id).filter(Boolean))]
         }
@@ -128,7 +129,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           setItems(nextItems)
         }
       } else if (isLocations) {
-        const { data: locations, error: locationError } = await supabase.from('locations').select('id,city,district,state,pincode').eq('status','active').order('city')
+        const { data: locations, error: locationError } = await fetchAllPages(() => supabase.from('locations').select('id,city,district,state,pincode').eq('status','active').order('city').order('id'))
         if (locationError) { if (!cancelled) { setError(locationError.message); setLoading(false) }; return }
         const ids = (locations || []).map(x => x.id)
         const locationRelationshipResult = ids.length
@@ -140,8 +141,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         const companyIds=[...new Set((rels||[]).map(x=>x.company_id).filter(Boolean))]
         const distributorIds=[...new Set((rels||[]).map(x=>x.distributor_id).filter(Boolean))]
         const [companies,distributors]=await Promise.all([
-          companyIds.length ? supabase.from('companies').select('id,company_name').in('id',companyIds).eq('status','active') : Promise.resolve({data:[],error:null}),
-          distributorIds.length ? supabase.from('distributors').select('id,distributor_name').in('id',distributorIds).eq('status','active') : Promise.resolve({data:[],error:null})
+          fetchByIds(companyIds,ids=>supabase.from('companies').select('id,company_name').in('id',ids).eq('status','active')),
+          fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name').in('id',ids).eq('status','active'))
         ])
         if (companies.error || distributors.error) { if (!cancelled) { setError((companies.error||distributors.error).message); setLoading(false) }; return }
         const cm=new Map((companies.data||[]).map(x=>[x.id,x])), dm=new Map((distributors.data||[]).map(x=>[x.id,x]))
@@ -161,11 +162,11 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           setItems(nextItems)
         }
       } else {
-        const { data, error: distributorError } = await supabase
+        const { data, error: distributorError } = await fetchAllPages(() => supabase
           .from('distributors')
           .select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url')
           .eq('status', 'active')
-          .order('distributor_name')
+          .order('distributor_name').order('id'))
 
         if (distributorError) {
           if (!cancelled) { setError(distributorError.message); setLoading(false) }

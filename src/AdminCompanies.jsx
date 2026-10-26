@@ -3,10 +3,28 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Building2, Edit3, LoaderCircle, Plus, Search, Save, X, Trash2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
+const PAGE_SIZE = 500
+
+async function loadAll(query){
+  const rows=[]
+  let start=0
+  while(true){
+    const {data,error}=await query.range(start,start+PAGE_SIZE-1)
+    if(error)return {data:null,error}
+    const batch=data||[]
+    rows.push(...batch)
+    if(batch.length<PAGE_SIZE)break
+    start+=PAGE_SIZE
+  }
+  return {data:rows,error:null}
+}
+
 export default function AdminCompanies({ onBack, onBulkUpload }){
   const [companies,setCompanies]=useState([]),[categories,setCategories]=useState([]),[companyCategoryIds,setCompanyCategoryIds]=useState([])
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
+  const [categoryLoading,setCategoryLoading]=useState(false)
+  const [categoryLoadError,setCategoryLoadError]=useState(false)
   const [query,setQuery]=useState('')
   const [status,setStatus]=useState('active')
   const [selected,setSelected]=useState(null)
@@ -15,19 +33,16 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
 
   async function loadCompanies(){
     setLoading(true);setError('')
-    const {data,error}=await supabase
+    const {data,error}=await loadAll(supabase
       .from('companies')
       .select('id,company_name,legal_name,short_name,description,status,company_group_id')
-      .order('company_name')
+      .order('company_name').order('id'))
     if(error){setError(error.message);setCompanies([]);setLoading(false);return}
 
     const rows=data||[]
-    const ids=rows.map(x=>x.id)
-    if(!ids.length){setCompanies([]);setLoading(false);return}
-
     const [divRes,relRes,catRes]=await Promise.all([
-      supabase.from('divisions').select('company_id').in('company_id',ids).eq('status','active'),
-      supabase.from('distributorships').select('company_id').in('company_id',ids).eq('status','active'),
+      loadAll(supabase.from('divisions').select('company_id').eq('status','active').order('id')),
+      loadAll(supabase.from('distributorships').select('company_id').eq('status','active').order('id')),
       supabase.from('categories').select('id,name').eq('status','active').order('name')
     ])
     if(divRes.error||relRes.error||catRes.error){setError((divRes.error||relRes.error||catRes.error).message);setCompanies([]);setLoading(false);return}
@@ -41,6 +56,19 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
   }
 
   useEffect(()=>{loadCompanies()},[])
+
+  useEffect(()=>{
+    if(!selected){setCompanyCategoryIds([]);setCategoryLoading(false);setCategoryLoadError(false);return}
+    let active=true
+    setCategoryLoading(true);setCategoryLoadError(false)
+    supabase.from('company_categories').select('category_id').eq('company_id',selected.id).then(({data,error})=>{
+      if(!active)return
+      if(error){setCategoryLoadError(true);setError(error.message)}
+      else setCompanyCategoryIds((data||[]).map(x=>x.category_id))
+      setCategoryLoading(false)
+    })
+    return()=>{active=false}
+  },[selected])
 
   const filtered=useMemo(()=>{
     const q=query.trim().toLowerCase()
@@ -60,7 +88,6 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
       description:company.description||'',
       status:company.status||'active'
     })
-    supabase.from('company_categories').select('category_id').eq('company_id',company.id).then(({data})=>setCompanyCategoryIds((data||[]).map(x=>x.category_id)))
   }
 
   function closeEdit(){if(!busy){setSelected(null)}}
@@ -78,7 +105,7 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
 
   async function saveCompany(e){
     e.preventDefault()
-    if(!form.company_name.trim())return
+    if(!form.company_name.trim()||categoryLoading||categoryLoadError)return
     setBusy(true);setError('')
     const {data,error}=await supabase
       .from('companies')
@@ -182,7 +209,11 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
                 <option value="inactive">Inactive</option>
               </select>
             </label>
-            <button className="report-submit" disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Saving…</>:<><Save size={16}/> Save Changes</>}</button>
+            <fieldset className="admin-category-checks" disabled={categoryLoading||categoryLoadError}>
+              <legend>Directory categories</legend>
+              {categoryLoading?<p>Loading category assignments…</p>:categoryLoadError?<p>Could not load assignments. Refresh the company record before saving.</p>:<div>{categories.map(category=><label key={category.id}><input type="checkbox" checked={companyCategoryIds.includes(category.id)} onChange={e=>setCompanyCategoryIds(current=>e.target.checked?[...new Set([...current,category.id])]:current.filter(id=>id!==category.id))}/>{category.name}</label>)}</div>}
+            </fieldset>
+            <button className="report-submit" disabled={busy||categoryLoading||categoryLoadError}>{busy?<><LoaderCircle className="spin" size={16}/> Saving…</>:<><Save size={16}/> Save Changes</>}</button>
           </form>
           <div className="admin-danger-zone">
             <strong>Permanent deletion</strong>

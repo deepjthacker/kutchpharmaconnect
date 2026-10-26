@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react'
 import {AlertTriangle,Check,Eye,LoaderCircle,Package,RefreshCw,ShieldAlert,X} from 'lucide-react'
 import {supabase} from './lib/supabase'
+import {fetchAllPages} from './lib/queryHelpers'
 
 const norm=v=>String(v||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ')
 const entriesOf=r=>Array.isArray(r.product_entries)?r.product_entries:[]
@@ -15,7 +16,7 @@ export default function AdminProductSubmissions({onBack}){
   const [s,c,p,d,v,cat,l]=await Promise.all([
    supabase.from('product_submissions').select('id,distributor_name,mobile,email,distributor_id,product_entries,source,file_name,row_count,notes,submitted_at,status,admin_notes,reviewed_at,reviewed_by,publish_data').order('submitted_at',{ascending:false}),
    supabase.from('companies').select('id,company_name,legal_name,short_name,status').eq('status','active').order('company_name'),
-   supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,category_id,status').eq('status','active').limit(5000),
+   fetchAllPages(()=>supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,category_id,status').eq('status','active').order('id')),
    supabase.from('distributors').select('id,distributor_name,legal_name,mobile,status').eq('status','active').order('distributor_name'),
    supabase.from('divisions').select('id,company_id,division_name,division_code,status').eq('status','active').order('division_name'),
    supabase.from('categories').select('id,name,status').eq('status','active').order('display_order').order('name'),

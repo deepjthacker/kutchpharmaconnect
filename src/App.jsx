@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
@@ -390,10 +391,10 @@ export default function App(){
     const allBrandIds=[...new Set(relationships.map(x=>x.brand_id).filter(Boolean))]
 
     const [rc,rd,rv,rb]=await Promise.all([
-      allCompanyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',allCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-      allDistributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').in('id',allDistributorIds):Promise.resolve({data:[],error:null}),
-      allDivisionIds.length?supabase.from('divisions').select('id,division_name,company_id').in('id',allDivisionIds):Promise.resolve({data:[],error:null}),
-      allBrandIds.length?supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',allBrandIds).eq('status','active'):Promise.resolve({data:[],error:null})
+      fetchByIds(allCompanyIds,ids=>supabase.from('companies').select('id,company_name,short_name').in('id',ids).eq('status','active')),
+      fetchByIds(allDistributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').in('id',ids)),
+      fetchByIds(allDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids)),
+      fetchByIds(allBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active'))
     ])
     const lookupErr=rc.error||rd.error||rv.error||rb.error
     if(requestId!==searchRequestRef.current)return
@@ -470,7 +471,7 @@ export default function App(){
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name').eq('id',id).eq('status','active').maybeSingle(),
-        supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active')
+        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id'))
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
@@ -480,10 +481,10 @@ export default function App(){
       const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
       const [dRes,vRes,bRes,lRes]=await Promise.all([
-        distributorIds.length?supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').in('id',distributorIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-        brandIds.length?supabase.from('brands').select('id,brand_name').in('id',brandIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-        locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds).eq('status','active'):Promise.resolve({data:[],error:null})
+        fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').in('id',ids).eq('status','active')),
+        fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids).eq('status','active')),
+        fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name').in('id',ids).eq('status','active')),
+        fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
       ])
       if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
@@ -494,7 +495,7 @@ export default function App(){
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id').eq('id',id).eq('status','active').maybeSingle(),
-        supabase.from('distributorships').select('id,company_id,division_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active')
+        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,division_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active').order('id'))
       ])
       if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
@@ -511,10 +512,10 @@ export default function App(){
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
       const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
       const [cRes,vRes,lRes,bRes]=await Promise.all([
-        companyIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-        divisionIds.length?supabase.from('divisions').select('id,division_name').in('id',divisionIds):Promise.resolve({data:[],error:null}),
-        locationIds.length?supabase.from('locations').select('id,city,district,state,pincode').in('id',locationIds):Promise.resolve({data:[],error:null}),
-        brandIds.length?supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',brandIds).eq('status','active'):Promise.resolve({data:[],error:null})
+        fetchByIds(companyIds,ids=>supabase.from('companies').select('id,company_name,short_name').in('id',ids).eq('status','active')),
+        fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids)),
+        fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids)),
+        fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active'))
       ])
       if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
