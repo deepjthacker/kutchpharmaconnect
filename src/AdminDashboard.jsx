@@ -10,6 +10,7 @@ import AdminDistributorships from './AdminDistributorships'
 import AdminVerification from './AdminVerification'
 import AdminDivisions from './AdminDivisions'
 import AdminBrands from './AdminBrands'
+import AdminCompanyHierarchy from './AdminCompanyHierarchy'
 import AdminLocations from './AdminLocations'
 import AdminCategories from './AdminCategories'
 import AdminAliases from './AdminAliases'
@@ -68,6 +69,7 @@ export default function AdminDashboard() {
   if (view === 'verification') return <AdminVerification onBack={back} />
   if (view === 'divisions') return <AdminDivisions onBack={back} />
   if (view === 'brands') return <AdminBrands onBack={back} />
+  if (view === 'hierarchy') return <AdminCompanyHierarchy onBack={back} />
   if (view === 'locations') return <AdminLocations onBack={back} />
   if (view === 'categories') return <AdminCategories onBack={back} />
   if (view === 'aliases') return <AdminAliases onBack={back} />
@@ -84,6 +86,7 @@ export default function AdminDashboard() {
     ['Distributorships', stats?.relationships, Link2, 'Which companies and divisions each distributor handles', 'relationships']
   ]
   const referenceData = [
+    ['Company hierarchy', null, GitBranch, 'View and manage parent companies, subsidiaries, divisions, brands and products', 'hierarchy'],
     ['Divisions', null, GitBranch, 'Manage company divisions', 'divisions'],
     ['Brands', null, Tags, 'Manage brands linked to companies', 'brands'],
     ['Categories', null, Tags, 'Manage directory categories', 'categories'],
