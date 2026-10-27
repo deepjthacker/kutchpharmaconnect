@@ -46,7 +46,7 @@ export default function App(){
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null)
   const navigationHistoryRef=useRef(false)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -482,7 +482,7 @@ export default function App(){
     })
 
     // Product matches are searchable independently from distributorship records.
-    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.length?',brand_id.in.('+searchedBrandIds.join(',')+')':'')).limit(20)
+    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.size?',brand_id.in.('+searchedBrandIds.join(',')+')':'')).limit(20)
     if(productRes.error){setError(productRes.error.message);setResults([]);setLoading(false);return}
     const productRows=productRes.data||[]
     const productCompanyIds=[...new Set(productRows.map(product=>product.company_id).filter(Boolean))]
@@ -882,8 +882,26 @@ export default function App(){
                 )}
 
                 {!loading && !error && results.length > 0 && (
+                  <div className="search-type-filters" role="group" aria-label="Filter search results">
+                    {[
+                      { id: 'all', label: 'All results', count: results.length },
+                      { id: 'product', label: 'Products', count: results.filter(item => item.type === 'product').length },
+                      { id: 'company', label: 'Companies', count: results.filter(item => item.type === 'company').length },
+                      { id: 'relationship', label: 'Distributor listings', count: results.filter(item => item.type === 'relationship').length }
+                    ].filter(item => item.id === 'all' || item.count > 0).map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`search-type-filter ${searchFilter === item.id ? 'is-active' : ''}`}
+                        aria-pressed={searchFilter === item.id}
+                        onClick={() => setSearchFilter(item.id)}
+                      >
+                        {item.label} <span>{item.count}</span>
+                      </button>
+                    ))}
+                  </div>
                   <div className="results-list">
-                    {results.map(r => {
+                    {results.filter(item => searchFilter === 'all' || item.type === searchFilter).map(r => {
                       if (r.type === 'company') return (
                         <div className="result-card" key={'company-'+r.id}>
                           <div className="result-icon"><Building2 size={19}/></div>
