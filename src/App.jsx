@@ -882,7 +882,7 @@ export default function App(){
                 )}
 
                 {!loading && !error && results.length > 0 && (
-                  <div className="search-type-filters" role="group" aria-label="Filter search results">
+                  <><div className="search-type-filters" role="group" aria-label="Filter search results">
                     {[
                       { id: 'all', label: 'All results', count: results.length },
                       { id: 'product', label: 'Products', count: results.filter(item => item.type === 'product').length },
@@ -1013,7 +1013,7 @@ export default function App(){
                         </div>
                       )
                     })}
-                  </div>
+                  </div></>
                 )}
 
                 {!loading && !error && results.length === 0 && (
