@@ -28,6 +28,7 @@ export default function AdminCompanyHierarchy({ onBack }) {
   const [parentDraft, setParentDraft] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [productDraft, setProductDraft] = useState({ product_name: '', company_id: '', brand_id: '', generic_name: '', strength: '', dosage_form: '', pack_size: '' })
 
   async function load() {
     setLoading(true)
@@ -124,6 +125,37 @@ export default function AdminCompanyHierarchy({ onBack }) {
     matches.forEach(company => addFamily(company.id))
     return companies.filter(company => ids.has(company.id))
   }, [query, companies, companyMap, childrenByParent, brandsByCompany, productsByCompany])
+
+  async function addProduct(event) {
+    event.preventDefault()
+    if (!productDraft.product_name.trim() || !productDraft.company_id) {
+      setError('Enter a product name and select its company.')
+      return
+    }
+    setBusy('product')
+    setError('')
+    setNotice('')
+    const productName = productDraft.product_name.trim()
+    const payload = {
+      product_name: productName,
+      normalized_product_name: productName.toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(),
+      company_id: productDraft.company_id,
+      brand_id: productDraft.brand_id || null,
+      generic_name: productDraft.generic_name.trim() || null,
+      strength: productDraft.strength.trim() || null,
+      dosage_form: productDraft.dosage_form.trim() || null,
+      pack_size: productDraft.pack_size.trim() || null,
+      status: 'active'
+    }
+    const { error: saveError } = await supabase.from('products').insert(payload)
+    if (saveError) setError(saveError.message)
+    else {
+      setProductDraft({ product_name: '', company_id: '', brand_id: '', generic_name: '', strength: '', dosage_form: '', pack_size: '' })
+      setNotice('Product added to the catalogue. Add a direct product–distributor link after confirming it.')
+      await load()
+    }
+    setBusy('')
+  }
 
   async function saveParent(company) {
     if (!company || busy) return
@@ -229,6 +261,19 @@ export default function AdminCompanyHierarchy({ onBack }) {
       </div>
       {error && <div className="admin-error">{error}</div>}
       {notice && <div className="admin-info-box"><strong>Saved</strong><span>{notice}</span></div>}
+      <section className="admin-panel" style={{ marginBottom: 18 }}>
+        <div className="admin-panel-heading"><div><p className="section-kicker">PRODUCT CATALOGUE</p><h2>Add a product</h2><p>Record the owning company and any verified brand or product details. Distributor links are managed separately.</p></div><Package size={20}/></div>
+        <form className="admin-hierarchy-editor" onSubmit={addProduct}>
+          <label>Product name<input required value={productDraft.product_name} onChange={event=>setProductDraft(current=>({...current,product_name:event.target.value}))} /></label>
+          <label>Owning company<select required value={productDraft.company_id} onChange={event=>setProductDraft(current=>({...current,company_id:event.target.value,brand_id:''}))}><option value="">Select company</option>{companies.map(company=><option key={company.id} value={company.id}>{company.company_name}</option>)}</select></label>
+          <label>Brand<select value={productDraft.brand_id} onChange={event=>setProductDraft(current=>({...current,brand_id:event.target.value}))}><option value="">Unassigned / not provided</option>{brands.filter(brand=>brand.company_id===productDraft.company_id).map(brand=><option key={brand.id} value={brand.id}>{brand.brand_name}</option>)}</select></label>
+          <label>Generic name<input value={productDraft.generic_name} onChange={event=>setProductDraft(current=>({...current,generic_name:event.target.value}))} /></label>
+          <label>Strength<input value={productDraft.strength} onChange={event=>setProductDraft(current=>({...current,strength:event.target.value}))} /></label>
+          <label>Dosage form<input value={productDraft.dosage_form} onChange={event=>setProductDraft(current=>({...current,dosage_form:event.target.value}))} /></label>
+          <label>Pack size<input value={productDraft.pack_size} onChange={event=>setProductDraft(current=>({...current,pack_size:event.target.value}))} /></label>
+          <button className="report-submit" type="submit" disabled={busy==='product'}>{busy==='product'?<LoaderCircle className="spin" size={15}/>:<Save size={15}/>} Add product</button>
+        </form>
+      </section>
       <section className="admin-control-summary">
         <div><strong>{companies.length}</strong><span>Active companies</span><small>separate company records</small></div>
         <div><strong>{linkedCount}</strong><span>Subsidiaries linked</span><small>with a parent company</small></div>

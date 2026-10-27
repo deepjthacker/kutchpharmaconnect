@@ -64,7 +64,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           category
             ? supabase.from('categories').select('id,name').ilike('name', category).eq('status', 'active').maybeSingle()
             : Promise.resolve({data:null,error:null}),
-          fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name').eq('status', 'active').order('company_name').order('id'))
+          fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status', 'active').order('company_name').order('id'))
         ])
         if (categoryResult.error || companyResult.error) {
           if (!cancelled) { setError((categoryResult.error || companyResult.error).message); setLoading(false) }
@@ -77,6 +77,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           categoryCompanyIds = [...new Set((categoryLinks || []).map(x => x.company_id).filter(Boolean))]
         }
         const data = companyResult.data || []
+        const productResult = await fetchAllPages(() => supabase.from('products').select('id,company_id').eq('status','active'))
+        if (productResult.error) { if (!cancelled) { setError(productResult.error.message); setLoading(false) }; return }
+        const productCounts = new Map()
+        ;(productResult.data||[]).forEach(product=>productCounts.set(product.company_id,(productCounts.get(product.company_id)||0)+1))
+        const companyNameMap = new Map(data.map(company=>[company.id,company.company_name]))
+        const parentIds = new Set(data.map(company=>company.parent_company_id).filter(Boolean))
 
         const companyRows = categoryCompanyIds ? (data || []).filter(x => categoryCompanyIds.includes(x.id)) : (data || [])
         const ids = companyRows.map(x => x.id)
@@ -123,8 +129,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         if (!cancelled) {
           const nextItems=companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
-            return { ...x, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()], locationIds:[...info.locations.keys()], categoryNames:[...new Set((rels||[]).filter(r=>r.company_id===x.id).map(r=>categoryMap.get(r.category_id)).filter(Boolean))] }
-          }).filter(x => x.relationshipCount > 0)
+            return { ...x, parentName:x.parent_company_id?companyNameMap.get(x.parent_company_id):null, hasSubsidiaries:parentIds.has(x.id), productCount:productCounts.get(x.id)||0, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()], locationIds:[...info.locations.keys()], categoryNames:[...new Set((rels||[]).filter(r=>r.company_id===x.id).map(r=>categoryMap.get(r.category_id)).filter(Boolean))] }
+          }).filter(x => x.relationshipCount > 0 || x.parent_company_id || x.hasSubsidiaries || x.productCount > 0)
           browseCache.set(cacheKey,nextItems)
           setItems(nextItems)
         }
@@ -254,7 +260,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
   const filtered = items.filter(item => {
     if (categoryFilter && !(item.categoryNames || []).includes(categoryFilter)) return false
     if (locationFilter && !(item.locationIds || []).includes(locationFilter)) return false
-    const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? item.company_name : item.distributor_name
+    const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? [item.company_name,item.parentName].filter(Boolean).join(' ') : item.distributor_name
     const secondary = isLocations ? '' : isCompanies ? item.short_name : item.contact_person
     const locationText = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies
       ? (item.locations || []).map(x => [x.city, x.district, x.state].filter(Boolean).join(', ')).join(' ')
@@ -336,13 +342,16 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                   ) : (
                     <>
                       {isCompanies && item.short_name && <span>{item.short_name}</span>}
+                      {isCompanies && item.parentName && <span>Subsidiary of {item.parentName}</span>}
+                      {isCompanies && item.hasSubsidiaries && <span>Parent company · subsidiaries listed below</span>}
+                      {isCompanies && item.productCount > 0 && <small>{item.productCount} catalogue {item.productCount===1?'product':'products'}</small>}
                       {isCompanies && item.locations?.length > 0 && <div className="browse-card-locations">{item.locations.map(location => <span className="browse-location" key={location.id}>{formatLocation(location)}</span>)}</div>}
                       {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
                       {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
-                      <small>{item.relationshipCount} active {item.relationshipCount === 1 ? 'relationship' : 'relationships'}</small>
+                      <small>{item.relationshipCount > 0 ? `${item.relationshipCount} active ${item.relationshipCount === 1 ? 'relationship' : 'relationships'}` : 'No active distributor relationships'}</small>
                       {isCompanies && item.verifiedCount > 0 && <span className="verified-badge verified-badge-small" title="At least one current company–distributor relationship has been independently verified.">✓ Relationship Verified</span>}
                       {isCompanies && item.verifiedCount === 0 && item.reviewCount > 0 && <span className="status-badge status-review">Under Review</span>}
-                      {isCompanies && item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Company relationship data has not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
+                      {isCompanies && item.relationshipCount > 0 && item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Company relationship data has not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
                           {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={14}/><span>Call</span></a>}
