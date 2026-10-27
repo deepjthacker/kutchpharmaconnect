@@ -103,7 +103,7 @@ export default function AdminCompanyHierarchy({ onBack }) {
 
   const visibleCompanies = useMemo(() => {
     const term = query.trim().toLocaleLowerCase('en-IN')
-    if (!term) return companies.filter(company => company.parent_company_id || (childrenByParent.get(company.id) || []).length)
+    if (!term) return companies.filter(company => company.parent_company_id || (childrenByParent.get(company.id) || []).length || (brandsByCompany.get(company.id) || []).length || (productsByCompany.get(company.id) || []).length || (divisionsByCompany.get(company.id) || []).length)
     const matches = companies.filter(company => {
       const text = [
         company.company_name,
