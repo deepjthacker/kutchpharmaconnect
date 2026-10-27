@@ -509,7 +509,7 @@ export default function App(){
       const direct=(directLinksRes.data||[]).filter(link=>link.product_id===product.id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
       const companyListed=(companyLinksRes.data||[]).filter(link=>link.company_id===product.company_id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
       const distributors=[...new Map((direct.length?direct:companyListed).map(distributor=>[distributor.id,distributor])).values()]
-      cards.push({type:'product',id:product.id,title:product.product_name,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
+      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
     })
 
     if(requestId!==searchRequestRef.current)return
@@ -915,16 +915,24 @@ export default function App(){
                         </div>
                       )
                       if (r.type === 'product') return (
-                        <div className="result-card" key={'product-'+r.id}>
-                          <div className="result-icon"><Package size={19}/></div>
+                        <div className="result-card product-result-card" key={'product-'+r.id}>
+                          <div className="result-icon"><Package size={20}/></div>
                           <div className="result-copy">
                             <strong>{r.title}</strong>
                             {r.brandName && <span className="result-division">Brand: {r.brandName}</span>}
                             {r.specs && <span className="result-meta">{r.specs}</span>}
-                            <span className="result-relation">Made by {r.companyName}{r.parentName ? ' · part of '+r.parentName : ''}</span>
-                            {r.distributors.length ? <span className="result-target">{r.directDistributorLinks ? 'Product-specific distributor listing (availability not confirmed): ' : 'Company-listed distributors (product handling not confirmed): '}{r.distributors.map(x=>x.distributor_name).join(', ')}</span> : <span className="result-meta">No distributor listed for this product yet.</span>}
-                            {r.distributors.filter(x=>x.mobile).map(x=><a key={x.id} className="result-meta" href={phoneLink(x.mobile)} onClick={e=>e.stopPropagation()}>{x.distributor_name}: {x.mobile}</a>)}
+                            <span className="result-relation">Company: {r.companyName}</span>
                           </div>
+                          {r.companyId && (
+                            <button
+                              type="button"
+                              className="product-company-link"
+                              onClick={() => openProfile('company', r.companyId)}
+                              aria-label={`View company and distributor details for ${r.title}`}
+                            >
+                              Company details <ArrowRight size={15}/>
+                            </button>
+                          )}
                         </div>
                       )
                       const profileType = r.icon === 'company' ? 'company' : 'distributor'
