@@ -1,0 +1,31 @@
+.admin-hierarchy-list{display:grid;gap:14px}
+.admin-hierarchy-node{display:grid;gap:10px}
+.admin-hierarchy-card{overflow:hidden;border:1px solid #dce7e2;border-radius:16px;background:#fff;box-shadow:0 2px 10px rgba(25,55,45,.035)}
+.admin-hierarchy-heading{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.admin-hierarchy-name{display:grid;gap:4px;min-width:180px;flex:1}
+.admin-hierarchy-name strong{font-size:15px;color:#173b31}
+.admin-hierarchy-name small{font-size:12px;color:#64746d}
+.admin-hierarchy-name small b{color:#266d55;font-weight:650}
+.admin-hierarchy-counts{font-size:12px;color:#66756e;white-space:nowrap}
+.admin-hierarchy-heading .admin-refresh{flex:none}
+.admin-hierarchy-editor{display:flex;align-items:flex-end;gap:10px;padding:14px 16px;background:#f6faf8;border-top:1px solid #e7efeb}
+.admin-hierarchy-editor label{display:grid;gap:6px;flex:1;font-size:12px;font-weight:650;color:#34483e}
+.admin-hierarchy-editor select{min-height:40px;width:100%;border:1px solid #d4e0da;border-radius:9px;background:#fff;padding:8px 10px;color:#213a31}
+.admin-hierarchy-editor .report-submit{min-height:40px;width:auto;margin:0;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 14px}
+.admin-hierarchy-data{display:grid;gap:8px;padding:0 16px 14px}
+.admin-hierarchy-tags{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding-top:9px;border-top:1px solid #edf2ef}
+.admin-hierarchy-tags strong{font-size:11px;color:#6c7973;text-transform:uppercase;letter-spacing:.08em}
+.admin-hierarchy-tags span{border:1px solid #dce8e1;border-radius:999px;padding:4px 9px;background:#f7faf8;font-size:12px;color:#335b49}
+.admin-hierarchy-detail{border:1px solid #e3ece7;border-radius:10px;background:#fbfdfc}
+.admin-hierarchy-detail summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;color:#245740;font-size:13px;font-weight:650}
+.admin-hierarchy-detail summary::-webkit-details-marker{display:none}
+.admin-hierarchy-detail summary span{display:flex;align-items:center;gap:7px}
+.admin-hierarchy-detail summary small{color:#728078;font-size:11px;font-weight:500}
+.admin-hierarchy-detail ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 18px;max-height:240px;overflow:auto;margin:0;padding:0 18px 12px 34px;color:#43564c;font-size:12px}
+@media(max-width:700px){
+ .admin-hierarchy-heading{align-items:flex-start;flex-wrap:wrap}
+ .admin-hierarchy-counts{width:100%;padding-left:42px}
+ .admin-hierarchy-heading .admin-refresh{margin-left:42px}
+ .admin-hierarchy-editor{align-items:stretch;flex-direction:column}
+ .admin-hierarchy-editor .report-submit{width:100%}
+}
