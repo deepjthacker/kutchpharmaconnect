@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Search, Building2, Truck, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
+import { Search, Building2, Truck, Package, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
@@ -228,15 +228,16 @@ export default function App(){
     const requestId=++suggestionRequestRef.current
     setSuggestionLoading(true)
     const p='%'+term.replace(/[%_]/g,'')+'%'
-    const [co,di,dv,br,al]=await Promise.all([
+    const [co,di,dv,br,al,pr]=await Promise.all([
       supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(5),
       supabase.from('distributors').select('id,distributor_name,contact_person').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(5),
       supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(5),
       supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(5),
-      supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(8)
+      supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(8),
+      supabase.from('products').select('id,product_name,company_id').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p).limit(5)
     ])
     if(requestId!==suggestionRequestRef.current)return
-    if(co.error||di.error||dv.error||br.error||al.error){setSuggestions([]);setSuggestionLoading(false);return}
+    if(co.error||di.error||dv.error||br.error||al.error||pr.error){setSuggestions([]);setSuggestionLoading(false);return}
 
     const companyAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
     const distributorAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='distributor').map(x=>x.entity_id))]
@@ -260,6 +261,9 @@ export default function App(){
     })
     ;(br.data||[]).forEach(x=>{
       if(!seen.has('brand-'+x.id)){seen.add('brand-'+x.id);next.push({type:'brand',id:x.id,companyId:x.company_id,label:x.brand_name,meta:'Brand'})}
+    })
+    ;(pr.data||[]).forEach(x=>{
+      if(!seen.has('product-'+x.id)){seen.add('product-'+x.id);next.push({type:'product',id:x.id,label:x.product_name,meta:'Product'})}
     })
     setSuggestions(next.slice(0,10))
     setSuggestionLoading(false)
@@ -329,7 +333,7 @@ export default function App(){
     const p='%'+cleanTerm+'%'
 
     const [co,di,dv,br,al,loc] = await Promise.all([
-      supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
+      supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
       supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(12),
       supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(12),
       supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(12),
@@ -444,6 +448,70 @@ export default function App(){
       }
     })
 
+    // Show matching legal entities even when they have no direct distributor listing.
+    const matchedCompanies=[...new Map([...(co.data||[]),...(aliasCompaniesRes.data||[])].map(company=>[company.id,company])).values()]
+    const matchedCompanyIds=matchedCompanies.map(company=>company.id)
+    const matchedRows=matchedCompanyIds.length
+      ? await supabase.from('companies').select('id,company_name,short_name,parent_company_id').in('id',matchedCompanyIds).eq('status','active')
+      : {data:[],error:null}
+    const parentIds=[...new Set((matchedRows.data||[]).map(company=>company.parent_company_id).filter(Boolean))]
+    const familySeedIds=[...new Set([...matchedCompanyIds,...parentIds])]
+    const familyRows=familySeedIds.length
+      ? await supabase.from('companies').select('id,company_name,short_name,parent_company_id').or('id.in.('+familySeedIds.join(',')+'),parent_company_id.in.('+familySeedIds.join(',')+')').eq('status','active')
+      : {data:[],error:null}
+    if(requestId!==searchRequestRef.current)return
+    const familyCompanies=familyRows.data||[]
+    const familyMap=new Map(familyCompanies.map(company=>[company.id,company]))
+    const familyParents=[...new Set(familyCompanies.map(company=>company.parent_company_id).filter(Boolean))]
+    const missingParentIds=familyParents.filter(id=>!familyMap.has(id))
+    if(missingParentIds.length){
+      const parentRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').in('id',missingParentIds).eq('status','active')
+      ;(parentRes.data||[]).forEach(company=>familyMap.set(company.id,company))
+    }
+    const familyDisplayIds=new Set([...matchedCompanyIds,...familyCompanies.map(company=>company.id),...familyParents])
+    familyDisplayIds.forEach(id=>{
+      const company=familyMap.get(id)||matchedCompanies.find(item=>item.id===id)
+      if(!company)return
+      const parent=company.parent_company_id?familyMap.get(company.parent_company_id):null
+      const children=familyCompanies.filter(item=>item.parent_company_id===company.id)
+      const key='family-'+company.id
+      if(!seen.has(key)){
+        seen.add(key)
+        cards.push({type:'company',id:company.id,title:company.company_name,parentName:parent?.company_name||null,children:children.map(item=>item.company_name)})
+      }
+    })
+
+    // Product matches are searchable independently from distributorship records.
+    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.length?',brand_id.in.('+searchedBrandIds.join(',')+')':'')).limit(20)
+    if(productRes.error){setError(productRes.error.message);setResults([]);setLoading(false);return}
+    const productRows=productRes.data||[]
+    const productCompanyIds=[...new Set(productRows.map(product=>product.company_id).filter(Boolean))]
+    const productBrandIds=[...new Set(productRows.map(product=>product.brand_id).filter(Boolean))]
+    const productIds=productRows.map(product=>product.id)
+    const [productCompaniesRes,productBrandsRes,directLinksRes,companyLinksRes]=await Promise.all([
+      productCompanyIds.length?supabase.from('companies').select('id,company_name,parent_company_id').in('id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      productBrandIds.length?supabase.from('brands').select('id,brand_name').in('id',productBrandIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      productIds.length?supabase.from('product_distributors').select('product_id,distributor_id').in('product_id',productIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      productCompanyIds.length?supabase.from('distributorships').select('company_id,distributor_id,territory').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
+    ])
+    const productDistributorIds=[...new Set([...(directLinksRes.data||[]).map(link=>link.distributor_id),...(companyLinksRes.data||[]).map(link=>link.distributor_id)])]
+    const productDistributorRes=productDistributorIds.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp').in('id',productDistributorIds).eq('status','active'):{data:[],error:null}
+    const productCompanyMap=new Map((productCompaniesRes.data||[]).map(company=>[company.id,company]))
+    const productParentIds=[...new Set((productCompaniesRes.data||[]).map(company=>company.parent_company_id).filter(Boolean))].filter(id=>!productCompanyMap.has(id))
+    if(productParentIds.length){
+      const productParentRes=await supabase.from('companies').select('id,company_name,parent_company_id').in('id',productParentIds).eq('status','active')
+      ;(productParentRes.data||[]).forEach(company=>productCompanyMap.set(company.id,company))
+    }
+    const productBrandMap=new Map((productBrandsRes.data||[]).map(brand=>[brand.id,brand]))
+    const productDistributorMap=new Map((productDistributorRes.data||[]).map(distributor=>[distributor.id,distributor]))
+    productRows.forEach(product=>{
+      const company=productCompanyMap.get(product.company_id)
+      const direct=(directLinksRes.data||[]).filter(link=>link.product_id===product.id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
+      const companyListed=(companyLinksRes.data||[]).filter(link=>link.company_id===product.company_id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
+      const distributors=[...new Map((direct.length?direct:companyListed).map(distributor=>[distributor.id,distributor])).values()]
+      cards.push({type:'product',id:product.id,title:product.product_name,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
+    })
+
     if(requestId!==searchRequestRef.current)return
     setResults(cards)
     setLoading(false)
@@ -470,11 +538,25 @@ export default function App(){
     trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
-        supabase.from('companies').select('id,company_name,short_name').eq('id',id).eq('status','active').maybeSingle(),
+        supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id'))
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
+      const parentCompanyId=companyRes.data?.parent_company_id
+      const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
+      const familyRows=familyRes.data||[]
+      const profileCompanyIds=[...new Set([id,...familyRows.map(company=>company.id),...familyRows.map(company=>company.parent_company_id).filter(Boolean)])]
+      const catalogRes=profileCompanyIds.length?await fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null}
+      const profileProductBrandIds=[...new Set((catalogRes.data||[]).map(product=>product.brand_id).filter(Boolean))]
+      const profileBrandsRes=profileProductBrandIds.length?await supabase.from('brands').select('id,brand_name').in('id',profileProductBrandIds).eq('status','active'):{data:[],error:null}
+      const profileBrandMap=new Map((profileBrandsRes.data||[]).map(brand=>[brand.id,brand.brand_name]))
+      const profileCompanyMap=new Map(familyRows.map(company=>[company.id,company]))
+      if(parentCompanyId&&!profileCompanyMap.has(parentCompanyId)){
+        const parentRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',parentCompanyId).eq('status','active').maybeSingle()
+        if(parentRes.data)profileCompanyMap.set(parentRes.data.id,parentRes.data)
+      }
+      if(familyRes.error||catalogRes.error||profileBrandsRes.error){setError((familyRes.error||catalogRes.error||profileBrandsRes.error).message);setProfileLoading(false);return}
       if(companyRes.data)rememberRecent('company',id,companyRes.data.company_name)
       const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
@@ -491,7 +573,7 @@ export default function App(){
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'company',entity:companyRes.data,relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,subsidiaries:familyRows.filter(company=>company.parent_company_id===id),catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id').eq('id',id).eq('status','active').maybeSingle(),
@@ -628,6 +710,21 @@ export default function App(){
                 </div>
               )}
 
+              {profile.type === 'company' && (
+                <>
+                  {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list">
+                    <div className="profile-list-title">Company group</div>
+                    {profile.entity.parentCompany && <div className="profile-rel"><div><small>Subsidiary of</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></div></div>}
+                    {(profile.entity.subsidiaries||[]).map(company=><div className="profile-rel" key={company.id}><div><small>Subsidiary</small><button className="profile-link-button" onClick={()=>openProfile('company',company.id)}>{company.company_name}</button></div></div>)}
+                  </div>}
+                  {profile.entity.catalog?.length > 0 && <div className="profile-list">
+                    <div className="profile-list-title">Product catalogue</div>
+                    <p className="result-meta">Company catalogue. Distributor handling or current stock is not confirmed unless a product-specific link is shown.</p>
+                    {profile.entity.catalog.map(product=><div className="profile-rel" key={product.id}><div><strong>{product.product_name}</strong>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
+                  </div>}
+                </>
+              )}
+
               <div className="profile-list">
                 <div className="profile-list-title">
                   {profile.type === 'company' ? 'Currently handled by' : 'Currently handles'}
@@ -722,7 +819,7 @@ export default function App(){
             <h1>Find Who Handles<br/><span>What in Kutch.</span></h1>
 
             <p className="hero-copy">
-              Search a company or distributor to find the current Kutch distributorship relationship and contact details.
+              Search companies, subsidiaries, brands, products or distributors to find catalogue details and current Kutch distributor listings.
             </p>
 
             <form
@@ -739,7 +836,7 @@ export default function App(){
                 onFocus={()=>q.trim().length>=2&&setShowSuggestions(true)}
                 onKeyDown={e=>{if(e.key==='Escape')setShowSuggestions(false)}}
                 type="search"
-                placeholder="Search company, distributor, division..."
+                placeholder="Search company, subsidiary, brand, product or distributor..."
                 aria-label="Search"
               />
               <button>Search</button>
@@ -787,6 +884,31 @@ export default function App(){
                 {!loading && !error && results.length > 0 && (
                   <div className="results-list">
                     {results.map(r => {
+                      if (r.type === 'company') return (
+                        <div className="result-card" key={'company-'+r.id}>
+                          <div className="result-icon"><Building2 size={19}/></div>
+                          <div className="result-copy">
+                            <strong>{r.title}</strong>
+                            <span className="result-relation">{r.parentName ? 'Subsidiary of '+r.parentName : 'Company'}</span>
+                            {r.children?.length > 0 && <span className="result-meta">Subsidiaries: {r.children.join(', ')}</span>}
+                            <span className="result-meta">Company record · distributor relationships may be listed under subsidiaries</span>
+                          </div>
+                          <button className="result-open" aria-label={`Open ${r.title} profile`} onClick={()=>openProfile('company',r.id)}><ArrowRight size={18}/></button>
+                        </div>
+                      )
+                      if (r.type === 'product') return (
+                        <div className="result-card" key={'product-'+r.id}>
+                          <div className="result-icon"><Package size={19}/></div>
+                          <div className="result-copy">
+                            <strong>{r.title}</strong>
+                            {r.brandName && <span className="result-division">Brand: {r.brandName}</span>}
+                            {r.specs && <span className="result-meta">{r.specs}</span>}
+                            <span className="result-relation">Made by {r.companyName}{r.parentName ? ' · part of '+r.parentName : ''}</span>
+                            {r.distributors.length ? <span className="result-target">{r.directDistributorLinks ? 'Product-listed distributors: ' : 'Company-listed distributors (product handling not confirmed): '}{r.distributors.map(x=>x.distributor_name).join(', ')}</span> : <span className="result-meta">No distributor listed for this product yet.</span>}
+                            {r.distributors.filter(x=>x.mobile).map(x=><a key={x.id} className="result-meta" href={phoneLink(x.mobile)} onClick={e=>e.stopPropagation()}>{x.distributor_name}: {x.mobile}</a>)}
+                          </div>
+                        </div>
+                      )
                       const profileType = r.icon === 'company' ? 'company' : 'distributor'
                       const profileId = r.icon === 'company'
                         ? r.rel.company_id
