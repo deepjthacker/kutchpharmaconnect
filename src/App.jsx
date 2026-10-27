@@ -904,7 +904,7 @@ export default function App(){
                             {r.brandName && <span className="result-division">Brand: {r.brandName}</span>}
                             {r.specs && <span className="result-meta">{r.specs}</span>}
                             <span className="result-relation">Made by {r.companyName}{r.parentName ? ' · part of '+r.parentName : ''}</span>
-                            {r.distributors.length ? <span className="result-target">{r.directDistributorLinks ? 'Product-listed distributors: ' : 'Company-listed distributors (product handling not confirmed): '}{r.distributors.map(x=>x.distributor_name).join(', ')}</span> : <span className="result-meta">No distributor listed for this product yet.</span>}
+                            {r.distributors.length ? <span className="result-target">{r.directDistributorLinks ? 'Product-specific distributor listing (availability not confirmed): ' : 'Company-listed distributors (product handling not confirmed): '}{r.distributors.map(x=>x.distributor_name).join(', ')}</span> : <span className="result-meta">No distributor listed for this product yet.</span>}
                             {r.distributors.filter(x=>x.mobile).map(x=><a key={x.id} className="result-meta" href={phoneLink(x.mobile)} onClick={e=>e.stopPropagation()}>{x.distributor_name}: {x.mobile}</a>)}
                           </div>
                         </div>

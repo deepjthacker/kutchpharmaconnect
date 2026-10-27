@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Building2, GitBranch, LoaderCircle, Package, Search, Save, Tags } from 'lucide-react'
+import { ArrowLeft, Building2, GitBranch, LoaderCircle, Package, Search, Save, Tags, Truck } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import './AdminCompanyHierarchy.css'
 
@@ -21,6 +21,9 @@ export default function AdminCompanyHierarchy({ onBack }) {
   const [divisions, setDivisions] = useState([])
   const [brands, setBrands] = useState([])
   const [products, setProducts] = useState([])
+  const [distributors, setDistributors] = useState([])
+  const [productLinks, setProductLinks] = useState([])
+  const [linkDraft, setLinkDraft] = useState({ product_id: '', distributor_id: '', territory: '' })
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState('')
@@ -33,13 +36,15 @@ export default function AdminCompanyHierarchy({ onBack }) {
   async function load() {
     setLoading(true)
     setError('')
-    const [companyResult, divisionResult, brandResult, productResult] = await Promise.all([
+    const [companyResult, divisionResult, brandResult, productResult, distributorResult, productLinkResult] = await Promise.all([
       loadAll(supabase.from('companies').select('id,company_name,short_name,parent_company_id,status').eq('status', 'active').order('company_name').order('id')),
       loadAll(supabase.from('divisions').select('id,company_id,division_name').eq('status', 'active').order('division_name')),
       loadAll(supabase.from('brands').select('id,company_id,division_id,brand_name').eq('status', 'active').order('brand_name')),
-      loadAll(supabase.from('products').select('id,company_id,division_id,brand_id,product_name').eq('status', 'active').order('product_name'))
+      loadAll(supabase.from('products').select('id,company_id,division_id,brand_id,product_name').eq('status', 'active').order('product_name')),
+      loadAll(supabase.from('distributors').select('id,distributor_name').eq('status', 'active').order('distributor_name')),
+      loadAll(supabase.from('product_distributors').select('id,product_id,distributor_id,territory,verification_status').eq('status', 'active').order('product_id'))
     ])
-    const failed = [companyResult, divisionResult, brandResult, productResult].find(result => result.error)
+    const failed = [companyResult, divisionResult, brandResult, productResult, distributorResult, productLinkResult].find(result => result.error)
     if (failed) {
       setError(failed.error.message)
     } else {
@@ -47,6 +52,8 @@ export default function AdminCompanyHierarchy({ onBack }) {
       setDivisions(divisionResult.data || [])
       setBrands(brandResult.data || [])
       setProducts(productResult.data || [])
+      setDistributors(distributorResult.data || [])
+      setProductLinks(productLinkResult.data || [])
     }
     setLoading(false)
   }
@@ -125,6 +132,51 @@ export default function AdminCompanyHierarchy({ onBack }) {
     matches.forEach(company => addFamily(company.id))
     return companies.filter(company => ids.has(company.id))
   }, [query, companies, companyMap, childrenByParent, brandsByCompany, productsByCompany])
+
+  async function addProductDistributor(event) {
+    event.preventDefault()
+    if (!linkDraft.product_id || !linkDraft.distributor_id) {
+      setError('Select a product and distributor.')
+      return
+    }
+    const existing = productLinks.find(link => link.product_id === linkDraft.product_id && link.distributor_id === linkDraft.distributor_id)
+    if (existing) {
+      setError('This product already has an active listing for that distributor.')
+      return
+    }
+    setBusy('product-link')
+    setError('')
+    setNotice('')
+    const { error: saveError } = await supabase.from('product_distributors').insert({
+      product_id: linkDraft.product_id,
+      distributor_id: linkDraft.distributor_id,
+      territory: linkDraft.territory.trim() || null,
+      status: 'active',
+      verification_status: 'unverified',
+      verification_note: 'Product-specific distributor listing. Confirm current availability directly.'
+    })
+    if (saveError) setError(saveError.message)
+    else {
+      setLinkDraft({ product_id: '', distributor_id: '', territory: '' })
+      setNotice('Product–distributor listing added. It is shown as unverified; current stock is not confirmed.')
+      await load()
+    }
+    setBusy('')
+  }
+
+  async function deactivateProductLink(link) {
+    if (!link || busy) return
+    setBusy(link.id)
+    setError('')
+    setNotice('')
+    const { error: saveError } = await supabase.from('product_distributors').update({ status: 'inactive' }).eq('id', link.id)
+    if (saveError) setError(saveError.message)
+    else {
+      setProductLinks(current => current.filter(item => item.id !== link.id))
+      setNotice('Product–distributor listing deactivated.')
+    }
+    setBusy('')
+  }
 
   async function addProduct(event) {
     event.preventDefault()
@@ -273,6 +325,16 @@ export default function AdminCompanyHierarchy({ onBack }) {
           <label>Pack size<input value={productDraft.pack_size} onChange={event=>setProductDraft(current=>({...current,pack_size:event.target.value}))} /></label>
           <button className="report-submit" type="submit" disabled={busy==='product'}>{busy==='product'?<LoaderCircle className="spin" size={15}/>:<Save size={15}/>} Add product</button>
         </form>
+      </section>
+      <section className="admin-panel" style={{ marginBottom: 18 }}>
+        <div className="admin-panel-heading"><div><p className="section-kicker">DISTRIBUTOR COVERAGE</p><h2>Link a product to a distributor</h2><p>This creates a product-specific listing. Availability is always unverified until confirmed.</p></div><Truck size={20}/></div>
+        <form className="admin-hierarchy-editor" onSubmit={addProductDistributor}>
+          <label>Product<select required value={linkDraft.product_id} onChange={event=>setLinkDraft(current=>({...current,product_id:event.target.value}))}><option value="">Select product</option>{products.map(product=><option key={product.id} value={product.id}>{product.product_name} — {companyMap.get(product.company_id)?.company_name||'Company not assigned'}</option>)}</select></label>
+          <label>Distributor<select required value={linkDraft.distributor_id} onChange={event=>setLinkDraft(current=>({...current,distributor_id:event.target.value}))}><option value="">Select distributor</option>{distributors.map(distributor=><option key={distributor.id} value={distributor.id}>{distributor.distributor_name}</option>)}</select></label>
+          <label>Territory (optional)<input value={linkDraft.territory} onChange={event=>setLinkDraft(current=>({...current,territory:event.target.value}))} placeholder="e.g. Bhuj / Kutch" /></label>
+          <button className="report-submit" type="submit" disabled={busy==='product-link'}>{busy==='product-link'?<LoaderCircle className="spin" size={15}/>:<Save size={15}/>} Save product listing</button>
+        </form>
+        {productLinks.length>0 && <div className="admin-hierarchy-data"><strong>Active product-specific listings</strong>{productLinks.map(link=><div className="admin-hierarchy-tags" key={link.id}><span>{products.find(product=>product.id===link.product_id)?.product_name||'Product'} → {distributors.find(distributor=>distributor.id===link.distributor_id)?.distributor_name||'Distributor'}{link.territory?' · '+link.territory:''}</span><button className="admin-refresh" type="button" disabled={busy===link.id} onClick={()=>deactivateProductLink(link)}>Deactivate</button></div>)}</div>}
       </section>
       <section className="admin-control-summary">
         <div><strong>{companies.length}</strong><span>Active companies</span><small>separate company records</small></div>
