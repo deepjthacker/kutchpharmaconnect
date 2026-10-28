@@ -477,7 +477,7 @@ export default function App(){
       const key='family-'+company.id
       if(!seen.has(key)){
         seen.add(key)
-        cards.push({type:'company',id:company.id,title:company.company_name,parentName:parent?.company_name||null,children:children.map(item=>item.company_name)})
+        cards.push({type:'company',id:company.id,title:company.company_name,imageUrl:company.image_url||null,parentName:parent?.company_name||null,children:children.map(item=>item.company_name)})
       }
     })
 
@@ -538,13 +538,13 @@ export default function App(){
     trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
       const [companyRes, relRes]=await Promise.all([
-        supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',id).eq('status','active').maybeSingle(),
+        supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id'))
       ])
       if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
       const parentCompanyId=companyRes.data?.parent_company_id
-      const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
+      const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
       const familyRows=familyRes.data||[]
       const subsidiaryRows=familyRows.filter(company=>company.parent_company_id===id)
       const subsidiaryIds=subsidiaryRows.map(company=>company.id)
@@ -929,7 +929,7 @@ export default function App(){
                     {results.filter(item => searchFilter === 'all' || item.type === searchFilter).map(r => {
                       if (r.type === 'company') return (
                         <div className="result-card" key={'company-'+r.id}>
-                          <div className="result-icon"><Building2 size={19}/></div>
+                          <div className="result-icon">{r.imageUrl ? <img src={r.imageUrl} alt={`${r.title} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>}</div>
                           <div className="result-copy">
                             <strong>{r.title}</strong>
                             <span className="result-relation">{r.parentName ? 'Subsidiary of '+r.parentName : 'Company'}</span>
