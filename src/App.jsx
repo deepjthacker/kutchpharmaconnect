@@ -44,7 +44,7 @@ export default function App(){
   const suggestionRequestRef=useRef(0)
   const lastSearchTermRef=useRef('')
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
-  const [reportTarget,setReportTarget]=useState(null)
+  const [reportTarget,setReportTarget]=useState(null),[policyPage,setPolicyPage]=useState(null)
   const navigationHistoryRef=useRef(false)
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
@@ -66,6 +66,7 @@ export default function App(){
     // Specific entity routes must take precedence over generic directory views.
     const distributorSlug=url.searchParams.get('d')
     if(distributorSlug)return {kpc:'distributorSlug',slug:distributorSlug}
+    if(['privacy','terms','disclaimer','about','contact','corrections'].includes(view))return {kpc:'policy',type:view}
     if(view==='companies'||view==='distributors'||view==='locations'||view==='products'){
       return {kpc:'browse',type:view,category:url.searchParams.get('category')||null}
     }
@@ -98,14 +99,17 @@ export default function App(){
       resolveDistributorSlug(initial.slug)
     }else if(initial.kpc==='admin'){
       setAdmin(true)
+    }else if(initial.kpc==='policy'){
+      setPolicyPage(initial.type)
     }else if(initial.q){
       setQ(initial.q);setSearched(true)
     }
     const onPopState=e=>{
       const route=e.state?.kpc?e.state:routeFromLocation()
       navigationHistoryRef.current=true
-      setProfile(null);setProfileLoading(false);setBrowse(null);setBrowseCategory(null);setAdmin(false);setShowSuggestions(false)
+      setProfile(null);setProfileLoading(false);setBrowse(null);setBrowseCategory(null);setAdmin(false);setPolicyPage(null);setShowSuggestions(false)
       if(route.kpc==='admin')setAdmin(true)
+      else if(route.kpc==='policy')setPolicyPage(route.type)
       else if(route.kpc==='browse'){
         setBrowse(route.type||'companies');setBrowseCategory(route.category||null)
       }else if(route.kpc==='profile'&&route.type&&route.id){
@@ -1179,7 +1183,7 @@ export default function App(){
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={backFromBrowse} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={backFromBrowse} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
+        {policyPage ? <ErrorBoundary><Suspense fallback={<div className="admin-state">Loading policy page…</div>}><PolicyPages page={policyPage} onBack={()=>{setPolicyPage(null);window.location.href=import.meta.env.BASE_URL}} /></Suspense></ErrorBoundary> : admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={backFromBrowse} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={backFromBrowse} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
       <DistributorSubmissionLauncher />
@@ -1193,6 +1197,7 @@ export default function App(){
               <span className="footer-brand-text">KutchPharmaConnect</span>
               <span>KutchPharmaConnect — Find Who Handles What in Kutch</span>
               <span>Directory information may change. Please contact the distributor directly to confirm current distributorship, territory, availability, and contact details.</span>
+              <nav className="policy-links" aria-label="Legal and information"><a href="?view=about">About</a><a href="?view=privacy">Privacy Policy</a><a href="?view=terms">Terms of Use</a><a href="?view=disclaimer">Disclaimer</a><a href="?view=corrections">Corrections</a><a href="?view=contact">Contact</a></nav>
             </div>
           </div>
           <div className="site-footer-contact">
