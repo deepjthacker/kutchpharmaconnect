@@ -2,6 +2,7 @@ import React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Building2, Edit3, LoaderCircle, Plus, Search, Save, X, Trash2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import ProfileImageUpload from './ProfileImageUpload'
 
 const PAGE_SIZE = 500
 
@@ -35,7 +36,7 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
     setLoading(true);setError('')
     const {data,error}=await loadAll(supabase
       .from('companies')
-      .select('id,company_name,legal_name,short_name,description,status,company_group_id')
+      .select('id,company_name,legal_name,short_name,description,status,company_group_id,image_url')
       .order('company_name').order('id'))
     if(error){setError(error.message);setCompanies([]);setLoading(false);return}
 
@@ -117,7 +118,7 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
         status:form.status
       })
       .eq('id',selected.id)
-      .select('id,company_name,legal_name,short_name,description,status,company_group_id')
+      .select('id,company_name,legal_name,short_name,description,status,company_group_id,image_url')
       .single()
 
     if(error){setError(error.message);setBusy(false);return}
@@ -190,6 +191,7 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
           <p className="section-kicker">COMPANY RECORD</p>
           <h2>Edit Company</h2>
           <p className="report-help">Update the company identity only. Distributorship verification is managed separately.</p>
+          <ProfileImageUpload entityType="company" entityId={selected.id} imageUrl={form.image_url} onUploaded={url=>{setForm(current=>({...current,image_url:url}));setCompanies(current=>current.map(x=>x.id===selected.id?{...x,image_url:url}:x))}} onError={setError}/>
           <form onSubmit={saveCompany}>
             <label>Company name <span className="required">*</span>
               <input required value={form.company_name} onChange={e=>setForm({...form,company_name:e.target.value})}/>
