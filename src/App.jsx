@@ -546,6 +546,21 @@ export default function App(){
       const parentCompanyId=companyRes.data?.parent_company_id
       const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
       const familyRows=familyRes.data||[]
+      const subsidiaryRows=familyRows.filter(company=>company.parent_company_id===id)
+      const subsidiaryIds=subsidiaryRows.map(company=>company.id)
+      const subsidiaryRelsRes=subsidiaryIds.length?await fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,verification_status,territory').in('company_id',subsidiaryIds).eq('status','active').order('id')):{data:[],error:null}
+      const subsidiaryDistributorIds=[...new Set((subsidiaryRelsRes.data||[]).map(rel=>rel.distributor_id))]
+      const subsidiaryDistributorsRes=subsidiaryDistributorIds.length?await fetchByIds(subsidiaryDistributorIds,ids=>supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url').in('id',ids).eq('status','active')):{data:[],error:null}
+      const subsidiaryDistributorMap=new Map((subsidiaryDistributorsRes.data||[]).map(distributor=>[distributor.id,distributor]))
+      const subsidiarySummaryMap=new Map(subsidiaryRows.map(company=>[company.id,{...company,distributorCount:0,distributorNames:[]}]))
+      for(const rel of (subsidiaryRelsRes.data||[])){
+        const subsidiary=subsidiarySummaryMap.get(rel.company_id)
+        const distributor=subsidiaryDistributorMap.get(rel.distributor_id)
+        if(subsidiary&&distributor&&!subsidiary.distributorNames.includes(distributor.distributor_name)){
+          subsidiary.distributorNames.push(distributor.distributor_name)
+          subsidiary.distributorCount=subsidiary.distributorNames.length
+        }
+      }
       const profileCompanyIds=[...new Set([id,...familyRows.map(company=>company.id),...familyRows.map(company=>company.parent_company_id).filter(Boolean)])]
       const catalogRes=profileCompanyIds.length?await fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null}
       const profileProductBrandIds=[...new Set((catalogRes.data||[]).map(product=>product.brand_id).filter(Boolean))]
@@ -556,7 +571,7 @@ export default function App(){
         const parentRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',parentCompanyId).eq('status','active').maybeSingle()
         if(parentRes.data)profileCompanyMap.set(parentRes.data.id,parentRes.data)
       }
-      if(familyRes.error||catalogRes.error||profileBrandsRes.error){setError((familyRes.error||catalogRes.error||profileBrandsRes.error).message);setProfileLoading(false);return}
+      if(familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||profileBrandsRes.error){setError((familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||profileBrandsRes.error).message);setProfileLoading(false);return}
       if(companyRes.data)rememberRecent('company',id,companyRes.data.company_name)
       const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
@@ -573,7 +588,7 @@ export default function App(){
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,subsidiaries:familyRows.filter(company=>company.parent_company_id===id),catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id').eq('id',id).eq('status','active').maybeSingle(),
@@ -653,7 +668,7 @@ export default function App(){
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
-                    <span className="profile-summary">{profile.relationships.length} active Kutch {profile.relationships.length===1?'relationship':'relationships'}</span>
+                    <span className="profile-summary">{profile.type==='company' && profile.entity.subsidiaries?.length ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
                     {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
                       <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
                         <ShieldCheck size={14}/> Relationship Verified
@@ -712,10 +727,18 @@ export default function App(){
 
               {profile.type === 'company' && (
                 <>
-                  {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list">
+                  {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list company-group-list">
                     <div className="profile-list-title">Company group</div>
-                    {profile.entity.parentCompany && <div className="profile-rel"><div><small>Subsidiary of</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></div></div>}
-                    {(profile.entity.subsidiaries||[]).map(company=><div className="profile-rel" key={company.id}><div><small>Subsidiary</small><button className="profile-link-button" onClick={()=>openProfile('company',company.id)}>{company.company_name}</button></div></div>)}
+                    {profile.entity.parentCompany && <div className="profile-rel company-parent-row"><div><small>Parent company</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></div></div>}
+                    {(profile.entity.subsidiaries||[]).map(company=><div className="profile-rel company-subsidiary-row" key={company.id}>
+                      <div className="company-subsidiary-copy">
+                        <small>Operating company</small>
+                        <button className="profile-link-button" onClick={()=>openProfile('company',company.id)}>{company.company_name}</button>
+                        <span className="company-subsidiary-count">{company.distributorCount} active Kutch distributor {company.distributorCount===1?'relationship':'relationships'}</span>
+                        {company.distributorNames.length>0 && <span className="company-subsidiary-preview">{company.distributorNames.slice(0,3).join(' · ')}{company.distributorNames.length>3?' · +'+(company.distributorNames.length-3)+' more':''}</span>}
+                      </div>
+                      <button className="company-subsidiary-open" onClick={()=>openProfile('company',company.id)}>View distributors <ArrowRight size={15}/></button>
+                    </div>)}
                   </div>}
                   {profile.entity.catalog?.length > 0 && <div className="profile-list">
                     <div className="profile-list-title">Product catalogue</div>
