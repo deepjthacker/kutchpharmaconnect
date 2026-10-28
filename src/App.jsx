@@ -740,17 +740,13 @@ export default function App(){
                       <button className="company-subsidiary-open" onClick={()=>openProfile('company',company.id)}>View distributors <ArrowRight size={15}/></button>
                     </div>)}
                   </div>}
-                  {!profile.entity.subsidiaries?.length && profile.entity.catalog?.length > 0 && <div className="profile-list">
-                    <div className="profile-list-title">Product catalogue</div>
-                    <p className="result-meta">Company catalogue. Distributor handling or current stock is not confirmed unless a product-specific link is shown.</p>
-                    {profile.entity.catalog.map(product=><div className="profile-rel" key={product.id}><div><strong>{product.product_name}</strong>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
-                  </div>}
+
                 </>
               )}
 
               <div className="profile-list">
                 <div className="profile-list-title">
-                  {profile.type === 'company' ? 'Currently handled by' : 'Currently handles'}
+                  {profile.type === 'company' ? 'Distributors in Kutch' : 'Currently handles'}
                 </div>
 
                 {profile.type === 'distributor' && profile.relationships.length > 0 && (
@@ -820,6 +816,12 @@ export default function App(){
                   <div className="result-state">{profile.relationships.length === 0 ? 'No active distributorships found.' : 'No companies, divisions or brands match your search.'}</div>
                 )}
               </div>
+
+                  {!profile.entity.subsidiaries?.length && profile.entity.catalog?.length > 0 && <div className="profile-list">
+                    <div className="profile-list-title">Product catalogue</div>
+                    <p className="result-meta">Company catalogue. Distributor handling or current stock is not confirmed unless a product-specific link is shown.</p>
+                    {profile.entity.catalog.map(product=><div className="profile-rel" key={product.id}><div><strong>{product.product_name}</strong>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
+                  </div>}
 
             </div>
           )}
