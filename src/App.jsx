@@ -78,8 +78,19 @@ export default function App(){
   }
 
   useEffect(()=>{
-    const initial=window.history.state?.kpc?window.history.state:routeFromLocation()
-    window.history.replaceState({...initial,__kpcInternal:window.history.state?.__kpcInternal===true},'',window.location.href)
+    const hadKpcState=Boolean(window.history.state?.kpc)
+    const initial=hadKpcState?window.history.state:routeFromLocation()
+    const initialUrl=new URL(window.location.href)
+    if(!hadKpcState&&['browse','profile','distributorSlug'].includes(initial.kpc)){
+      const routeUrl=new URL(window.location.href)
+      const homeUrl=new URL(window.location.href)
+      ;['view','type','id','category','d'].forEach(key=>homeUrl.searchParams.delete(key))
+      homeUrl.searchParams.delete('q')
+      window.history.replaceState({kpc:'home',q:'',__kpcInternal:false},'',homeUrl.pathname+homeUrl.search+homeUrl.hash)
+      window.history.pushState({...initial,__kpcInternal:true},'',routeUrl.pathname+routeUrl.search+routeUrl.hash)
+    }else{
+      window.history.replaceState({...initial,__kpcInternal:window.history.state?.__kpcInternal===true},'',window.location.href)
+    }
     if(initial.kpc==='browse'){
       setBrowse(initial.type||'companies');setBrowseCategory(initial.category||null)
     }else if(initial.kpc==='profile'&&initial.type&&initial.id){
