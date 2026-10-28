@@ -665,6 +665,7 @@ export default function App(){
                       {profile.type === 'company' ? 'COMPANY' : 'DISTRIBUTOR'}
                     </p>
                     <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
+                     {profile.type === 'company' && profile.entity.parentCompany && <span className="profile-parent-inline">Part of <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></span>}
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
@@ -729,7 +730,6 @@ export default function App(){
                 <>
                   {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list company-group-list">
                     <div className="profile-list-title">Company group</div>
-                    {profile.entity.parentCompany && <div className="profile-rel company-parent-row"><div><small>Parent company</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></div></div>}
                     {(profile.entity.subsidiaries||[]).map(company=><div className="profile-rel company-subsidiary-row" key={company.id}>
                       <div className="company-subsidiary-copy">
                         <small>Operating company</small>
@@ -740,7 +740,7 @@ export default function App(){
                       <button className="company-subsidiary-open" onClick={()=>openProfile('company',company.id)}>View distributors <ArrowRight size={15}/></button>
                     </div>)}
                   </div>}
-                  {profile.entity.catalog?.length > 0 && <div className="profile-list">
+                  {!profile.entity.subsidiaries?.length && profile.entity.catalog?.length > 0 && <div className="profile-list">
                     <div className="profile-list-title">Product catalogue</div>
                     <p className="result-meta">Company catalogue. Distributor handling or current stock is not confirmed unless a product-specific link is shown.</p>
                     {profile.entity.catalog.map(product=><div className="profile-rel" key={product.id}><div><strong>{product.product_name}</strong>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
