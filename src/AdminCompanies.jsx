@@ -30,7 +30,7 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
   const [status,setStatus]=useState('active')
   const [selected,setSelected]=useState(null)
   const [busy,setBusy]=useState(false)
-  const [form,setForm]=useState({company_name:'',legal_name:'',short_name:'',description:'',status:'active'})
+  const [form,setForm]=useState({company_name:'',legal_name:'',short_name:'',description:'',status:'active',image_url:''})
 
   async function loadCompanies(){
     setLoading(true);setError('')
@@ -87,7 +87,8 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
       legal_name:company.legal_name||'',
       short_name:company.short_name||'',
       description:company.description||'',
-      status:company.status||'active'
+      status:company.status||'active',
+      image_url:company.image_url||''
     })
   }
 
@@ -115,7 +116,8 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
         legal_name:form.legal_name.trim()||null,
         short_name:form.short_name.trim()||null,
         description:form.description.trim()||null,
-        status:form.status
+        status:form.status,
+        image_url:form.image_url||null
       })
       .eq('id',selected.id)
       .select('id,company_name,legal_name,short_name,description,status,company_group_id,image_url')
@@ -172,7 +174,7 @@ export default function AdminCompanies({ onBack, onBulkUpload }){
           <div className="admin-company-list">
             {filtered.map(company=>(
               <button className="admin-company-card" key={company.id} onClick={()=>openEdit(company)}>
-                <span className="admin-company-icon"><Building2 size={18}/></span>
+                <span className="admin-company-icon">{company.image_url ? <img src={company.image_url} alt={`${company.company_name} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={18}/>}</span>
                 <span className="admin-company-copy">
                   <strong>{company.company_name}</strong>
                   {company.short_name&&<span>{company.short_name}</span>}
