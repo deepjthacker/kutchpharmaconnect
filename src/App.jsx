@@ -937,7 +937,7 @@ export default function App(){
                   <div className="results-list">
                     {results.filter(item => searchFilter === 'all' || item.type === searchFilter).map(r => {
                       if (r.type === 'company') return (
-                        <div className="result-card" key={'company-'+r.id}>
+                        <div className="result-card result-card-clickable" key={'company-'+r.id} role="link" tabIndex={0} onClick={() => openProfile('company',r.id)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.id)}}}>
                           <div className="result-icon">{r.imageUrl ? <img src={r.imageUrl} alt={`${r.title} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>}</div>
                           <div className="result-copy">
                             <strong>{r.title}</strong>
@@ -950,7 +950,7 @@ export default function App(){
                       )
                       if (r.type === 'product') return (
                         <div className="product-result-group" key={'product-'+r.id}>
-                          <div className="result-card product-result-card">
+                          <div className="result-card product-result-card result-card-clickable" role="link" tabIndex={0} aria-label={`Open ${r.companyName} company profile`} onClick={() => openProfile('company',r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.companyId)}}}>
                             <div className="result-icon"><Package size={20}/></div>
                             <div className="result-copy">
                               <strong>{r.title}</strong>
@@ -998,8 +998,12 @@ export default function App(){
 
                       return (
                         <div
-                          className="result-card"
+                          className="result-card result-card-clickable"
                           key={r.type + r.rel.id}
+                          role="link"
+                          tabIndex={0}
+                          onClick={() => openProfile(profileType, profileId)}
+                          onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile(profileType, profileId)}}}
                         >
                           <div className={`result-icon ${r.icon === 'distributor' ? 'distributor-icon' : ''}`}>
                             {r.icon === 'company' ? (r.imageUrl ? <img src={r.imageUrl} alt={`${r.title} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>) : <Truck size={19}/>}
