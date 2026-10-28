@@ -1919,3 +1919,19 @@ html[data-theme="dark"] .company-subsidiary-open {
 .company-group-list .company-subsidiary-row {
   margin-top: 8px;
 }
+
+/* Company and distributor image uploads */
+.admin-image-upload{display:flex;align-items:center;gap:14px;padding:14px;margin:0 0 16px;border:1px solid var(--border,#dbe4ef);border-radius:12px;background:var(--surface-soft,#f8fafc)}
+.admin-image-preview{width:68px;height:68px;flex:none;display:grid;place-items:center;overflow:hidden;border:1px dashed #b8c7d9;border-radius:10px;background:var(--surface,#fff);color:var(--muted,#64748b)}
+.admin-image-preview img{width:100%;height:100%;object-fit:contain}
+.admin-image-upload-copy{display:grid;gap:5px;min-width:0}
+.admin-image-upload-copy strong{font-size:13px}
+.admin-image-upload-copy small{font-size:11px;color:var(--muted,#64748b)}
+.admin-image-upload-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px}
+.admin-image-remove{display:inline-flex;align-items:center;gap:6px;border:1px solid #e3b8b8;border-radius:8px;padding:8px 10px;background:#fff;color:#9f2525;font-size:12px;font-weight:700;cursor:pointer}
+.admin-image-remove:disabled{opacity:.6;cursor:wait}
+.profile-logo-image{width:100%;height:100%;object-fit:contain;border-radius:10px}
+@media(max-width:520px){.admin-image-upload{align-items:flex-start;padding:11px}.admin-image-preview{width:56px;height:56px}}
+html[data-theme="dark"] .admin-image-upload{background:#121e30;border-color:#2c3e57}
+html[data-theme="dark"] .admin-image-preview{background:#0d1727;border-color:#3a5375}
+html[data-theme="dark"] .admin-image-remove{background:#2b1b20;color:#ffcaca;border-color:#70404a}
