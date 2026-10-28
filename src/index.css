@@ -2105,3 +2105,198 @@ html[data-theme="dark"] .admin-nav-button:hover{background:#20375b!important;bor
   .footer-submit-link,.footer-submit-link::before,.footer-submit-link>svg{transition:none!important}
   .footer-submit-link:hover,.footer-submit-link:active{transform:none!important}
 }
+
+
+/* Site-wide premium interaction system: consistent, restrained, and accessible */
+:root{
+  --kpc-interaction-ease:cubic-bezier(.2,.7,.25,1);
+  --kpc-interaction-ring:rgba(68,116,194,.24);
+}
+button,
+a,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"]{
+  -webkit-tap-highlight-color:transparent;
+}
+button,
+a,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"]{
+  transition-property:color,background-color,border-color,box-shadow,opacity,filter,transform;
+  transition-duration:.18s;
+  transition-timing-function:var(--kpc-interaction-ease);
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input[type="button"]:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="reset"]:focus-visible{
+  outline:2px solid #7ea5e8;
+  outline-offset:3px;
+}
+button:disabled,
+input:disabled,
+[aria-disabled="true"]{
+  cursor:not-allowed!important;
+  filter:saturate(.65);
+}
+button:disabled:hover,
+input:disabled:hover{
+  transform:none!important;
+  box-shadow:none!important;
+}
+
+/* Lift gently on hover; press feedback is a small compression, never a downward shove */
+button:active,
+a:active,
+[role="button"]:active,
+input[type="button"]:active,
+input[type="submit"]:active,
+input[type="reset"]:active{
+  transform:scale(.985)!important;
+  transition-duration:.07s!important;
+}
+.search-submit-button:active,
+.footer-submit-link:active,
+.admin-nav-button:active{
+  transform:scale(.985)!important;
+}
+.quick-links button,
+.header-nav button,
+.result-actions a,
+.profile-actions a,
+.profile-rel-action,
+.profile-rel-call,
+.browse-location-links button,
+.browse-card-open,
+.result-open,
+.admin-refresh,
+.admin-actions button,
+.admin-link,
+.report-floating,
+.report-close,
+.report-submit,
+.report-success button,
+.admin-signout,
+.admin-image-remove,
+.product-detail-company button,
+.policy-links a,
+.site-footer-contact a,
+.recent-searches-list button,
+.recent-searches-heading button{
+  transition:color .18s var(--kpc-interaction-ease),
+    background-color .18s var(--kpc-interaction-ease),
+    border-color .18s var(--kpc-interaction-ease),
+    box-shadow .18s var(--kpc-interaction-ease),
+    transform .18s var(--kpc-interaction-ease),
+    filter .18s var(--kpc-interaction-ease);
+}
+.quick-links button:hover,
+.result-actions a:hover,
+.profile-actions a:hover,
+.profile-rel-action:hover,
+.profile-rel-call:hover,
+.browse-location-links button:hover,
+.admin-refresh:hover,
+.admin-actions button:hover,
+.admin-link:hover,
+.report-floating:hover,
+.admin-image-remove:hover,
+.product-detail-company button:hover,
+.recent-searches-list button:hover,
+.recent-searches-heading button:hover{
+  box-shadow:0 3px 10px rgba(24,48,86,.08);
+}
+.quick-links button:active,
+.result-actions a:active,
+.profile-actions a:active,
+.profile-rel-action:active,
+.profile-rel-call:active,
+.browse-location-links button:active,
+.admin-refresh:active,
+.admin-actions button:active,
+.admin-link:active,
+.report-floating:active,
+.report-submit:active,
+.report-success button:active,
+.admin-signout:active,
+.admin-image-remove:active,
+.product-detail-company button:active,
+.recent-searches-list button:active,
+.recent-searches-heading button:active{
+  transform:scale(.985)!important;
+}
+.result-actions a:hover,
+.profile-actions a:hover,
+.profile-rel-action:hover,
+.profile-rel-call:hover{
+  border-color:#9db4d9;
+  color:#173f86;
+}
+.suggestion-item,
+.category-card,
+.result-card,
+.browse-card,
+.product-directory-card,
+.company-subsidiary-open,
+.product-company-link,
+.product-distributors-toggle{
+  transition:background-color .18s var(--kpc-interaction-ease),
+    border-color .18s var(--kpc-interaction-ease),
+    box-shadow .18s var(--kpc-interaction-ease),
+    transform .18s var(--kpc-interaction-ease),
+    color .18s var(--kpc-interaction-ease);
+}
+.suggestion-item:hover{background:#f6f8fc}
+.category-card:hover,
+.result-card:hover,
+.browse-card:hover,
+.product-directory-card:hover{
+  border-color:#b7c9e6;
+  box-shadow:0 7px 20px rgba(25,48,84,.065);
+}
+.category-card:active,
+.result-card:active,
+.browse-card:active,
+.product-directory-card:active{
+  transform:scale(.995)!important;
+}
+.search-box button{min-height:44px}
+.search-box button:hover{filter:brightness(1.06)}
+.report-submit:hover,
+.report-success button:hover,
+.admin-actions button.primary:hover{
+  filter:brightness(1.06);
+  box-shadow:0 5px 13px rgba(23,58,143,.18);
+}
+.report-submit:active,
+.report-success button:active,
+.admin-actions button.primary:active{
+  filter:brightness(.98);
+}
+html[data-theme="dark"] .quick-links button:hover,
+html[data-theme="dark"] .result-actions a:hover,
+html[data-theme="dark"] .profile-actions a:hover,
+html[data-theme="dark"] .profile-rel-action:hover,
+html[data-theme="dark"] .profile-rel-call:hover,
+html[data-theme="dark"] .admin-refresh:hover,
+html[data-theme="dark"] .admin-actions button:hover,
+html[data-theme="dark"] .admin-link:hover{
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+@media(prefers-reduced-motion:reduce){
+  button,a,[role="button"],input[type="button"],input[type="submit"],input[type="reset"],
+  .suggestion-item,.category-card,.result-card,.browse-card,.product-directory-card,
+  .company-subsidiary-open,.product-company-link,.product-distributors-toggle{
+    transition:none!important;
+  }
+  button:active,a:active,[role="button"]:active,
+  .category-card:active,.result-card:active,.browse-card:active,.product-directory-card:active{
+    transform:none!important;
+  }
+}
