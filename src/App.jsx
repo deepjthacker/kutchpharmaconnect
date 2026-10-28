@@ -46,7 +46,7 @@ export default function App(){
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null)
   const navigationHistoryRef=useRef(false)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -495,7 +495,7 @@ export default function App(){
       productCompanyIds.length?supabase.from('distributorships').select('company_id,distributor_id,territory').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
     const productDistributorIds=[...new Set([...(directLinksRes.data||[]).map(link=>link.distributor_id),...(companyLinksRes.data||[]).map(link=>link.distributor_id)])]
-    const productDistributorRes=productDistributorIds.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp').in('id',productDistributorIds).eq('status','active'):{data:[],error:null}
+    const productDistributorRes=productDistributorIds.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url').in('id',productDistributorIds).eq('status','active'):{data:[],error:null}
     const productCompanyMap=new Map((productCompaniesRes.data||[]).map(company=>[company.id,company]))
     const productParentIds=[...new Set((productCompaniesRes.data||[]).map(company=>company.parent_company_id).filter(Boolean))].filter(id=>!productCompanyMap.has(id))
     if(productParentIds.length){
@@ -915,23 +915,45 @@ export default function App(){
                         </div>
                       )
                       if (r.type === 'product') return (
-                        <div className="result-card product-result-card" key={'product-'+r.id}>
-                          <div className="result-icon"><Package size={20}/></div>
-                          <div className="result-copy">
-                            <strong>{r.title}</strong>
-                            {r.brandName && <span className="result-division">Brand: {r.brandName}</span>}
-                            {r.specs && <span className="result-meta">{r.specs}</span>}
-                            <span className="result-relation">Company: {r.companyName}</span>
+                        <div className="product-result-group" key={'product-'+r.id}>
+                          <div className="result-card product-result-card">
+                            <div className="result-icon"><Package size={20}/></div>
+                            <div className="result-copy">
+                              <strong>{r.title}</strong>
+                              {r.brandName && <span className="result-division">Brand: {r.brandName}</span>}
+                              {r.specs && <span className="result-meta">{r.specs}</span>}
+                              <span className="result-relation">Company: {r.companyName}{r.parentName ? ' · part of '+r.parentName : ''}</span>
+                            </div>
                           </div>
-                          {r.companyId && (
-                            <button
-                              type="button"
-                              className="product-company-link"
-                              onClick={() => openProfile('company', r.companyId)}
-                              aria-label={`View company and distributor details for ${r.title}`}
-                            >
-                              Company details <ArrowRight size={15}/>
-                            </button>
+                          <button type="button" className="product-distributors-toggle" aria-expanded={!!expandedProductDistributors[r.id]} onClick={() => setExpandedProductDistributors(current => ({...current,[r.id]:!current[r.id]}))}>
+                            <span className="product-distributors-toggle-icon"><Truck size={19}/></span>
+                            <span className="product-distributors-toggle-copy">
+                              <strong>{expandedProductDistributors[r.id] ? 'Hide distributors' : 'View distributors'}</strong>
+                              <small>{r.distributors.length ? `${r.distributors.length} contact${r.distributors.length===1?'':'s'} listed in Kutch` : 'No distributor contacts listed yet'}</small>
+                            </span>
+                            <ArrowRight size={17} className={expandedProductDistributors[r.id]?'is-expanded':''}/>
+                          </button>
+                          {expandedProductDistributors[r.id] && (
+                            <div className="product-distributors-panel">
+                              <div className="product-distributors-heading">
+                                <strong>Distributors in Kutch</strong>
+                                {!r.directDistributorLinks && r.distributors.length>0 && <span>Company-listed contacts · product-specific handling not confirmed</span>}
+                                {r.directDistributorLinks && <span>Product-specific listing · availability not confirmed</span>}
+                              </div>
+                              {r.distributors.length ? r.distributors.map(distributor => (
+                                <div className="product-distributor-row" key={distributor.id}>
+                                  <div className="product-distributor-name">
+                                    <strong>{distributor.distributor_name}</strong>
+                                    {distributor.address && <small><MapPin size={13}/>{distributor.address}</small>}
+                                  </div>
+                                  <div className="product-distributor-actions">
+                                    {distributor.mobile && <a href={phoneLink(distributor.mobile)} onClick={e=>e.stopPropagation()}><Phone size={14}/>Call</a>}
+                                    {(distributor.whatsapp || distributor.mobile) && <a href={waLink(distributor.whatsapp||distributor.mobile,stockWhatsAppMessage(distributor.distributor_name,r.title))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={14}/>WhatsApp</a>}
+                                    {mapsLink(distributor) && <a href={mapsLink(distributor)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/>{mapsLabel(distributor)}</a>}
+                                  </div>
+                                </div>
+                              )) : <p className="product-distributors-empty">No active distributor contacts are linked to this listing yet.</p>}
+                            </div>
                           )}
                         </div>
                       )
