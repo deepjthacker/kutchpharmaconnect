@@ -10,7 +10,6 @@ import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import SiteFeedback from './SiteFeedback'
 
-const categories=['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary']
 const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||'+91 89800 43357'
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
 const adminWhatsAppMessage='Hello, I need help with KutchPharmaConnect.'
@@ -1147,26 +1146,7 @@ export default function App(){
           </div>
         </section>
 
-        <section className="directory-section">
-          <div className="container">
-            <div className="section-heading">
-              <div>
-                <p className="section-kicker">DIRECTORY</p>
-                <h2>Browse by category</h2>
-              </div>
-              <p>Find companies and distributors across Kutch.</p>
-            </div>
 
-            <div className="category-grid">
-              {categories.map(x => (
-                <button className="category-card" key={x} onClick={()=>{pushRoute('browse',{type:'companies',category:x});setBrowse('companies');setBrowseCategory(x);setProfile(null);setSearched(false);setShowSuggestions(false)}}>
-                  <span>{x}</span>
-                  <ArrowRight size={17}/>
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
       </>
     )
   }
