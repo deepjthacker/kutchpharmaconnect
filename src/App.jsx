@@ -485,7 +485,7 @@ export default function App(){
     })
 
     // Product matches are searchable independently from distributorship records.
-    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.size?',brand_id.in.('+searchedBrandIds.join(',')+')':'')).limit(20)
+    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.size?',brand_id.in.('+[...searchedBrandIds].join(',')+')':'')).limit(20)
     if(productRes.error){setError(productRes.error.message);setResults([]);setLoading(false);return}
     const productRows=productRes.data||[]
     const productCompanyIds=[...new Set(productRows.map(product=>product.company_id).filter(Boolean))]
