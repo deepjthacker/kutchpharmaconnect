@@ -46,37 +46,20 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState(category || '')
   const [locationFilter, setLocationFilter] = useState('')
 
   useEffect(() => {
     let cancelled = false
 
     async function load() {
-      const cacheKey = `${type}:${category || ''}`
+      const cacheKey = type
       const cached = browseCache.get(cacheKey)
       if (cached) { setItems(cached); setLoading(false) } else setLoading(true)
       setError('')
 
       if (isCompanies) {
-        let categoryCompanyIds = null
-        const [categoryResult, companyResult] = await Promise.all([
-          category
-            ? supabase.from('categories').select('id,name').ilike('name', category).eq('status', 'active').maybeSingle()
-            : Promise.resolve({data:null,error:null}),
-          fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status', 'active').order('company_name').order('id'))
-        ])
-        if (categoryResult.error || companyResult.error) {
-          if (!cancelled) { setError((categoryResult.error || companyResult.error).message); setLoading(false) }
-          return
-        }
-        if (category) {
-          if (!categoryResult.data) { if (!cancelled) { setError('Category not found.'); setLoading(false) }; return }
-          const { data: categoryLinks, error: categoryLinkError } = await fetchAllPages(() => supabase.from('company_categories').select('company_id').eq('category_id', categoryResult.data.id).order('company_id'))
-          if (categoryLinkError) { if (!cancelled) { setError(categoryLinkError.message); setLoading(false) }; return }
-          categoryCompanyIds = [...new Set((categoryLinks || []).map(x => x.company_id).filter(Boolean))]
-        }
-        const data = companyResult.data || []
+        const { data, error: companyError } = await fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status', 'active').order('company_name').order('id'))
+        if (companyError) { if (!cancelled) { setError(companyError.message); setLoading(false) }; return }
         const productResult = await fetchAllPages(() => supabase.from('products').select('id,company_id').eq('status','active'))
         if (productResult.error) { if (!cancelled) { setError(productResult.error.message); setLoading(false) }; return }
         const productCounts = new Map()
@@ -84,7 +67,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         const companyNameMap = new Map(data.map(company=>[company.id,company.company_name]))
         const parentIds = new Set(data.map(company=>company.parent_company_id).filter(Boolean))
 
-        const companyRows = categoryCompanyIds ? (data || []).filter(x => categoryCompanyIds.includes(x.id)) : (data || [])
+        const companyRows = data || []
         const ids = companyRows.map(x => x.id)
         // Fetch active relationships without sending hundreds of company IDs in one URL.
         // A large `.in('company_id', ids)` filter can exceed request URL limits and return Bad Request.
@@ -258,7 +241,6 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
   const term = query.trim().toLowerCase()
   const filtered = items.filter(item => {
-    if (categoryFilter && !(item.categoryNames || []).includes(categoryFilter)) return false
     if (locationFilter && !(item.locationIds || []).includes(locationFilter)) return false
     const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? [item.company_name,item.parentName].filter(Boolean).join(' ') : item.distributor_name
     const secondary = isLocations ? '' : isCompanies ? item.short_name : item.contact_person
@@ -286,9 +268,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         <div className="browse-header">
           <div>
             <p className="section-kicker">DIRECTORY</p>
-            <h1>{isLocations ? 'Kutch Locations' : isCompanies && category ? category : isCompanies ? 'Companies' : 'Distributors'}</h1>
+            <h1>{isLocations ? 'Kutch Locations' : isCompanies ? 'Companies' : 'Distributors'}</h1>
             <p>{isLocations ? 'Browse Kutch locations with active company and distributor relationships.' : isCompanies
-              ? (category ? 'Companies listed in this category with current Kutch distributorship relationships.' : 'Browse active companies with current Kutch distributorship relationships.')
+              ? 'Browse active companies with current Kutch distributorship relationships.'
               : 'Browse active distributors and the companies they currently handle.'}</p>
           </div>
           {!loading && !error && <div className="browse-count">{filtered.length} {filtered.length === 1 ? 'record' : 'records'}</div>}
@@ -299,21 +281,17 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={isLocations ? 'Search locations...' : isCompanies ? (category ? `Search ${category} companies or locations...` : 'Search companies or locations...') : 'Search distributors or locations...'}
+            placeholder={isLocations ? 'Search locations...' : isCompanies ? 'Search companies or locations...' : 'Search distributors or locations...'}
             aria-label={isCompanies ? 'Search companies' : 'Search distributors'}
           />
         </div>
 
         {!loading && !error && !isLocations && <div className="browse-filters">
-          <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} aria-label="Filter by category">
-            <option value="">All categories</option>
-            {['Pharmaceutical','Surgical','OTC','Ayurvedic','Nutraceutical','Medical Devices','Diagnostic','Veterinary'].map(x=><option key={x} value={x}>{x}</option>)}
-          </select>
           <select value={locationFilter} onChange={e=>setLocationFilter(e.target.value)} aria-label="Filter by location">
             <option value="">All locations</option>
             {[...new Map(items.flatMap(x=>(x.locations||[x.location]).filter(Boolean).map(l=>[l.id,l]))).values()].sort((a,b)=>(a.city||'').localeCompare(b.city||'')).map(l=><option key={l.id} value={l.id}>{[l.city,l.district].filter(Boolean).join(', ')}</option>)}
           </select>
-          {(categoryFilter||locationFilter) && <button type="button" onClick={()=>{setCategoryFilter(category||'');setLocationFilter('')}}>Clear</button>}
+          {locationFilter && <button type="button" onClick={()=>setLocationFilter('')}>Clear</button>}
         </div>}
 
         {loading && (
