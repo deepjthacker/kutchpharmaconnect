@@ -1900,3 +1900,22 @@ html[data-theme="dark"] .company-subsidiary-open {
   color: #d8e7ff;
   border-color: #3a5375;
 }
+
+
+/* Keep parent-company context compact so operating companies and distributors stay primary */
+.profile-parent-inline {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.profile-parent-inline .profile-link-button {
+  font-size: inherit;
+  font-weight: 650;
+}
+.company-group-list .company-subsidiary-row {
+  margin-top: 8px;
+}
