@@ -395,7 +395,7 @@ export default function App(){
     const allBrandIds=[...new Set(relationships.map(x=>x.brand_id).filter(Boolean))]
 
     const [rc,rd,rv,rb]=await Promise.all([
-      fetchByIds(allCompanyIds,ids=>supabase.from('companies').select('id,company_name,short_name').in('id',ids).eq('status','active')),
+      fetchByIds(allCompanyIds,ids=>supabase.from('companies').select('id,company_name,short_name,image_url').in('id',ids).eq('status','active')),
       fetchByIds(allDistributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').in('id',ids)),
       fetchByIds(allDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids)),
       fetchByIds(allBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active'))
@@ -452,12 +452,12 @@ export default function App(){
     const matchedCompanies=[...new Map([...(co.data||[]),...(aliasCompaniesRes.data||[])].map(company=>[company.id,company])).values()]
     const matchedCompanyIds=matchedCompanies.map(company=>company.id)
     const matchedRows=matchedCompanyIds.length
-      ? await supabase.from('companies').select('id,company_name,short_name,parent_company_id').in('id',matchedCompanyIds).eq('status','active')
+      ? await supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').in('id',matchedCompanyIds).eq('status','active')
       : {data:[],error:null}
     const parentIds=[...new Set((matchedRows.data||[]).map(company=>company.parent_company_id).filter(Boolean))]
     const familySeedIds=[...new Set([...matchedCompanyIds,...parentIds])]
     const familyRows=familySeedIds.length
-      ? await supabase.from('companies').select('id,company_name,short_name,parent_company_id').or('id.in.('+familySeedIds.join(',')+'),parent_company_id.in.('+familySeedIds.join(',')+')').eq('status','active')
+      ? await supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').or('id.in.('+familySeedIds.join(',')+'),parent_company_id.in.('+familySeedIds.join(',')+')').eq('status','active')
       : {data:[],error:null}
     if(requestId!==searchRequestRef.current)return
     const familyCompanies=familyRows.data||[]
