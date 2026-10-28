@@ -229,7 +229,7 @@ export default function App(){
     setSuggestionLoading(true)
     const p='%'+term.replace(/[%_]/g,'')+'%'
     const [co,di,dv,br,al,pr]=await Promise.all([
-      supabase.from('companies').select('id,company_name,short_name').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(5),
+      supabase.from('companies').select('id,company_name,short_name,image_url').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(5),
       supabase.from('distributors').select('id,distributor_name,contact_person').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(5),
       supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(5),
       supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(5),
@@ -333,7 +333,7 @@ export default function App(){
     const p='%'+cleanTerm+'%'
 
     const [co,di,dv,br,al,loc] = await Promise.all([
-      supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
+      supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
       supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(12),
       supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(12),
       supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(12),
@@ -495,7 +495,7 @@ export default function App(){
       productCompanyIds.length?supabase.from('distributorships').select('company_id,distributor_id,territory').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
     const productDistributorIds=[...new Set([...(directLinksRes.data||[]).map(link=>link.distributor_id),...(companyLinksRes.data||[]).map(link=>link.distributor_id)])]
-    const productDistributorRes=productDistributorIds.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url').in('id',productDistributorIds).eq('status','active'):{data:[],error:null}
+    const productDistributorRes=productDistributorIds.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url,image_url').in('id',productDistributorIds).eq('status','active'):{data:[],error:null}
     const productCompanyMap=new Map((productCompaniesRes.data||[]).map(company=>[company.id,company]))
     const productParentIds=[...new Set((productCompaniesRes.data||[]).map(company=>company.parent_company_id).filter(Boolean))].filter(id=>!productCompanyMap.has(id))
     if(productParentIds.length){
@@ -578,7 +578,7 @@ export default function App(){
       const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
       const [dRes,vRes,bRes,lRes]=await Promise.all([
-        fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url').in('id',ids).eq('status','active')),
+        fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url').in('id',ids).eq('status','active')),
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids).eq('status','active')),
         fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name').in('id',ids).eq('status','active')),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
@@ -591,7 +591,7 @@ export default function App(){
       setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
-        supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id').eq('id',id).eq('status','active').maybeSingle(),
+        supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,division_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active').order('id'))
       ])
       if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
@@ -658,7 +658,7 @@ export default function App(){
               <div className="profile-heading profile-heading-with-actions">
                 <div className="profile-heading-main">
                   <div className="profile-icon">
-                    {profile.type === 'company' ? <Building2 size={24}/> : <Truck size={24}/>}
+                    {profile.entity?.image_url ? <img className="profile-logo-image" src={profile.entity.image_url} alt="" /> : (profile.type === 'company' ? <Building2 size={24}/> : <Truck size={24}/>)}
                   </div>
                   <div className="profile-heading-copy">
                     <p className="profile-kicker">
