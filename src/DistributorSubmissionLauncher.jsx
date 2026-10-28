@@ -8,7 +8,7 @@ export default function DistributorSubmissionLauncher({variant='floating'}){
   return <>
     <button className={variant==='inline'?'footer-submit-link':'distributor-submit-cta'} onClick={()=>setOpen(true)}>
       <Truck size={17}/>
-      <span><strong>{variant==='inline'?'Add a distributor listing':'Are you a distributor?'}</strong><small>{variant==='inline'?'Share your details for review':'Add your company & distributorship details'}</small></span>
+      <span><strong>{variant==='inline'?'Add Distributor':'Are you a distributor?'}</strong><small>{variant==='inline'?'Share your details for review':'Add your company & distributorship details'}</small></span>
     </button>
     {open&&<Suspense fallback={null}><DistributorSubmission open={open} onClose={()=>setOpen(false)}/></Suspense>}
   </>
