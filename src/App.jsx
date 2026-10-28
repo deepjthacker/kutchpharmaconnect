@@ -945,7 +945,7 @@ export default function App(){
                             {r.children?.length > 0 && <span className="result-meta">Subsidiaries: {r.children.join(', ')}</span>}
                             <span className="result-meta">Company record · distributor relationships may be listed under subsidiaries</span>
                           </div>
-                          <button className="result-open" aria-label={`Open ${r.title} profile`} onClick={()=>openProfile('company',r.id)}><ArrowRight size={18}/></button>
+                          <button className="result-open" aria-label={`Open ${r.title} profile`} onClick={e=>{e.stopPropagation();openProfile('company',r.id)}}><ArrowRight size={18}/></button>
                         </div>
                       )
                       if (r.type === 'product') return (
