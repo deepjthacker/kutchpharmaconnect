@@ -890,7 +890,7 @@ export default function App(){
                 placeholder="Search company, subsidiary, brand, product or distributor..."
                 aria-label="Search"
               />
-              <button>Search</button>
+              <button type="submit" className="search-submit-button" aria-label="Search directory" title="Search directory"><Search size={21} strokeWidth={2.5}/></button>
             </form>
 
             {showSuggestions && q.trim().length>=2 && (
@@ -1178,7 +1178,7 @@ export default function App(){
               {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
               <span>{theme==='dark'?'Light':'Dark'}</span>
             </button>
-            <button onClick={()=>{if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-nav-button">{session?'Admin Dashboard':'Admin Login'}</button>
+            <button type="button" onClick={()=>{if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-nav-button">{session?<><UserRound size={15}/><span>Admin Dashboard</span></>:<><UserRound size={15}/><span>Log in</span></>}</button>
           </nav>
         </div>
       </header>
