@@ -1187,7 +1187,16 @@ export default function App(){
         {policyPage ? <ErrorBoundary><Suspense fallback={<div className="admin-state">Loading policy page…</div>}><PolicyPages page={policyPage} onBack={()=>{setPolicyPage(null);window.location.href=import.meta.env.BASE_URL}} /></Suspense></ErrorBoundary> : admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={backFromBrowse} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={backFromBrowse} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
-      <DistributorSubmissionLauncher />
+      {!policyPage && !admin && <section className="distributor-join-section" aria-labelledby="distributor-join-title">
+        <div className="container distributor-join-inner">
+          <div className="distributor-join-copy">
+            <span className="distributor-join-kicker">FOR PHARMACEUTICAL DISTRIBUTORS</span>
+            <h2 id="distributor-join-title">Are you a distributor in Kutch?</h2>
+            <p>Get your company and distributorship details listed on KutchPharmaConnect. Submit your details for review.</p>
+          </div>
+          <DistributorSubmissionLauncher variant="inline" />
+        </div>
+      </section>}
 
       <button className="report-floating" onClick={openReport}><Flag size={15}/> Report Incorrect Information</button>
 
