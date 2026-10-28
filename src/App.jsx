@@ -9,6 +9,7 @@ import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import SiteFeedback from './SiteFeedback'
+const PolicyPages = lazy(() => import('./PolicyPages'))
 
 const ADMIN_PHONE=import.meta.env.VITE_ADMIN_PHONE||'+91 89800 43357'
 const KPC_WEBSITE=typeof window!=='undefined'?window.location.origin+import.meta.env.BASE_URL:''
