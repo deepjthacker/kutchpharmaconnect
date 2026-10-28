@@ -3,13 +3,14 @@ import { useEffect,useMemo,useState } from 'react'
 import { ArrowLeft,Truck,Edit3,LoaderCircle,Search,Save,X,Phone,Trash2,MessageCircle,MapPin,Mail } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { fetchAllPages } from './lib/queryHelpers'
+import ProfileImageUpload from './ProfileImageUpload'
 
 export default function AdminDistributors({onBack}){
  const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[q,setQ]=useState(''),[status,setStatus]=useState('active'),[selected,setSelected]=useState(null),[busy,setBusy]=useState(false)
  const [form,setForm]=useState({})
  async function load(){
   setLoading(true);setError('')
-  const {data,error}=await supabase.from('distributors').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city_id,maps_url,website,notes,status').order('distributor_name')
+  const {data,error}=await supabase.from('distributors').select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city_id,maps_url,website,notes,status,image_url').order('distributor_name')
   if(error){setError(error.message);setRows([])} else {
    const ids=(data||[]).map(x=>x.id)
    let counts={}
@@ -32,8 +33,8 @@ export default function AdminDistributors({onBack}){
   setSelected(null);setBusy(false)
  }
  async function save(e){e.preventDefault();setBusy(true);setError('')
-  const payload={distributor_name:form.distributor_name.trim(),legal_name:form.legal_name?.trim()||null,contact_person:form.contact_person?.trim()||null,mobile:form.mobile?.trim()||null,whatsapp:form.whatsapp?.trim()||null,email:form.email?.trim()||null,address:form.address?.trim()||null,maps_url:form.maps_url?.trim()||null,website:form.website?.trim()||null,notes:form.notes?.trim()||null,status:form.status}
-  const r=await supabase.from('distributors').update(payload).eq('id',selected.id).select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city_id,maps_url,website,notes,status').single()
+  const payload={distributor_name:form.distributor_name.trim(),legal_name:form.legal_name?.trim()||null,contact_person:form.contact_person?.trim()||null,mobile:form.mobile?.trim()||null,whatsapp:form.whatsapp?.trim()||null,email:form.email?.trim()||null,address:form.address?.trim()||null,maps_url:form.maps_url?.trim()||null,website:form.website?.trim()||null,notes:form.notes?.trim()||null,status:form.status,image_url:form.image_url||null}
+  const r=await supabase.from('distributors').update(payload).eq('id',selected.id).select('id,distributor_name,legal_name,contact_person,mobile,whatsapp,email,address,city_id,maps_url,website,notes,status,image_url').single()
   if(r.error){setError(r.error.message)}else{setRows(x=>x.map(v=>v.id===r.data.id?{...v,...r.data}:v));setSelected(null)}setBusy(false)
  }
  return <div className="admin-page"><div className="admin-head"><div><button className="admin-back" onClick={onBack}><ArrowLeft size={15}/> Dashboard</button><p className="section-kicker">ADMINISTRATION</p><h1>Distributors</h1><p>Manage distributor identity and contact information.</p></div><button className="admin-refresh" onClick={load} disabled={loading}><LoaderCircle className={loading?'spin':''} size={15}/> Refresh</button></div>
