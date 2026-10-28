@@ -438,7 +438,7 @@ export default function App(){
         const key='company-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
-          cards.push({type:'relationship',icon:'company',title:company.company_name,imageUrl:company.image_url||null,subtitle:brand?'Brand: '+brand.brand_name:(brandOwnerMatch?'Company-listed distributor • brand handling not confirmed':(division?'Division: '+division.division_name:null)),relation:'Currently handled by',target:distributor,contact:distributor,rel})
+          cards.push({type:'relationship',icon:'company',title:company.company_name,imageUrl:company.image_url||null,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handled by',target:distributor,contact:distributor,rel})
         }
       }
 
