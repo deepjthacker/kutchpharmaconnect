@@ -5,15 +5,15 @@ import { supabase } from './lib/supabase'
 const normalizePhone = number => {
   const raw = String(number || '').trim()
   if (!raw) return ''
-  if (raw.startsWith('+')) return '+' + raw.slice(1).replace(/\\D/g, '')
-  const digits = raw.replace(/\\D/g, '')
+  if (raw.startsWith('+')) return '+' + raw.slice(1).replace(/\D/g, '')
+  const digits = raw.replace(/\D/g, '')
   if (digits.length === 10) return '+91' + digits
   if (digits.length === 11 && digits.startsWith('0')) return '+91' + digits.slice(1)
   if (digits.startsWith('91') && digits.length === 12) return '+' + digits
   return digits
 }
 const phoneLink = number => `tel:${normalizePhone(number)}`
-const waLink = (number, message) => `https://wa.me/${normalizePhone(number).replace(/\\D/g, '')}?text=${encodeURIComponent(message)}`
+const waLink = (number, message) => `https://wa.me/${normalizePhone(number).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
 const mapsLink = d => d.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([d.distributor_name,d.address,'Kutch','Gujarat'].filter(Boolean).join(', '))}`
 
 export default function ProductDirectory({ productId, onBack, onOpenProduct, onOpenCompany, onOpenDistributor }) {
