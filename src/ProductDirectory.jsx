@@ -23,6 +23,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
   const [company,setCompany] = useState(null)
   const [brand,setBrand] = useState(null)
   const [distributors,setDistributors] = useState([])
+  const [productSpecificDistributors,setProductSpecificDistributors] = useState(false)
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState('')
 
@@ -58,7 +59,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
         const ids=[...new Set(directIds.length?directIds:companyIds)].filter(Boolean)
         const dRes=ids.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url').in('id',ids).eq('status','active').order('distributor_name'):{data:[],error:null}
         if(dRes.error){if(!cancelled){setError(dRes.error.message);setLoading(false)};return}
-        if(!cancelled){setProduct(p);setCompany(co.data);setBrand(br.data);setDistributors(dRes.data||[])}
+        if(!cancelled){setProduct(p);setCompany(co.data);setBrand(br.data);setDistributors(dRes.data||[]);setProductSpecificDistributors(directIds.length>0)}
       }
       if(!cancelled)setLoading(false)
     }
@@ -80,8 +81,8 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
           <div className="product-detail-title-row"><span className="product-detail-icon"><Package size={24}/></span><div><h1>{product.product_name}</h1>{brand?.brand_name&&<p>{brand.brand_name}</p>}</div></div>
           {specs&&<p className="product-detail-specs">{specs}</p>}
           <div className="product-detail-company"><Building2 size={18}/><div><span>Company</span><strong>{company?.company_name||'Company not assigned'}</strong></div>{company&&<button type="button" onClick={()=>onOpenCompany(company.id)} aria-label="Open company profile"><ArrowRight size={17}/></button>}</div>
-          <div className="product-detail-distributors"><div className="product-detail-section-heading"><div><h2>Distributors</h2><p>Contact them to confirm current handling and stock availability.</p></div><span>{distributors.length}</span></div>
-          {!distributors.length?<div className="result-state">No active distributor links are listed for this product or company yet.</div>:distributors.map(d=><article className="product-distributor-card" key={d.id} onClick={()=>onOpenDistributor(d.id)}><div className="product-distributor-copy"><strong>{d.distributor_name}</strong>{(d.address)&&<span>{d.address}</span>}<small>Current distributorship and stock should be confirmed directly.</small></div><div className="browse-contact-actions" onClick={e=>e.stopPropagation()}>{d.mobile&&<a className="contact-action call-action" href={phoneLink(d.mobile)}><Phone size={14}/><span>Call</span></a>}{(d.whatsapp||d.mobile)&&<a className="contact-action whatsapp-action" href={waLink(d.whatsapp||d.mobile,`Hello ${d.distributor_name}, do you currently handle ${company?.company_name||product.product_name} and have stock available in Kutch? I found your contact through KutchPharmaConnect.`)} target="_blank" rel="noreferrer"><MessageCircle size={14}/><span>WhatsApp</span></a>}<a className="contact-action maps-action" href={mapsLink(d)} target="_blank" rel="noreferrer"><MapPin size={14}/><span>Maps</span></a></div></article>)}
+          <div className="product-detail-distributors"><div className="product-detail-section-heading"><div><h2>{productSpecificDistributors?'Product-linked distributors':'Company distributors'}</h2><p>{productSpecificDistributors?'These distributors are linked to this product. Confirm current stock before ordering.':'These distributors are listed for the company; handling of this specific product has not been confirmed.'}</p></div><span>{distributors.length}</span></div>
+          {!distributors.length?<div className="result-state">No active distributor links are listed for this product or company yet.</div>:distributors.map(d=><article className="product-distributor-card" key={d.id} onClick={()=>onOpenDistributor(d.id)}><div className="product-distributor-copy"><strong>{d.distributor_name}</strong>{(d.address)&&<span>{d.address}</span>}<small>{productSpecificDistributors?'Confirm current stock and availability directly.':'Company relationship only — product handling is not confirmed.'}</small></div><div className="browse-contact-actions" onClick={e=>e.stopPropagation()}>{d.mobile&&<a className="contact-action call-action" href={phoneLink(d.mobile)}><Phone size={14}/><span>Call</span></a>}{(d.whatsapp||d.mobile)&&<a className="contact-action whatsapp-action" href={waLink(d.whatsapp||d.mobile,`Hello ${d.distributor_name}, do you currently handle ${company?.company_name||product.product_name} and have stock available in Kutch? I found your contact through KutchPharmaConnect.`)} target="_blank" rel="noreferrer"><MessageCircle size={14}/><span>WhatsApp</span></a>}<a className="contact-action maps-action" href={mapsLink(d)} target="_blank" rel="noreferrer"><MapPin size={14}/><span>Maps</span></a></div></article>)}
           </div>
         </div>
       </div>}
