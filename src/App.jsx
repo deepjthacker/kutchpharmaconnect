@@ -79,7 +79,7 @@ export default function App(){
 
   useEffect(()=>{
     const initial=window.history.state?.kpc?window.history.state:routeFromLocation()
-    window.history.replaceState(initial,'',window.location.href)
+    window.history.replaceState({...initial,__kpcInternal:window.history.state?.__kpcInternal===true},'',window.location.href)
     if(initial.kpc==='browse'){
       setBrowse(initial.type||'companies');setBrowseCategory(initial.category||null)
     }else if(initial.kpc==='profile'&&initial.type&&initial.id){
@@ -130,7 +130,7 @@ export default function App(){
     }else{
       url.searchParams.delete('q')
     }
-    window.history.pushState({kpc:route,...state},'',url.pathname+url.search+url.hash)
+    window.history.pushState({kpc:route,...state,__kpcInternal:true},'',url.pathname+url.search+url.hash)
   }
 
   useEffect(()=>{
@@ -308,6 +308,12 @@ export default function App(){
   function clearRecentSearches(){
     setRecentSearches([])
     try{localStorage.removeItem('kpc-recent-searches')}catch{}
+  }
+
+  function backFromBrowse(){
+    const state=window.history.state
+    if(state?.kpc==='browse'&&state.__kpcInternal===true)window.history.back()
+    else {setProfile(null);setBrowse(null);setBrowseCategory(null);setAdmin(false);setQ('');setSearched(false);setResults([]);setError('');window.history.replaceState({kpc:'home',q:'',__kpcInternal:false},'',window.location.pathname+window.location.hash)}
   }
 
   function chooseSuggestion(item){
@@ -1182,7 +1188,7 @@ export default function App(){
       </header>
 
       <main>
-        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={()=>{if(window.history.state?.kpc==='browse')window.history.back();else{setBrowse(null);setBrowseCategory(null)}}} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{if(window.history.state?.kpc==='browse')window.history.back();else{setBrowse(null);setBrowseCategory(null)}}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
+        {admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={backFromBrowse} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={()=>{if(window.history.state?.kpc==='browse')window.history.back();else{setBrowse(null);setBrowseCategory(null)}}} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
       <DistributorSubmissionLauncher />
