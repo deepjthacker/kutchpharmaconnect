@@ -607,11 +607,6 @@ export default function App(){
       const rels=relRes.data||[]
       if(distRes.data){
         rememberRecent('distributor',id,distRes.data.distributor_name)
-        // Keep a readable distributor slug in the shareable URL while the stable ID remains the lookup key.
-        const profileUrl=new URL(window.location.href)
-        profileUrl.search=''
-        profileUrl.searchParams.set('d',String(distRes.data.distributor_name||'distributor').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''))
-        window.history.replaceState({kpc:'distributorSlug',slug:profileUrl.searchParams.get('d')}, '', profileUrl.pathname+profileUrl.search+profileUrl.hash)
       }
       const companyIds=[...new Set(rels.map(x=>x.company_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
