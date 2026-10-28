@@ -435,7 +435,7 @@ export default function App(){
         const key='company-'+rel.id
         if(!seen.has(key)){
           seen.add(key)
-          cards.push({type:'relationship',icon:'company',title:company.company_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handled by',target:distributor,contact:distributor,rel})
+          cards.push({type:'relationship',icon:'company',title:company.company_name,imageUrl:company.image_url||null,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handled by',target:distributor,contact:distributor,rel})
         }
       }
 
@@ -993,7 +993,7 @@ export default function App(){
                           key={r.type + r.rel.id}
                         >
                           <div className={`result-icon ${r.icon === 'distributor' ? 'distributor-icon' : ''}`}>
-                            {r.icon === 'company' ? <Building2 size={19}/> : <Truck size={19}/>}
+                            {r.icon === 'company' ? (r.imageUrl ? <img src={r.imageUrl} alt={`${r.title} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>) : <Truck size={19}/>}
                           </div>
 
                           <div className="result-copy">
