@@ -535,6 +535,7 @@ export default function App(){
       productIds.length?supabase.from('product_distributors').select('product_id,distributor_id').in('product_id',productIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       productCompanyIds.length?supabase.from('distributorships').select('company_id,distributor_id,territory').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
+    if(productCompaniesRes.error||productBrandsRes.error||productDivisionsRes.error||directLinksRes.error||companyLinksRes.error){setError((productCompaniesRes.error||productBrandsRes.error||productDivisionsRes.error||directLinksRes.error||companyLinksRes.error).message);setResults([]);setLoading(false);return}
     const productDistributorIds=[...new Set([...(directLinksRes.data||[]).map(link=>link.distributor_id),...(companyLinksRes.data||[]).map(link=>link.distributor_id)])]
     const productDistributorRes=productDistributorIds.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url,image_url').in('id',productDistributorIds).eq('status','active'):{data:[],error:null}
     const productCompanyMap=new Map((productCompaniesRes.data||[]).map(company=>[company.id,company]))
