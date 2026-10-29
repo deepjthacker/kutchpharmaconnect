@@ -257,9 +257,10 @@ export default function App(){
 
     const companyAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='company').map(x=>x.entity_id))]
     const distributorAliasIds=[...new Set((al.data||[]).filter(x=>x.entity_type==='distributor').map(x=>x.entity_id))]
-    const [ac,ad]=await Promise.all([
+    const [ac,ad,divisionCompanies]=await Promise.all([
       companyAliasIds.length?supabase.from('companies').select('id,company_name,short_name').in('id',companyAliasIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-      distributorAliasIds.length?supabase.from('distributors').select('id,distributor_name,contact_person').in('id',distributorAliasIds).eq('status','active'):Promise.resolve({data:[],error:null})
+      distributorAliasIds.length?supabase.from('distributors').select('id,distributor_name,contact_person').in('id',distributorAliasIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      (dv.data||[]).length?supabase.from('companies').select('id,company_name').in('id',[...new Set((dv.data||[]).map(x=>x.company_id).filter(Boolean))]).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
 
     if(requestId!==suggestionRequestRef.current)return
@@ -272,8 +273,9 @@ export default function App(){
     ;[...(di.data||[]),...(ad.data||[])].forEach(x=>{
       if(!seen.has('distributor-'+x.id)){seen.add('distributor-'+x.id);next.push({type:'distributor',id:x.id,label:x.distributor_name,meta:x.contact_person?'Distributor • '+x.contact_person:'Distributor'})}
     })
+    const divisionCompanyMap=new Map((divisionCompanies.data||[]).map(x=>[x.id,x.company_name]))
     ;(dv.data||[]).forEach(x=>{
-      if(!seen.has('division-'+x.id)){seen.add('division-'+x.id);next.push({type:'division',id:x.id,companyId:x.company_id,label:x.division_name,meta:'Division'})}
+      if(!seen.has('division-'+x.id)){seen.add('division-'+x.id);next.push({type:'division',id:x.id,companyId:x.company_id,label:x.division_name,meta:divisionCompanyMap.get(x.company_id)?'Division · '+divisionCompanyMap.get(x.company_id):'Division'})}
     })
     ;(br.data||[]).forEach(x=>{
       if(!seen.has('brand-'+x.id)){seen.add('brand-'+x.id);next.push({type:'brand',id:x.id,companyId:x.company_id,label:x.brand_name,meta:'Brand'})}
@@ -442,6 +444,18 @@ export default function App(){
     const cards=[]
     const seen=new Set()
 
+    // Show division catalogue matches with their owning company, even without a distributor listing.
+    if(divisionRows.length){
+      const divisionCompanyIds=[...new Set(divisionRows.map(row=>row.company_id).filter(Boolean))]
+      const divisionCompanyRes=divisionCompanyIds.length?await supabase.from('companies').select('id,company_name,short_name,image_url').in('id',divisionCompanyIds).eq('status','active'):{data:[],error:null}
+      if(divisionCompanyRes.error){setError(divisionCompanyRes.error.message);setResults([]);setLoading(false);return}
+      const divisionCompanyMap=new Map((divisionCompanyRes.data||[]).map(company=>[company.id,company]))
+      divisionRows.forEach(division=>{
+        const owner=divisionCompanyMap.get(division.company_id)
+        if(owner){const key='division-'+division.id;if(!seen.has(key)){seen.add(key);cards.push({type:'division',id:division.id,title:division.division_name,companyId:owner.id,companyName:owner.company_name,imageUrl:owner.image_url||null})}}
+      })
+    }
+
     relationships.forEach(rel=>{
       const company=companyMap.get(rel.company_id)
       const distributor=distributorMap.get(rel.distributor_id)
@@ -507,15 +521,17 @@ export default function App(){
     })
 
     // Product matches are searchable independently from distributorship records.
-    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.size?',brand_id.in.('+[...searchedBrandIds].join(',')+')':'')).limit(20)
+    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.size?',brand_id.in.('+[...searchedBrandIds].join(',')+')':'')).limit(20)
     if(productRes.error){setError(productRes.error.message);setResults([]);setLoading(false);return}
     const productRows=productRes.data||[]
     const productCompanyIds=[...new Set(productRows.map(product=>product.company_id).filter(Boolean))]
     const productBrandIds=[...new Set(productRows.map(product=>product.brand_id).filter(Boolean))]
+    const productDivisionIds=[...new Set(productRows.map(product=>product.division_id).filter(Boolean))]
     const productIds=productRows.map(product=>product.id)
-    const [productCompaniesRes,productBrandsRes,directLinksRes,companyLinksRes]=await Promise.all([
+    const [productCompaniesRes,productBrandsRes,productDivisionsRes,directLinksRes,companyLinksRes]=await Promise.all([
       productCompanyIds.length?supabase.from('companies').select('id,company_name,parent_company_id').in('id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       productBrandIds.length?supabase.from('brands').select('id,brand_name').in('id',productBrandIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      productDivisionIds.length?supabase.from('divisions').select('id,division_name,company_id').in('id',productDivisionIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       productIds.length?supabase.from('product_distributors').select('product_id,distributor_id').in('product_id',productIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       productCompanyIds.length?supabase.from('distributorships').select('company_id,distributor_id,territory').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
@@ -534,7 +550,7 @@ export default function App(){
       const direct=(directLinksRes.data||[]).filter(link=>link.product_id===product.id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
       const companyListed=(companyLinksRes.data||[]).filter(link=>link.company_id===product.company_id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
       const distributors=[...new Map((direct.length?direct:companyListed).map(distributor=>[distributor.id,distributor])).values()]
-      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
+      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,divisionName:product.division_id?productDivisionMap.get(product.division_id)?.division_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
     })
 
     if(requestId!==searchRequestRef.current)return
@@ -938,6 +954,7 @@ export default function App(){
                       { id: 'all', label: 'All results', count: results.length },
                       { id: 'product', label: 'Products', count: results.filter(item => item.type === 'product').length },
                       { id: 'company', label: 'Companies', count: results.filter(item => item.type === 'company').length },
+                      { id: 'division', label: 'Divisions', count: results.filter(item => item.type === 'division').length },
                       { id: 'relationship', label: 'Distributor listings', count: results.filter(item => item.type === 'relationship').length }
                     ].filter(item => item.id === 'all' || item.count > 0).map(item => (
                       <button
@@ -965,6 +982,13 @@ export default function App(){
                           <button className="result-open" aria-label={`Open ${r.title} profile`} onClick={e=>{e.stopPropagation();openProfile('company',r.id)}}><ArrowRight size={18}/></button>
                         </div>
                       )
+                      if (r.type === 'division') return (
+                        <div className="result-card result-card-clickable" key={'division-'+r.id} role="link" tabIndex={0} onClick={() => openProfile('company',r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.companyId)}}}>
+                          <div className="result-icon">{r.imageUrl ? <img src={r.imageUrl} alt={`${r.companyName} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>}</div>
+                          <div className="result-copy"><strong>{r.title}</strong><span className="result-division">Division</span><span className="result-relation">Company: {r.companyName}</span><span className="result-meta">Open company profile to view its catalogue and distributor relationships.</span></div>
+                          <button className="result-open" aria-label={`Open ${r.companyName}`} onClick={e=>{e.stopPropagation();openProfile('company',r.companyId)}}><ArrowRight size={18}/></button>
+                        </div>
+                      )
                       if (r.type === 'product') return (
                         <div className="product-result-group" key={'product-'+r.id}>
                           <div className="result-card product-result-card result-card-clickable" role="link" tabIndex={0} aria-label={`Open ${r.companyName} company profile`} onClick={() => openProfile('company',r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.companyId)}}}>
@@ -972,6 +996,7 @@ export default function App(){
                             <div className="result-copy">
                               <strong>{r.title}</strong>
                               {r.brandName && <span className="result-division">Brand: {r.brandName}</span>}
+                              {r.divisionName && <span className="result-division">Division: {r.divisionName}</span>}
                               {r.specs && <span className="result-meta">{r.specs}</span>}
                               <span className="result-relation">Company: {r.companyName}{r.parentName ? ' · part of '+r.parentName : ''}</span>
                             </div>
