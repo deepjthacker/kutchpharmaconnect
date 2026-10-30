@@ -751,7 +751,7 @@ export default function App(){
               <div className="profile-heading profile-heading-with-actions">
                 <div className="profile-heading-main">
                   <div className="profile-icon">
-                    {profile.entity?.image_url ? <img className="profile-logo-image" src={profile.entity.image_url} alt="" /> : (profile.type === 'company' ? <Building2 size={24}/> : <Truck size={24}/>)}
+                    {profile.entity?.image_url ? <img className="profile-logo-image" src={profile.entity.image_url} alt="" /> : (profile.type !== 'distributor' ? <Building2 size={24}/> : <Truck size={24}/>)}
                   </div>
                   <div className="profile-heading-copy">
                     <p className="profile-kicker">
@@ -911,7 +911,7 @@ export default function App(){
                 )}
               </div>
 
-                  {!profile.entity.subsidiaries?.length && profile.entity.catalog?.length > 0 && <div className="profile-list">
+                  {!profile.entity.subsidiaries?.length && !profile.entity.divisions?.length && profile.entity.catalog?.length > 0 && <div className="profile-list">
                     <div className="profile-list-title">Product catalogue</div>
                     <p className="result-meta">Company catalogue. Distributor handling or current stock is not confirmed unless a product-specific link is shown.</p>
                     {profile.entity.catalog.map(product=><div className="profile-rel" key={product.id}><div><strong>{product.product_name}</strong>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
