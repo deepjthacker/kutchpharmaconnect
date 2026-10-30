@@ -335,7 +335,7 @@ export default function App(){
 
   function chooseSuggestion(item){
     setShowSuggestions(false)
-    if(item.type==='company'||item.type==='distributor'){
+    if(['company','distributor','division','brand'].includes(item.type)){
       openProfile(item.type,item.id)
       return
     }
