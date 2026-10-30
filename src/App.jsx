@@ -634,11 +634,12 @@ export default function App(){
     setProfileLoading(true);setError('')
     trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
-      const [companyRes, relRes]=await Promise.all([
+      const [companyRes, relRes, divisionsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
-        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id'))
+        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id')),
+        supabase.from('divisions').select('id,division_name,company_id').eq('company_id',id).eq('status','active').order('division_name')
       ])
-      if(companyRes.error||relRes.error){setError((companyRes.error||relRes.error).message);setProfileLoading(false);return}
+      if(companyRes.error||relRes.error||divisionsRes.error){setError((companyRes.error||relRes.error||divisionsRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
       const parentCompanyId=companyRes.data?.parent_company_id
       const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
@@ -685,7 +686,7 @@ export default function App(){
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:divisionsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
