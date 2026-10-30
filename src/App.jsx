@@ -865,7 +865,7 @@ export default function App(){
                           </button>
                         )}
                         {rel.division && <span>{rel.division.division_name}</span>}
-                        {profile.type === 'division' && rel.isCompanyLevel && <span className="profile-rel-scope-note">Listed at parent-company level · division-specific handling not separately confirmed</span>}
+                        
                         {profile.type !== 'distributor' && rel.distributor?.mobile && (
                           <div className="profile-rel-phone">
                             <Phone size={13}/>
