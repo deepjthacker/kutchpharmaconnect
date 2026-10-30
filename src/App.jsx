@@ -820,7 +820,7 @@ export default function App(){
                 </div>
               )}
 
-              {profile.type === 'company' && (
+              {profile.type !== 'distributor' && (
                 <>
                   {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list company-group-list">
                     <div className="profile-list-title">Company group</div>
@@ -840,7 +840,7 @@ export default function App(){
 
               <div className="profile-list">
                 <div className="profile-list-title">
-                  {profile.type === 'company' ? 'Distributors in Kutch' : 'Currently handles'}
+                  {profile.type === 'distributor' ? 'Currently handles' : 'Distributors in Kutch'}
                 </div>
 
                 {profile.type === 'distributor' && profile.relationships.length > 0 && (
@@ -855,7 +855,7 @@ export default function App(){
                   visibleRelationships.map(rel => (
                     <div className="profile-rel" key={rel.id}>
                       <div>
-                        {profile.type === 'company' ? (
+                        {profile.type !== 'distributor' ? (
                           <button className="profile-link-button" onClick={() => openProfile('distributor', rel.distributor_id)}>
                             {rel.distributor?.distributor_name}
                           </button>
@@ -865,7 +865,7 @@ export default function App(){
                           </button>
                         )}
                         {rel.division && <span>{rel.division.division_name}</span>}
-                        {profile.type === 'company' && rel.distributor?.mobile && (
+                        {profile.type !== 'distributor' && rel.distributor?.mobile && (
                           <div className="profile-rel-phone">
                             <Phone size={13}/>
                             <a href={phoneLink(rel.distributor.mobile)}>{rel.distributor.mobile}</a>
@@ -889,7 +889,7 @@ export default function App(){
                             <span className="status-symbol">!</span> Not Verified
                           </span>
                         )}
-                        {profile.type === 'company' && (
+                        {profile.type !== 'distributor' && (
                           <div className="profile-rel-actions">
                             {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)}><Phone size={13}/> Call</a>}
                             {(rel.distributor?.whatsapp || rel.distributor?.mobile) && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
