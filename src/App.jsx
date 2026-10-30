@@ -551,7 +551,7 @@ export default function App(){
       const direct=(directLinksRes.data||[]).filter(link=>link.product_id===product.id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
       const companyListed=(companyLinksRes.data||[]).filter(link=>link.company_id===product.company_id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
       const distributors=[...new Map((direct.length?direct:companyListed).map(distributor=>[distributor.id,distributor])).values()]
-      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,divisionName:product.division_id?productDivisionMap.get(product.division_id)?.division_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
+      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,divisionId:product.division_id||null,brandId:product.brand_id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,divisionName:product.division_id?productDivisionMap.get(product.division_id)?.division_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
     })
 
     if(requestId!==searchRequestRef.current)return
@@ -1043,7 +1043,7 @@ export default function App(){
                       )
                       if (r.type === 'product') return (
                         <div className="product-result-group" key={'product-'+r.id}>
-                          <div className="result-card product-result-card result-card-clickable" role="link" tabIndex={0} aria-label={`Open ${r.companyName} company profile`} onClick={() => openProfile('company',r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.companyId)}}}>
+                          <div className="result-card product-result-card result-card-clickable" role="link" tabIndex={0} aria-label={`Open ${r.companyName} company profile`} onClick={() => openProfile(r.brandId?'brand':r.divisionId?'division':'company',r.brandId||r.divisionId||r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile(r.brandId?'brand':r.divisionId?'division':'company',r.brandId||r.divisionId||r.companyId)}}}>
                             <div className="result-icon"><Package size={20}/></div>
                             <div className="result-copy">
                               <strong>{r.title}</strong>
