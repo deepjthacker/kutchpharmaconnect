@@ -602,7 +602,7 @@ export default function App(){
       const failure=companyRes.error||relRes.error||productRes.error||divisionRes.error||brandRes.error
       if(failure)throw failure
       if(!companyRes.data)throw new Error('The parent company for this '+type+' is unavailable.')
-      const allRels=(relRes.data||[]).filter(rel=>isDivision?rel.division_id===id:rel.brand_id===id)
+      const allRels=(relRes.data||[]).filter(rel=>isDivision?(rel.division_id===id||(!rel.division_id&&!rel.brand_id)):rel.brand_id===id).map(rel=>({...rel,isCompanyLevel:isDivision&&!rel.division_id&&!rel.brand_id}))
       const distributorIds=[...new Set(allRels.map(rel=>rel.distributor_id))]
       const locationIds=[...new Set(allRels.map(rel=>rel.location_id).filter(Boolean))]
       const [dRes,lRes]=await Promise.all([
@@ -865,6 +865,7 @@ export default function App(){
                           </button>
                         )}
                         {rel.division && <span>{rel.division.division_name}</span>}
+                        {profile.type === 'division' && rel.isCompanyLevel && <span className="profile-rel-scope-note">Listed at parent-company level · division-specific handling not separately confirmed</span>}
                         {profile.type !== 'distributor' && rel.distributor?.mobile && (
                           <div className="profile-rel-phone">
                             <Phone size={13}/>
