@@ -755,14 +755,15 @@ export default function App(){
                   </div>
                   <div className="profile-heading-copy">
                     <p className="profile-kicker">
-                      {profile.type === 'company' ? 'COMPANY' : 'DISTRIBUTOR'}
+                      {profile.type === 'company' ? 'COMPANY' : profile.type === 'division' ? 'DIVISION' : profile.type === 'brand' ? 'BRAND' : 'DISTRIBUTOR'}
                     </p>
-                    <h2>{profile.entity?.company_name || profile.entity?.distributor_name}</h2>
-                     {profile.type === 'company' && profile.entity.parentCompany && <span className="profile-parent-inline">Part of <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></span>}
+                    <h2>{profile.entity?.company_name || profile.entity?.division_name || profile.entity?.brand_name || profile.entity?.distributor_name}</h2>
+                     {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.parentCompany && <span className="profile-parent-inline">Part of <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></span>}
+                     {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: {profile.entity.division.division_name}</span>}
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
-                    <span className="profile-summary">{profile.type==='company' && profile.entity.subsidiaries?.length ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
+                    <span className="profile-summary">{profile.type==='company' && (profile.entity.subsidiaries?.length||profile.entity.divisions?.length) ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
                     {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
                       <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
                         <ShieldCheck size={14}/> Relationship Verified
