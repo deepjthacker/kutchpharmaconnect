@@ -33,7 +33,8 @@ export default function AdminDashboard() {
       const qs = await Promise.all([
         supabase.from('companies').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('distributorships').select('id', { count: 'exact', head: true }).eq('status', 'active'),\n        supabase.from('products').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('distributorships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributor_submissions').select('id', { count: 'exact', head: true }).in('status', ['open', 'under_review']),
         supabase.from('correction_reports').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing']),
         supabase.from('website_feedback').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing'])
@@ -44,9 +45,10 @@ export default function AdminDashboard() {
         companies: qs[0].count ?? 0,
         distributors: qs[1].count ?? 0,
         relationships: qs[2].count ?? 0,
-        submissions: qs[3].count ?? 0,
-        reports: qs[4].count ?? 0,
-        websiteFeedback: qs[5].count ?? 0
+        products: qs[3].count ?? 0,
+        submissions: qs[4].count ?? 0,
+        reports: qs[5].count ?? 0,
+        websiteFeedback: qs[6].count ?? 0
       })
     } catch (e) {
       setStats(null)
