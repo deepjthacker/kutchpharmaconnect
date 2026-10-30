@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Building2, Truck, Link2, Inbox, Flag, ShieldAlert, Database, Settings, Search, RefreshCw, ArrowRight, LoaderCircle, Tags, MapPin, GitBranch, MessageSquare, MessageSquareWarning, Plus } from 'lucide-react'
+import { Building2, Truck, Package, Link2, Inbox, Flag, ShieldAlert, Database, Settings, Search, RefreshCw, ArrowRight, LoaderCircle, Tags, MapPin, GitBranch, MessageSquare, MessageSquareWarning, Plus } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
-import AdminCompanies from './AdminCompanies'
+import AdminCompanies from './AdminCompanies'\nimport AdminProducts from './AdminProducts'
 import AdminDataWorkspace from './AdminDataWorkspace'
 import AdminDistributors from './AdminDistributors'
 import AdminDistributorships from './AdminDistributorships'
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
       const qs = await Promise.all([
         supabase.from('companies').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('distributorships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('distributorships').select('id', { count: 'exact', head: true }).eq('status', 'active'),\n        supabase.from('products').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributor_submissions').select('id', { count: 'exact', head: true }).in('status', ['open', 'under_review']),
         supabase.from('correction_reports').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing']),
         supabase.from('website_feedback').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing'])
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
   if (view === 'reports') return <AdminReports onBack={back} />
   if (view === 'reviews') return <AdminReviews onBack={back} />
   if (view === 'websiteFeedback') return <AdminWebsiteFeedback onBack={back} />
-  if (view === 'companies') return <AdminCompanies onBack={back} onBulkUpload={() => { setWorkspaceModule('catalog'); setView('workspace') }} />
+  if (view === 'products') return <AdminProducts onBack={back} />\n  if (view === 'companies') return <AdminCompanies onBack={back} onBulkUpload={() => { setWorkspaceModule('catalog'); setView('workspace') }} />
   if (view === 'workspace') return <AdminDataWorkspace key={workspaceModule} initialModule={workspaceModule} onBack={back} onOpenSubmissions={() => setView('submissions')} />
   if (view === 'distributors') return <AdminDistributors onBack={back} />
   if (view === 'relationships') return <AdminDistributorships onBack={back} />
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
   ]
   const directory = [
     ['Distributors', stats?.distributors, Truck, 'Distributor profiles and contact details', 'distributors'],
-    ['Companies', stats?.companies, Building2, 'Company records and legal names', 'companies'],
+    ['Companies', stats?.companies, Building2, 'Company records and legal names', 'companies'],\n    ['Products', stats?.products, Package, 'Search, review and edit the product catalogue', 'products'],
     ['Distributorships', stats?.relationships, Link2, 'Which companies and divisions each distributor handles', 'relationships']
   ]
   const referenceData = [
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
             <div><strong>{stats.reports}</strong><span>Corrections</span><small>open or reviewing</small></div>
             <div><strong>{stats.websiteFeedback}</strong><span>Website feedback</span><small>open or reviewing</small></div>
             <div><strong>{stats.companies}</strong><span>Companies</span><small>active directory records</small></div>
-            <div><strong>{stats.distributors}</strong><span>Distributors</span><small>active directory records</small></div>
+            <div><strong>{stats.distributors}</strong><span>Distributors</span><small>active directory records</small></div>\n            <div><strong>{stats.products.toLocaleString()}</strong><span>Products</span><small>active catalogue records</small></div>
             <div><strong>{stats.relationships}</strong><span>Distributorships</span><small>active company–distributor links</small></div>
           </section>
 
