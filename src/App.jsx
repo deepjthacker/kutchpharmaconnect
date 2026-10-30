@@ -1033,10 +1033,10 @@ export default function App(){
                         </div>
                       )
                       if (r.type === 'division') return (
-                        <div className="result-card result-card-clickable" key={'division-'+r.id} role="link" tabIndex={0} onClick={() => openProfile('company',r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.companyId)}}}>
+                        <div className="result-card result-card-clickable" key={'division-'+r.id} role="link" tabIndex={0} onClick={() => openProfile('division',r.id)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('division',r.id)}}}>
                           <div className="result-icon">{r.imageUrl ? <img src={r.imageUrl} alt={`${r.companyName} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>}</div>
-                          <div className="result-copy"><strong>{r.title}</strong><span className="result-division">Division</span><span className="result-relation">Company: {r.companyName}</span><span className="result-meta">Open company profile to view its catalogue and distributor relationships.</span></div>
-                          <button className="result-open" aria-label={`Open ${r.companyName}`} onClick={e=>{e.stopPropagation();openProfile('company',r.companyId)}}><ArrowRight size={18}/></button>
+                          <div className="result-copy"><strong>{r.title}</strong><span className="result-division">Division</span><span className="result-relation">Company: {r.companyName}</span><span className="result-meta">Open division profile to view its own catalogue and distributor relationships.</span></div>
+                          <button className="result-open" aria-label={`Open ${r.companyName}`} onClick={e=>{e.stopPropagation();openProfile('division',r.id)}}><ArrowRight size={18}/></button>
                         </div>
                       )
                       if (r.type === 'product') return (
