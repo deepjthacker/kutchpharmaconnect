@@ -65,7 +65,8 @@ export default function AdminDashboard() {
   if (view === 'reports') return <AdminReports onBack={back} />
   if (view === 'reviews') return <AdminReviews onBack={back} />
   if (view === 'websiteFeedback') return <AdminWebsiteFeedback onBack={back} />
-  if (view === 'products') return <AdminProducts onBack={back} />\n  if (view === 'companies') return <AdminCompanies onBack={back} onBulkUpload={() => { setWorkspaceModule('catalog'); setView('workspace') }} />
+  if (view === 'products') return <AdminProducts onBack={back} />
+  if (view === 'companies') return <AdminCompanies onBack={back} onBulkUpload={() => { setWorkspaceModule('catalog'); setView('workspace') }} />
   if (view === 'workspace') return <AdminDataWorkspace key={workspaceModule} initialModule={workspaceModule} onBack={back} onOpenSubmissions={() => setView('submissions')} />
   if (view === 'distributors') return <AdminDistributors onBack={back} />
   if (view === 'relationships') return <AdminDistributorships onBack={back} />
@@ -85,7 +86,8 @@ export default function AdminDashboard() {
   ]
   const directory = [
     ['Distributors', stats?.distributors, Truck, 'Distributor profiles and contact details', 'distributors'],
-    ['Companies', stats?.companies, Building2, 'Company records and legal names', 'companies'],\n    ['Products', stats?.products, Package, 'Search, review and edit the product catalogue', 'products'],
+    ['Companies', stats?.companies, Building2, 'Company records and legal names', 'companies'],
+    ['Products', stats?.products, Package, 'Search, review and edit the product catalogue', 'products'],
     ['Distributorships', stats?.relationships, Link2, 'Which companies and divisions each distributor handles', 'relationships']
   ]
   const referenceData = [
@@ -131,7 +133,8 @@ export default function AdminDashboard() {
             <div><strong>{stats.reports}</strong><span>Corrections</span><small>open or reviewing</small></div>
             <div><strong>{stats.websiteFeedback}</strong><span>Website feedback</span><small>open or reviewing</small></div>
             <div><strong>{stats.companies}</strong><span>Companies</span><small>active directory records</small></div>
-            <div><strong>{stats.distributors}</strong><span>Distributors</span><small>active directory records</small></div>\n            <div><strong>{stats.products.toLocaleString()}</strong><span>Products</span><small>active catalogue records</small></div>
+            <div><strong>{stats.distributors}</strong><span>Distributors</span><small>active directory records</small></div>
+            <div><strong>{stats.products.toLocaleString()}</strong><span>Products</span><small>active catalogue records</small></div>
             <div><strong>{stats.relationships}</strong><span>Distributorships</span><small>active company–distributor links</small></div>
           </section>
 
