@@ -339,7 +339,7 @@ Additional observations:
 - Company records: 737 active and 29 inactive.
 - Distributors: 30 active.
 - Distributorships: 1,256 active and 5 inactive.
-- Distributorship verification states: 1,253 verified, 1 needs review and 7 unverified.
+- Distributorship verification states by lifecycle: 1,249 active + verified, **7 active + unverified**, 1 inactive + needs review, and 4 inactive + verified. The 7 active + unverified relationships are currently eligible under the existing public RLS rule because that rule checks only active lifecycle status; this is a confirmed policy violation that must be corrected before further public directory changes.
 - No company/division mismatch was found in product-to-division relationships or distributorship-to-division relationships in the initial consistency checks.
 - One normalized company-name duplicate group was found for Cadila Healthcare Limited (two records). No automatic merge is authorised.
 - The existing schema contains separate tables for companies, company groups, divisions, brands, products, distributors, distributorships, search aliases, verification records, distributor submissions, product submissions, correction reports, profile reviews, feedback and import staging.
@@ -357,7 +357,7 @@ These are observations, not approval to alter the database. In particular:
 - The Cadila duplicate must not be merged until its linked records and public URLs are mapped.
 - `product_distributors` has zero rows and is not part of the standard workflow; retain the table pending dependency review.
 - The verification record table is synchronised from distributorship changes by a trigger, so the authoritative verification field and history model must be decided before simplifying it.
-- Current public read policies appear to gate distributorships by active status, not by verified status. This does not meet the approved visibility rule and requires a tested RLS/query correction.
+- Current public read policies gate distributorships by active status, not by verified status. The 7 active + unverified relationships are therefore exposed to anonymous/authenticated reads under the current policy. This is a confirmed policy violation and requires a tested RLS/query correction.
 - Current product profile code retrieves company-level distributorships without fully applying the division-scope rule. This requires correction before product/distributor presentation can be considered compliant.
 
 ## 11. Known website/database policy gaps
