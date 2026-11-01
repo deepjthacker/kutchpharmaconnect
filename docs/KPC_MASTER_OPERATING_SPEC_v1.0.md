@@ -358,6 +358,9 @@ These are observations, not approval to alter the database. In particular:
 - `product_distributors` has zero rows and is not part of the standard workflow; retain the table pending dependency review.
 - The verification record table is synchronised from distributorship changes by a trigger, so the authoritative verification field and history model must be decided before simplifying it.
 - Current public read policies gate distributorships by active status, not by verified status. The 7 active + unverified relationships are therefore exposed to anonymous/authenticated reads under the current policy. This is a confirmed policy violation and requires a tested RLS/query correction.
+- The distributor-submission publish function currently marks relationships active + verified when an administrator approves a distributor-submitted mapping. Approval of a self-submitted claim is not, by itself, independent verification. Under the approved policy, this path must be disabled or changed so the admin records evidence before a relationship becomes verified.
+- The current admin interface exposes permanent-delete actions for companies, distributors and distributorships. The associated SECURITY DEFINER delete functions remove related products, relationships, divisions, aliases and/or submission records. This is broader than the approved default of archive/inactivate; deletion controls must be restricted pending dependency previews, backups and a reviewed recovery plan.
+- The product-submission publish function can create product-level distributor mappings and marks them active + unverified. Product-level mapping is outside the standard workflow and must remain excluded from public directory presentation until separately approved.
 - Current product profile code retrieves company-level distributorships without fully applying the division-scope rule. This requires correction before product/distributor presentation can be considered compliant.
 
 ## 11. Known website/database policy gaps
@@ -365,6 +368,9 @@ These are observations, not approval to alter the database. In particular:
 | Gap | Required outcome |
 |---|---|
 | Public distributor submission form and public submission upload path | Disable new public distributor intake; admin creates records. Retain historical records and correction reports. |
+| Submission publishing auto-verifies distributor-submitted relationships | Do not equate admin approval of a self-submitted claim with independent verification; require evidence before setting verified. |
+| Permanent-delete controls and cascading RPCs | Restrict destructive actions; default to inactive/archive. Require dependency preview, backup and recovery plan before exceptional deletion. |
+| Product submission can create product-level distributor links | Keep product-level mapping outside standard workflow and prevent it from implying SKU stock or appearing publicly without separate approval. |
 | Public distributorship read rule | Enforce active + verified + valid entity + explicit scope. |
 | Product distributor retrieval | Respect company/division/optional brand scope; never imply stock. |
 | Admin interface has many separate screens | Present four primary work areas while retaining necessary internal functionality. |
