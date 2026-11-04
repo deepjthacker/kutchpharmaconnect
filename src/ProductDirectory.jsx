@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Package, Search, LoaderCircle, Building2, Phone, MessageCircle, MapPin } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { fetchAllPages } from './lib/queryHelpers'
 
 const normalizePhone = number => {
   const raw = String(number || '').trim()
@@ -32,7 +33,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
     async function load() {
       setLoading(true); setError('')
       if (!productId) {
-        const {data: products,error: productError} = await supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').order('product_name').limit(1000)
+        const {data: products,error: productError} = await fetchAllPages(() => supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').order('product_name').order('id'))
         if (productError) { if(!cancelled){setError(productError.message);setLoading(false)}; return }
         const companyIds=[...new Set((products||[]).map(x=>x.company_id).filter(Boolean))]
         const brandIds=[...new Set((products||[]).map(x=>x.brand_id).filter(Boolean))]
