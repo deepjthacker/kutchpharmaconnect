@@ -545,6 +545,7 @@ export default function App(){
       ;(productParentRes.data||[]).forEach(company=>productCompanyMap.set(company.id,company))
     }
     const productBrandMap=new Map((productBrandsRes.data||[]).map(brand=>[brand.id,brand]))
+    const productDivisionMap=new Map((productDivisionsRes.data||[]).map(division=>[division.id,division]))
     const productDistributorMap=new Map((productDistributorRes.data||[]).map(distributor=>[distributor.id,distributor]))
     productRows.forEach(product=>{
       const company=productCompanyMap.get(product.company_id)
