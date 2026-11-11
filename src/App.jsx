@@ -753,11 +753,14 @@ export default function App(){
         }
       }
       const profileCompanyIds=[id,...subsidiaryIds]
-      const catalogRes=profileCompanyIds.length?await fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null}
+      const [catalogRes,companyDivisionsRes]=await Promise.all([
+        profileCompanyIds.length?fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null},
+        supabase.from('divisions').select('id,division_name,company_id').in('company_id',profileCompanyIds).eq('status','active').order('division_name')
+      ])
       const profileProductBrandIds=[...new Set((catalogRes.data||[]).map(product=>product.brand_id).filter(Boolean))]
       const [profileBrandsRes,companyBrandsRes]=await Promise.all([
         profileProductBrandIds.length?supabase.from('brands').select('id,brand_name,division_id').in('id',profileProductBrandIds).eq('status','active'):{data:[],error:null},
-        supabase.from('brands').select('id,brand_name,division_id').eq('company_id',id).eq('status','active').order('brand_name')
+        supabase.from('brands').select('id,brand_name,division_id,company_id').in('company_id',profileCompanyIds).eq('status','active').order('brand_name')
       ])
       const profileBrandMap=new Map((profileBrandsRes.data||[]).map(brand=>[brand.id,brand.brand_name]))
       const profileCompanyMap=new Map(familyRows.map(company=>[company.id,company]))
@@ -765,7 +768,7 @@ export default function App(){
         const parentRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',parentCompanyId).eq('status','active').maybeSingle()
         if(parentRes.data)profileCompanyMap.set(parentRes.data.id,parentRes.data)
       }
-      if(familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||profileBrandsRes.error||companyBrandsRes.error){setError((familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||profileBrandsRes.error||companyBrandsRes.error).message);setProfileLoading(false);return}
+      if(familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||companyDivisionsRes.error||profileBrandsRes.error||companyBrandsRes.error){setError((familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||companyDivisionsRes.error||profileBrandsRes.error||companyBrandsRes.error).message);setProfileLoading(false);return}
       if(companyRes.data)rememberRecent('company',id,companyRes.data.company_name)
       const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
@@ -782,7 +785,7 @@ export default function App(){
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
