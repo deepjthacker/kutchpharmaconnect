@@ -18,12 +18,16 @@ const absoluteSiteUrl = () => {
   const base = import.meta.env.BASE_URL || '/'
   return window.location.origin + base
 }
-const getName = (profile) => profile?.type === 'company'
-  ? profile?.entity?.company_name
-  : profile?.entity?.distributor_name
-const getRelationshipName = (profile, rel) => profile?.type === 'company'
-  ? rel?.distributor?.distributor_name
-  : rel?.company?.company_name
+const getName = (profile) => ({
+  company: profile?.entity?.company_name,
+  distributor: profile?.entity?.distributor_name,
+  product: profile?.entity?.product_name,
+  division: profile?.entity?.division_name,
+  brand: profile?.entity?.brand_name,
+})[profile?.type]
+const getRelationshipName = (profile, rel) => profile?.type === 'distributor'
+  ? rel?.company?.company_name
+  : rel?.distributor?.distributor_name
 const getRelationshipLocation = (rel) => {
   const loc = rel?.location
   return loc ? [loc.city, loc.district, loc.state].filter(Boolean).join(', ') : (rel?.territory || 'Kutch, Gujarat')
@@ -34,7 +38,7 @@ const slug = (value) => String(value || 'business')
 const getShareUrl = (profile, siteUrl) => {
   const base = String(siteUrl || absoluteSiteUrl()).replace(/\/$/, '')
   const entity = profile?.entity || {}
-  if (!entity.id || !['company', 'distributor'].includes(profile?.type)) {
+  if (!entity.id || !['company', 'distributor', 'product', 'division', 'brand'].includes(profile?.type)) {
     return typeof window !== 'undefined' ? window.location.href : base
   }
   // Use the app's supported deep-link route so shared links open the same
@@ -100,6 +104,7 @@ function drawShareCard(profile, siteUrl, profileUrl) {
   ctx.fillText('FIND WHO HANDLES WHAT IN KUTCH', 66, 204)
 
   const isCompany = profile?.type === 'company'
+  const profileTypeLabel = String(profile?.type || 'directory').toUpperCase()
   const entity = profile?.entity || {}
   const title = getName(profile) || 'Directory profile'
   const rels = profile?.relationships || []
@@ -107,7 +112,7 @@ function drawShareCard(profile, siteUrl, profileUrl) {
 
   ctx.fillStyle = colors.blue
   ctx.font = '700 20px Arial, sans-serif'
-  ctx.fillText(isCompany ? 'COMPANY PROFILE' : 'DISTRIBUTOR PROFILE', 66, 330)
+  ctx.fillText(profileTypeLabel + ' PROFILE', 66, 330)
 
   ctx.fillStyle = colors.ink
   ctx.font = '700 42px Arial, sans-serif'
@@ -132,7 +137,7 @@ function drawShareCard(profile, siteUrl, profileUrl) {
   let y = summaryY + (verifiedCount > 0 ? 98 : 62)
   ctx.fillStyle = colors.ink
   ctx.font = '700 25px Arial, sans-serif'
-  ctx.fillText(isCompany ? 'CURRENTLY HANDLED BY' : 'CURRENTLY HANDLES', 66, y)
+  ctx.fillText(isCompany ? 'CURRENTLY HANDLED BY' : profile?.type === 'product' ? 'DISTRIBUTORS LISTED' : 'CURRENTLY HANDLES', 66, y)
   y += 26
 
   const maxRows = 5

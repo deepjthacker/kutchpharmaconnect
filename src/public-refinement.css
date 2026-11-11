@@ -176,3 +176,26 @@ html[data-theme="dark"] .brand-text span{color:#8faee0}
 html[data-theme="dark"] .hero h1 span{color:#8faee0!important}
 html[data-theme="dark"] .search-hint-dot{background:#8faee0;box-shadow:0 0 0 3px rgba(143,174,224,.2)}
 html[data-theme="dark"] .category-card-icon,html[data-theme="dark"] .quick-link-icon{background:#1d3151;color:#a8c1ec}
+
+
+/* Search result detail hierarchy refinement */
+.profile-structure-group{display:grid;gap:9px;margin-top:13px}
+.profile-structure-label{color:#718596;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.profile-structure-chips{display:flex;flex-wrap:wrap;gap:8px}
+.profile-structure-chip{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:7px 11px;border:1px solid #dce8e8;border-radius:9px;background:#fbfdfd;color:#244155;font-size:11px;font-weight:750;cursor:pointer;transition:border-color .16s,background .16s,transform .16s}
+.profile-structure-chip:hover{border-color:#9dc9c3;background:#eff8f6;transform:translateY(-1px)}
+.profile-structure-chip svg{color:#0b827a}
+.product-hierarchy{background:linear-gradient(145deg,#fbfdfd,#f5faf9);border:1px solid #dce9e7;border-radius:13px;padding:17px}
+.product-detail-specs{margin:2px 0 12px;color:#65798a;font-size:12px;line-height:1.6}
+.product-hierarchy-row{display:grid;grid-template-columns:82px minmax(0,1fr);align-items:center;gap:10px;padding:9px 0;border-top:1px solid #e3eceb}
+.product-hierarchy-row>small{color:#7c8e99;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.product-hierarchy-row .profile-link-button{display:inline-flex;align-items:center;gap:7px;justify-self:start;color:#155d75}
+.product-hierarchy-row .profile-link-button svg{width:13px;height:13px}
+.profile-catalog-count{display:inline-flex;align-items:center;margin-left:7px;padding:3px 7px;border-radius:99px;background:#edf5f4;color:#39766f;font-size:10px;font-weight:800}
+.company-product-row .profile-link-button{display:inline-flex;align-items:center;gap:6px;color:#155d75;text-align:left}
+.company-product-row .profile-link-button:hover,.product-hierarchy-row .profile-link-button:hover{text-decoration:underline}
+html[data-theme="dark"] .profile-structure-chip{background:#172b3a;border-color:#2e4855;color:#e3edf0}
+html[data-theme="dark"] .profile-structure-chip:hover{background:#1b3945;border-color:#4d817a}
+html[data-theme="dark"] .product-hierarchy{background:#142638;border-color:#2b4554}
+html[data-theme="dark"] .product-hierarchy-row{border-color:#2a4050}
+html[data-theme="dark"] .profile-catalog-count{background:#1b3c40;color:#a9d9d1}
