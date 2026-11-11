@@ -1049,7 +1049,7 @@ export default function App(){
                         {profile.type !== 'distributor' && (
                           <div className="profile-rel-actions">
                             {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)}><Phone size={13}/> Call</a>}
-                            {(rel.distributor?.whatsapp || rel.distributor?.mobile) && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
+                            {(rel.distributor?.whatsapp || rel.distributor?.mobile) && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company?.company_name||profile.entity.company_name||profile.entity.product_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
                             {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer"><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
                           </div>
                         )}
