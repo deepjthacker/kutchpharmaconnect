@@ -335,7 +335,7 @@ export default function App(){
 
   function chooseSuggestion(item){
     setShowSuggestions(false)
-    if(['company','distributor','division','brand'].includes(item.type)){
+    if(['company','distributor','division','brand','product'].includes(item.type)){
       openProfile(item.type,item.id)
       return
     }
@@ -628,7 +628,99 @@ export default function App(){
     setProfileLoading(false)
   }
 
+  async function openProductProfile(id,options={}){
+    setRelationshipSearch('')
+    if(options.history!==false)pushRoute('profile',{type:'product',id})
+    setProfileLoading(true);setError('')
+    try{
+      const productRes=await supabase.from('products')
+        .select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size')
+        .eq('id',id).eq('status','active').maybeSingle()
+      if(productRes.error||!productRes.data)throw productRes.error||new Error('This product could not be found.')
+      const product=productRes.data
+      const [companyRes,divisionRes,brandRes,directRes,companyRelRes]=await Promise.all([
+        product.company_id
+          ? supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',product.company_id).eq('status','active').maybeSingle()
+          : Promise.resolve({data:null,error:null}),
+        product.division_id
+          ? supabase.from('divisions').select('id,division_name,company_id').eq('id',product.division_id).eq('status','active').maybeSingle()
+          : Promise.resolve({data:null,error:null}),
+        product.brand_id
+          ? supabase.from('brands').select('id,brand_name,company_id,division_id').eq('id',product.brand_id).eq('status','active').maybeSingle()
+          : Promise.resolve({data:null,error:null}),
+        supabase.from('product_distributors')
+          .select('id,product_id,distributor_id,location_id,territory,verification_status')
+          .eq('product_id',id).eq('status','active'),
+        product.company_id
+          ? fetchAllPages(()=>supabase.from('distributorships')
+              .select('id,company_id,division_id,brand_id,distributor_id,location_id,territory,verification_status,verification_note')
+              .eq('company_id',product.company_id).eq('status','active').order('id'))
+          : Promise.resolve({data:[],error:null})
+      ])
+      const failure=companyRes.error||divisionRes.error||brandRes.error||directRes.error||companyRelRes.error
+      if(failure)throw failure
+      if(!companyRes.data)throw new Error('The company linked to this product is unavailable.')
+
+      const scopedCompanyRels=(companyRelRes.data||[]).filter(rel=>{
+        if(product.brand_id&&rel.brand_id===product.brand_id)return true
+        if(product.division_id&&!rel.brand_id&&rel.division_id===product.division_id)return true
+        return !rel.division_id&&!rel.brand_id
+      })
+      const directRels=(directRes.data||[]).map(rel=>({...rel,scope:'product',isProductSpecific:true}))
+      const companyScopedRels=scopedCompanyRels.map(rel=>({
+        ...rel,
+        scope:rel.brand_id?'brand':rel.division_id?'division':'company',
+        isProductSpecific:false
+      }))
+      const allRels=[...directRels,...companyScopedRels]
+      const distributorIds=[...new Set(allRels.map(rel=>rel.distributor_id).filter(Boolean))]
+      const locationIds=[...new Set(allRels.map(rel=>rel.location_id).filter(Boolean))]
+      const [distributorsRes,locationsRes]=await Promise.all([
+        fetchByIds(distributorIds,ids=>supabase.from('distributors')
+          .select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url')
+          .in('id',ids).eq('status','active')),
+        fetchByIds(locationIds,ids=>supabase.from('locations')
+          .select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
+      ])
+      if(distributorsRes.error||locationsRes.error)throw distributorsRes.error||locationsRes.error
+      const distributorMap=new Map((distributorsRes.data||[]).map(item=>[item.id,item]))
+      const locationMap=new Map((locationsRes.data||[]).map(item=>[item.id,item]))
+      const relationshipMap=new Map()
+      allRels.forEach(rel=>{
+        const distributor=distributorMap.get(rel.distributor_id)
+        if(!distributor)return
+        const key=distributor.id
+        const previous=relationshipMap.get(key)
+        if(!previous||rel.isProductSpecific)relationshipMap.set(key,{
+          ...rel,
+          company:companyRes.data,
+          division:divisionRes.data,
+          brand:brandRes.data,
+          distributor,
+          location:rel.location_id?locationMap.get(rel.location_id):null
+        })
+      })
+      setProfile({
+        type:'product',
+        entity:{
+          ...product,
+          product_name:product.product_name,
+          company:companyRes.data,
+          parentCompany:companyRes.data.parent_company_id?null:null,
+          division:divisionRes.data,
+          brand:brandRes.data
+        },
+        relationships:[...relationshipMap.values()]
+      })
+      trackEvent('product_view',{entity_type:'product'})
+    }catch(err){
+      setError(err?.message||'Unable to load product details.')
+    }
+    setProfileLoading(false)
+  }
+
   async function openProfile(type,id,options={}){
+    if(type==='product')return openProductProfile(id,options)
     if(type==='division'||type==='brand')return openCatalogProfile(type,id,options)
     setRelationshipSearch('')
     if(options.history!==false)pushRoute('profile',{type,id})
@@ -752,19 +844,19 @@ export default function App(){
               <div className="profile-heading profile-heading-with-actions">
                 <div className="profile-heading-main">
                   <div className="profile-icon">
-                    {profile.entity?.image_url ? <img className="profile-logo-image" src={profile.entity.image_url} alt="" /> : (profile.type !== 'distributor' ? <Building2 size={24}/> : <Truck size={24}/>)}
+                    {profile.entity?.image_url ? <img className="profile-logo-image" src={profile.entity.image_url} alt="" /> : (profile.type === 'product' ? <Package size={24}/> : profile.type !== 'distributor' ? <Building2 size={24}/> : <Truck size={24}/>)}
                   </div>
                   <div className="profile-heading-copy">
                     <p className="profile-kicker">
-                      {profile.type === 'company' ? 'COMPANY' : profile.type === 'division' ? 'DIVISION' : profile.type === 'brand' ? 'BRAND' : 'DISTRIBUTOR'}
+                      {profile.type === 'product' ? 'PRODUCT' : profile.type === 'company' ? 'COMPANY' : profile.type === 'division' ? 'DIVISION' : profile.type === 'brand' ? 'BRAND' : 'DISTRIBUTOR'}
                     </p>
-                    <h2>{profile.entity?.company_name || profile.entity?.division_name || profile.entity?.brand_name || profile.entity?.distributor_name}</h2>
+                    <h2>{profile.entity?.product_name || profile.entity?.company_name || profile.entity?.division_name || profile.entity?.brand_name || profile.entity?.distributor_name}</h2>
                      {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.parentCompany && <span className="profile-parent-inline">Part of <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></span>}
                      {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: {profile.entity.division.division_name}</span>}
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
-                    <span className="profile-summary">{profile.type==='company' && (profile.entity.subsidiaries?.length||profile.entity.divisions?.length) ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
+                    <span className="profile-summary">{profile.type==='product' ? `${profile.relationships.length} distributor listing${profile.relationships.length===1?'':'s'} in Kutch` : profile.type==='company' && (profile.entity.subsidiaries?.length||profile.entity.divisions?.length) ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
                     {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
                       <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
                         <ShieldCheck size={14}/> Relationship Verified
@@ -1045,7 +1137,7 @@ export default function App(){
                       )
                       if (r.type === 'product') return (
                         <div className="product-result-group" key={'product-'+r.id}>
-                          <div className="result-card product-result-card result-card-clickable" role="link" tabIndex={0} aria-label={`Open ${r.companyName} company profile`} onClick={() => openProfile(r.brandId?'brand':r.divisionId?'division':'company',r.brandId||r.divisionId||r.companyId)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile(r.brandId?'brand':r.divisionId?'division':'company',r.brandId||r.divisionId||r.companyId)}}}>
+                          <div className="result-card product-result-card result-card-clickable" role="link" tabIndex={0} aria-label={`Open ${r.title} product details`} onClick={() => openProfile('product',r.id)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('product',r.id)}}}>
                             <div className="result-icon"><Package size={20}/></div>
                             <div className="result-copy">
                               <strong>{r.title}</strong>
