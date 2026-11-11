@@ -691,7 +691,8 @@ export default function App(){
         if(!distributor)return
         const key=distributor.id
         const previous=relationshipMap.get(key)
-        if(!previous||rel.isProductSpecific)relationshipMap.set(key,{
+        const priority=item=>item.isProductSpecific?4:item.brand_id?3:item.division_id?2:1
+        if(!previous||priority(rel)>priority(previous))relationshipMap.set(key,{
           ...rel,
           company:companyRes.data,
           division:divisionRes.data,
@@ -706,7 +707,6 @@ export default function App(){
           ...product,
           product_name:product.product_name,
           company:companyRes.data,
-          parentCompany:companyRes.data.parent_company_id?null:null,
           division:divisionRes.data,
           brand:brandRes.data
         },
@@ -814,8 +814,24 @@ export default function App(){
   }
 
   function closeProfile(){
-    if(window.history.state?.kpc==='profile')window.history.back()
-    else {setProfile(null);setProfileLoading(false)}
+    // "Back to search" is a deterministic action: return to the last search
+    // instead of stepping through intermediate entity profiles one at a time.
+    const currentUrl=new URL(window.location.href)
+    const returnQuery=String(q||currentUrl.searchParams.get('q')||'').trim()
+    ;['view','type','id','category','d'].forEach(key=>currentUrl.searchParams.delete(key))
+    if(returnQuery)currentUrl.searchParams.set('q',returnQuery)
+    else currentUrl.searchParams.delete('q')
+    window.history.replaceState({kpc:'home',q:returnQuery,__kpcInternal:false},'',currentUrl.pathname+currentUrl.search+currentUrl.hash)
+    setProfile(null)
+    setProfileLoading(false)
+    setBrowse(null)
+    setBrowseCategory(null)
+    setAdmin(false)
+    setPolicyPage(null)
+    setQ(returnQuery)
+    setSearched(Boolean(returnQuery))
+    setShowSuggestions(false)
+    setError('')
   }
 
   function renderProfile(){
