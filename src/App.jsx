@@ -70,6 +70,31 @@ const enrichCatalogProducts=(products,companies,divisions,brands,relationships,p
   })
 }
 
+
+function CatalogProductCard({product,onOpenProfile}){
+  const visibleDistributors=(product.distributors||[]).slice(0,3)
+  return <article className="catalog-product-card">
+    <div className="catalog-product-main">
+      <button type="button" className="catalog-product-name" onClick={()=>onOpenProfile('product',product.id)}>{product.product_name}<ArrowRight size={14}/></button>
+      {product.generic_name&&<span className="catalog-product-generic">{product.generic_name}</span>}
+      {[product.strength,product.dosage_form,product.pack_size].filter(Boolean).length>0&&<small className="catalog-product-specs">{[product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small>}
+    </div>
+    <div className="catalog-product-hierarchy">
+      {product.company_id&&<span><small>Company</small><button type="button" onClick={()=>onOpenProfile('company',product.company_id)}>{product.company_name}</button></span>}
+      {product.brand_id&&product.brand_name&&<span><small>Brand</small><button type="button" onClick={()=>onOpenProfile('brand',product.brand_id)}>{product.brand_name}</button></span>}
+      {product.division_id&&product.division_name&&<span><small>Division</small><button type="button" onClick={()=>onOpenProfile('division',product.division_id)}>{product.division_name}</button></span>}
+      {product.parent_company_id&&product.parent_company_name&&<span><small>Parent</small><button type="button" onClick={()=>onOpenProfile('company',product.parent_company_id)}>{product.parent_company_name}</button></span>}
+    </div>
+    <div className="catalog-product-distributors">
+      <div className="catalog-product-distributor-heading"><small>Distributors in Kutch</small><strong>{(product.distributors||[]).length}</strong></div>
+      {visibleDistributors.length>0?<div className="catalog-product-distributor-list">{visibleDistributors.map(distributor=><div key={distributor.id} className="catalog-product-distributor">
+        <button type="button" onClick={()=>onOpenProfile('distributor',distributor.id)}>{distributor.distributor_name}</button>
+        <span>{distributor.scope==='product'?'Product':distributor.scope==='brand'?'Brand':distributor.scope==='division'?'Division':'Company'} listing</span>
+      </div>)}{(product.distributors||[]).length>3&&<small className="catalog-product-more">+{product.distributors.length-3} more distributors</small>}</div>:<span className="catalog-product-no-distributor">No active distributor relationship listed</span>}
+    </div>
+  </article>
+}
+
 const trackEvent=(name,params={})=>{
   if(typeof window!=='undefined'&&typeof window.gtag==='function'){
     window.gtag('event',name,params)
@@ -815,6 +840,7 @@ export default function App(){
   }
 
   async function openProfile(type,id,options={}){
+    setCatalogSearch('')
     if(type==='product')return openProductProfile(id,options)
     if(type==='division'||type==='brand')return openCatalogProfile(type,id,options)
     setRelationshipSearch('')
@@ -981,7 +1007,7 @@ export default function App(){
                       {profile.type === 'product' ? 'PRODUCT' : profile.type === 'company' ? 'COMPANY' : profile.type === 'division' ? 'DIVISION' : profile.type === 'brand' ? 'BRAND' : 'DISTRIBUTOR'}
                     </p>
                     <h2>{profile.entity?.product_name || profile.entity?.company_name || profile.entity?.division_name || profile.entity?.brand_name || profile.entity?.distributor_name}</h2>
-                     {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.parentCompany && <span className="profile-parent-inline">Part of <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></span>}
+                     {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.company && <span className="profile-parent-inline">Company: <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.company.id)}>{profile.entity.company.company_name}</button></span>}
                      {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: {profile.entity.division.division_name}</span>}
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
