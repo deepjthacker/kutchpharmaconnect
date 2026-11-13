@@ -1163,9 +1163,9 @@ export default function App(){
                             {rel.company?.company_name}
                           </button>
                         )}
-                        {rel.division && <span>{rel.division.division_name}</span>}
-                        {rel.brand && <span>Brand: {rel.brand.brand_name}</span>}
-                        {profile.type==='product' && <small>{rel.isProductSpecific ? 'Product-specific distributor listing' : 'Company / division / brand listing · product-specific handling not confirmed'}</small>}
+                        {profile.type !== 'product' && rel.division && <span>{rel.division.division_name}</span>}
+                        {profile.type !== 'product' && rel.brand && <span>Brand: {rel.brand.brand_name}</span>}
+                        {profile.type==='product' && !rel.isProductSpecific && <small>Product information not available</small>}
                         
                         {profile.type !== 'distributor' && rel.distributor?.mobile && (
                           <div className="profile-rel-phone">
@@ -1400,8 +1400,8 @@ export default function App(){
                             <div className="product-distributors-panel">
                               <div className="product-distributors-heading">
                                 <strong>Distributors in Kutch</strong>
-                                {!r.directDistributorLinks && r.distributors.length>0 && <span>Company-listed contacts · product-specific handling not confirmed</span>}
-                                {r.directDistributorLinks && <span>Product-specific listing · availability not confirmed</span>}
+                                
+                                
                               </div>
                               {r.distributors.length ? r.distributors.map(distributor => (
                                 <div className="product-distributor-row" key={distributor.id}>
