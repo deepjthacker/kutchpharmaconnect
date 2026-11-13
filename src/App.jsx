@@ -694,7 +694,6 @@ export default function App(){
       if(!companyRes.data)throw new Error('The parent company for this '+type+' is unavailable.')
 
       const products=productRes.data||[]
-      const productIds=products.map(product=>product.id)
       const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
       const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
       const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
@@ -885,7 +884,6 @@ export default function App(){
         supabase.from('divisions').select('id,division_name,company_id').in('company_id',profileCompanyIds).eq('status','active').order('division_name')
       ])
       const catalogProducts=catalogRes.data||[]
-      const catalogProductIds=catalogProducts.map(product=>product.id)
       const profileProductBrandIds=[...new Set(catalogProducts.map(product=>product.brand_id).filter(Boolean))]
       const profileProductDivisionIds=[...new Set(catalogProducts.map(product=>product.division_id).filter(Boolean))]
       const [profileBrandsRes,companyBrandsRes,catalogRelationsRes,catalogProductLinksRes,profileProductDivisionsRes]=await Promise.all([
@@ -895,7 +893,6 @@ export default function App(){
         fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
         fetchByIds(profileProductDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
-      const profileBrandMap=new Map((profileBrandsRes.data||[]).map(brand=>[brand.id,brand.brand_name]))
       const profileCompanyMap=new Map(familyRows.map(company=>[company.id,company]))
       if(parentCompanyId&&!profileCompanyMap.has(parentCompanyId)){
         const parentRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',parentCompanyId).eq('status','active').maybeSingle()
