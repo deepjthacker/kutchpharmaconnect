@@ -693,13 +693,12 @@ export default function App(){
       const productIds=products.map(product=>product.id)
       const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
       const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
-      const [productLinksRes,productBrandsRes,productDivisionsRes,parentCompanyRes]=await Promise.all([
+      const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
         fetchByIds(productIds,ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
         fetchByIds(productBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
-        fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active')),
-        entityRes.data.company_id ? Promise.resolve({data:null,error:null}) : Promise.resolve({data:null,error:null})
+        fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
-      if(productLinksRes.error||productBrandsRes.error||productDivisionsRes.error||parentCompanyRes.error)throw productLinksRes.error||productBrandsRes.error||productDivisionsRes.error||parentCompanyRes.error
+      if(productLinksRes.error||productBrandsRes.error||productDivisionsRes.error)throw productLinksRes.error||productBrandsRes.error||productDivisionsRes.error
 
       const allRelations=allRelationsRes.data||[]
       const pageBrands=isDivision?(divisionBrandsRes.data||[]):[]
