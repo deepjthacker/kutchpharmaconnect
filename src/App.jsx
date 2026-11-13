@@ -289,7 +289,7 @@ export default function App(){
       const rank=item=>item.label.toLowerCase()===normalizedTerm?0:item.label.toLowerCase().startsWith(normalizedTerm)?1:2
       return rank(a)-rank(b)||a.label.localeCompare(b.label)
     })
-    setSuggestions(ranked.slice(0,5))
+    setSuggestions(ranked.slice(0,25))
     setSuggestionLoading(false)
   }
 
@@ -1161,7 +1161,7 @@ export default function App(){
                 </div>
                 {!suggestionLoading && suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).length>0 ? (
                   <div className="suggestion-list">
-                    {suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).map(item=>(
+                    {suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).slice(0,5).map(item=>(
                       <button className="suggestion-item" key={item.type+'-'+item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>chooseSuggestion(item)}>
                         <span className={`suggestion-icon ${item.type==='distributor'?'suggestion-distributor':''}`}>
                           {item.type==='company'?<Building2 size={15}/>:item.type==='distributor'?<Truck size={15}/>:<ArrowRight size={15}/>}
