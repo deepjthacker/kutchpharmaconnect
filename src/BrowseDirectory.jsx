@@ -75,10 +75,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           return
         }
 
-        const companyIds = [...new Set((data || []).map(item => item.company_id).filter(Boolean))]
-        const companyResult = companyIds.length
-          ? await fetchAllPages(() => supabase.from('companies').select('id,company_name').in('id', companyIds).eq('status', 'active'))
-          : { data: [], error: null }
+        // Load the active company name map once rather than constructing a long
+        // .in() URL from every brand/division company ID.
+        const companyResult = await fetchAllPages(() => supabase
+          .from('companies')
+          .select('id,company_name')
+          .eq('status', 'active'))
         if (companyResult.error) {
           if (!cancelled) { setError(companyResult.error.message); setLoading(false) }
           return
@@ -277,7 +279,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
   const term = query.trim().toLowerCase()
   const filtered = items.filter(item => {
-    if (locationFilter && !(item.locationIds || []).includes(locationFilter)) return false
+    if (!isCatalogEntity && locationFilter && !(item.locationIds || []).includes(locationFilter)) return false
     const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? [item.company_name,item.parentName].filter(Boolean).join(' ') : isCatalogEntity ? [item.displayName,item.companyName].filter(Boolean).join(' ') : item.distributor_name
     const secondary = isLocations ? '' : isCompanies ? item.short_name : isCatalogEntity ? item.companyName : item.contact_person
     const locationText = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies
