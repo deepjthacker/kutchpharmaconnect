@@ -316,7 +316,7 @@ export default function App(){
       applyFlexibleSearch(supabase.from('divisions').select('id,division_name,company_id').eq('status','active'),['division_name','division_code'],term).limit(5),
       applyFlexibleSearch(supabase.from('brands').select('id,brand_name,company_id').eq('status','active'),['brand_name'],term).limit(5),
       applyFlexibleSearch(supabase.from('search_aliases').select('entity_type,entity_id,alias'),['alias'],term).limit(8),
-      applyFlexibleSearch(supabase.from('products').select('id,product_name,company_id').eq('status','active'),['product_name','normalized_product_name','generic_name'],term).limit(5)
+      applyFlexibleSearch(supabase.from('products').select('id,product_name,company_id').eq('status','active'),['product_name','normalized_product_name','generic_name'],term).limit(50)
     ])
     if(requestId!==suggestionRequestRef.current)return
     if(co.error||di.error||dv.error||br.error||al.error||pr.error){setSuggestions([]);setSuggestionLoading(false);return}
