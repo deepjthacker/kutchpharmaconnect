@@ -42,6 +42,9 @@ async function fetchAllPages(makeQuery, pageSize = 1000) {
 export default function BrowseDirectory({ type, category, onBack, onOpenProfile, onReport }) {
   const isCompanies = type === 'companies'
   const isLocations = type === 'locations'
+  const isBrands = type === 'brands'
+  const isDivisions = type === 'divisions'
+  const isCatalogEntity = isBrands || isDivisions
   const [items, setItems] = useState([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -58,7 +61,39 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
       if (cached) { setItems(cached); setLoading(false) } else setLoading(true)
       setError('')
 
-      if (isCompanies) {
+      if (isBrands || isDivisions) {
+        const nameField = isBrands ? 'brand_name' : 'division_name'
+        const tableName = isBrands ? 'brands' : 'divisions'
+        const { data, error: entityError } = await fetchAllPages(() => supabase
+          .from(tableName)
+          .select(`id,${nameField},company_id`)
+          .eq('status', 'active')
+          .order(nameField)
+          .order('id'))
+        if (entityError) {
+          if (!cancelled) { setError(entityError.message); setLoading(false) }
+          return
+        }
+
+        const companyIds = [...new Set((data || []).map(item => item.company_id).filter(Boolean))]
+        const companyResult = companyIds.length
+          ? await fetchAllPages(() => supabase.from('companies').select('id,company_name').in('id', companyIds).eq('status', 'active'))
+          : { data: [], error: null }
+        if (companyResult.error) {
+          if (!cancelled) { setError(companyResult.error.message); setLoading(false) }
+          return
+        }
+        const companyMap = new Map((companyResult.data || []).map(company => [company.id, company.company_name]))
+        if (!cancelled) {
+          const nextItems = (data || []).map(item => ({
+            ...item,
+            displayName: item[nameField],
+            companyName: companyMap.get(item.company_id) || ''
+          }))
+          browseCache.set(cacheKey, nextItems)
+          setItems(nextItems)
+        }
+      } else if (isCompanies) {
         const { data, error: companyError } = await fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status', 'active').order('company_name').order('id'))
         if (companyError) { if (!cancelled) { setError(companyError.message); setLoading(false) }; return }
         const productResult = await fetchAllPages(() => supabase.from('products').select('id,company_id').eq('status','active'))
@@ -238,16 +273,16 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
     load()
     return () => { cancelled = true }
-  }, [isCompanies, isLocations, category])
+  }, [type, isCompanies, isLocations, category])
 
   const term = query.trim().toLowerCase()
   const filtered = items.filter(item => {
     if (locationFilter && !(item.locationIds || []).includes(locationFilter)) return false
-    const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? [item.company_name,item.parentName].filter(Boolean).join(' ') : item.distributor_name
-    const secondary = isLocations ? '' : isCompanies ? item.short_name : item.contact_person
+    const name = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies ? [item.company_name,item.parentName].filter(Boolean).join(' ') : isCatalogEntity ? [item.displayName,item.companyName].filter(Boolean).join(' ') : item.distributor_name
+    const secondary = isLocations ? '' : isCompanies ? item.short_name : isCatalogEntity ? item.companyName : item.contact_person
     const locationText = isLocations ? [item.city,item.district,item.state,item.pincode].filter(Boolean).join(' ') : isCompanies
       ? (item.locations || []).map(x => [x.city, x.district, x.state].filter(Boolean).join(', ')).join(' ')
-      : item.location
+      : !isCatalogEntity && item.location
         ? [item.location.city, item.location.district, item.location.state].filter(Boolean).join(' ')
         : ''
     return !term ||
@@ -270,9 +305,11 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         <div className="browse-header">
           <div>
             <p className="section-kicker">DIRECTORY</p>
-            <h1>{isLocations && selectedLocation ? formatLocation(selectedLocation) : isLocations ? 'Kutch Locations' : isCompanies ? 'Companies' : 'Distributors'}</h1>
+            <h1>{isLocations && selectedLocation ? formatLocation(selectedLocation) : isLocations ? 'Kutch Locations' : isCompanies ? 'Companies' : isBrands ? 'Brands' : isDivisions ? 'Divisions' : 'Distributors'}</h1>
             <p>{isLocations && selectedLocation ? 'Companies and distributor listings associated with this location.' : isLocations ? 'Select a location to see the complete company and distributor list for that area.' : isCompanies
               ? 'Browse active companies with current Kutch distributorship relationships.'
+              : isBrands ? 'Browse active pharmaceutical brands and the companies they belong to.'
+              : isDivisions ? 'Browse active pharmaceutical divisions and their parent companies.'
               : 'Browse active distributors and the companies they currently handle.'}</p>
           </div>
           {!loading && !error && <div className="browse-count">{filtered.length} {filtered.length === 1 ? 'record' : 'records'}</div>}
@@ -283,12 +320,12 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={isLocations ? 'Search locations...' : isCompanies ? 'Search companies or locations...' : 'Search distributors or locations...'}
-            aria-label={isCompanies ? 'Search companies' : 'Search distributors'}
+            placeholder={isLocations ? 'Search locations...' : isCompanies ? 'Search companies or locations...' : isBrands ? 'Search brands or companies...' : isDivisions ? 'Search divisions or companies...' : 'Search distributors or locations...'}
+            aria-label={isLocations ? 'Search locations' : isCompanies ? 'Search companies' : isBrands ? 'Search brands' : isDivisions ? 'Search divisions' : 'Search distributors'}
           />
         </div>
 
-        {!loading && !error && !isLocations && <div className="browse-filters">
+        {!loading && !error && !isLocations && !isCatalogEntity && <div className="browse-filters">
           <select value={locationFilter} onChange={e=>setLocationFilter(e.target.value)} aria-label="Filter by location">
             <option value="">All locations</option>
             {[...new Map(items.flatMap(x=>(x.locations||[x.location]).filter(Boolean).map(l=>[l.id,l]))).values()].sort((a,b)=>(a.city||'').localeCompare(b.city||'')).map(l=><option key={l.id} value={l.id}>{[l.city,l.district].filter(Boolean).join(', ')}</option>)}
@@ -329,10 +366,10 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
             {filtered.map(item => (
               <div className="browse-card" key={item.id}>
                 <div className="browse-card-icon">
-                  {isLocations ? <MapPin size={20} /> : isCompanies ? <Building2 size={20} /> : <Truck size={20} />}
+                  {isLocations ? <MapPin size={20} /> : isCompanies || isDivisions ? <Building2 size={20} /> : isBrands ? <Package size={20} /> : <Truck size={20} />}
                 </div>
                 <div className="browse-card-copy">
-                  <strong>{isLocations ? item.city : isCompanies ? item.company_name : item.distributor_name}</strong>
+                  <strong>{isLocations ? item.city : isCompanies ? item.company_name : isCatalogEntity ? item.displayName : item.distributor_name}</strong>
                   {isLocations ? (
                     <>
                       <span>{[item.district,item.state,item.pincode].filter(Boolean).join(', ')}</span>
@@ -342,6 +379,11 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                       <small>{item.companies.length} companies • {item.distributors.length} distributors</small>
                       <button type="button" className="location-open-button" onClick={e=>{e.stopPropagation();setSelectedLocationId(item.id)}}>View all companies <ArrowRight size={14}/></button>
                     </>
+                  ) : isCatalogEntity ? (
+                    <>
+                      {item.companyName && <span>Company: {item.companyName}</span>}
+                      <small>{isBrands ? 'Brand listing' : 'Division listing'}</small>
+                    </>
                   ) : (
                     <>
                       {isCompanies && item.short_name && <span>{item.short_name}</span>}
@@ -349,9 +391,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                       {isCompanies && item.hasSubsidiaries && <span>Parent company · subsidiaries listed below</span>}
                       {isCompanies && item.productCount > 0 && <small>{item.productCount} catalogue {item.productCount===1?'product':'products'}</small>}
                       {isCompanies && item.locations?.length > 0 && <div className="browse-card-locations">{item.locations.map(location => <span className="browse-location" key={location.id}>{formatLocation(location)}</span>)}</div>}
-                      {!isCompanies && item.location && <span>{formatLocation(item.location)}</span>}
-                      {!isCompanies && item.contact_person && <span>{item.contact_person}</span>}
-                      <small>{item.relationshipCount > 0 ? `${item.relationshipCount} active ${item.relationshipCount === 1 ? 'relationship' : 'relationships'}` : 'No active distributor relationships'}</small>
+                      {!isCompanies && !isCatalogEntity && item.location && <span>{formatLocation(item.location)}</span>}
+                      {!isCompanies && !isCatalogEntity && item.contact_person && <span>{item.contact_person}</span>}
+                      {!isCatalogEntity && <small>{item.relationshipCount > 0 ? `${item.relationshipCount} active ${item.relationshipCount === 1 ? 'relationship' : 'relationships'}` : 'No active distributor relationships'}</small>}
                       {isCompanies && item.verifiedCount > 0 && <span className="verified-badge verified-badge-small" title="At least one current company–distributor relationship has been independently verified.">✓ Relationship Verified</span>}
                       {isCompanies && item.verifiedCount === 0 && item.reviewCount > 0 && <span className="status-badge status-review">Under Review</span>}
                       {isCompanies && item.relationshipCount > 0 && item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Company relationship data has not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
@@ -362,11 +404,11 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                         {mapsLink(item) && <a className="contact-action maps-action" href={mapsLink(item)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/><span>Maps</span></a>}
                         </div>
                       )}
-                      {!isLocations && <button type="button" className="browse-report-action" onClick={e=>{e.stopPropagation();onReport?.({type:isCompanies?'company':'distributor',id:item.id,name:isCompanies?item.company_name:item.distributor_name,message:`Please review the directory information for ${isCompanies?item.company_name:item.distributor_name}.`})}}><Flag size={12}/> Report / Update Info</button>}
+                      {!isLocations && !isCatalogEntity && <button type="button" className="browse-report-action" onClick={e=>{e.stopPropagation();onReport?.({type:isCompanies?'company':'distributor',id:item.id,name:isCompanies?item.company_name:item.distributor_name,message:`Please review the directory information for ${isCompanies?item.company_name:item.distributor_name}.`})}}><Flag size={12}/> Report / Update Info</button>}
                     </>
                   )}
                 </div>
-                {!isLocations && <button type="button" className="browse-card-open" aria-label={`Open ${isCompanies ? item.company_name : item.distributor_name} profile`} onClick={()=>onOpenProfile(isCompanies ? 'company' : 'distributor', item.id)}><ArrowRight size={18}/></button>}
+                {!isLocations && <button type="button" className="browse-card-open" aria-label={`Open ${isCompanies ? item.company_name : isBrands ? item.displayName : isDivisions ? item.displayName : item.distributor_name} profile`} onClick={()=>onOpenProfile(isCompanies ? 'company' : isBrands ? 'brand' : isDivisions ? 'division' : 'distributor', item.id)}><ArrowRight size={18}/></button>}
               </div>
             ))}
           </div>
@@ -375,7 +417,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         {!loading && !error && isLocations && selectedLocation && selectedLocation.companies.length===0 && selectedLocation.distributors.length===0 && <div className="result-state">No active relationships are listed for this location.</div>}
 
         {!loading && !error && !selectedLocation && filtered.length === 0 && (
-          <div className="result-state">No matching {isLocations ? 'locations' : isCompanies ? 'companies' : 'distributors'} found.</div>
+          <div className="result-state">No matching {isLocations ? 'locations' : isCompanies ? 'companies' : isBrands ? 'brands' : isDivisions ? 'divisions' : 'distributors'} found.</div>
         )}
       </div>
     </section>
