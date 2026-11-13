@@ -25,7 +25,6 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
   const [brand,setBrand] = useState(null)
   const [division,setDivision] = useState(null)
   const [distributors,setDistributors] = useState([])
-  const [productSpecificDistributors,setProductSpecificDistributors] = useState(false)
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState('')
 
@@ -77,7 +76,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
         if(dRes.error){if(!cancelled){setError(dRes.error.message);setLoading(false)};return}
         const linkMap=new Map(distributorLinks.map(row=>[row.distributor_id,row]))
         const distributorRows=(dRes.data||[]).map(distributor=>({...distributor,scope:linkMap.get(distributor.id)?.scope||'company'}))
-        if(!cancelled){setProduct({...p,divisionName:divisionRes.data?.division_name||''});setCompany(co.data);setBrand(br.data);setDivision(divisionRes.data||null);setDistributors(distributorRows);setProductSpecificDistributors(directRows.length>0)}
+        if(!cancelled){setProduct({...p,divisionName:divisionRes.data?.division_name||''});setCompany(co.data);setBrand(br.data);setDivision(divisionRes.data||null);setDistributors(distributorRows)}
       }
       if(!cancelled)setLoading(false)
     }
