@@ -17,12 +17,13 @@ const phoneLink = number => `tel:${normalizePhone(number)}`
 const waLink = (number, message) => `https://wa.me/${normalizePhone(number).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
 const mapsLink = d => d.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([d.distributor_name,d.address,'Kutch','Gujarat'].filter(Boolean).join(', '))}`
 
-export default function ProductDirectory({ productId, onBack, onOpenProduct, onOpenCompany, onOpenDistributor }) {
+export default function ProductDirectory({ productId, onBack, onOpenProduct, onOpenCompany, onOpenDistributor, onOpenCatalogEntity }) {
   const [items,setItems] = useState([])
   const [query,setQuery] = useState('')
   const [product,setProduct] = useState(null)
   const [company,setCompany] = useState(null)
   const [brand,setBrand] = useState(null)
+  const [division,setDivision] = useState(null)
   const [distributors,setDistributors] = useState([])
   const [productSpecificDistributors,setProductSpecificDistributors] = useState(false)
   const [loading,setLoading] = useState(true)
@@ -56,7 +57,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
           p.brand_id ? supabase.from('brands').select('id,brand_name').eq('id',p.brand_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null}),
           supabase.from('product_distributors').select('distributor_id').eq('product_id',p.id).eq('status','active'),
           p.company_id ? supabase.from('distributorships').select('distributor_id').eq('company_id',p.company_id).eq('status','active') : Promise.resolve({data:[],error:null}),
-          p.division_id ? supabase.from('divisions').select('id,division_name').eq('id',p.division_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null})
+          p.division_id ? supabase.from('divisions').select('id,division_name,company_id').eq('id',p.division_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null})
         ])
         if(co.error||br.error||direct.error||companyRels.error||divisionRes.error){if(!cancelled){setError((co.error||br.error||direct.error||companyRels.error||divisionRes.error).message);setLoading(false)};return}
         const directIds=(direct.data||[]).map(x=>x.distributor_id)
@@ -64,7 +65,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
         const ids=[...new Set(directIds.length?directIds:companyIds)].filter(Boolean)
         const dRes=ids.length?await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url').in('id',ids).eq('status','active').order('distributor_name'):{data:[],error:null}
         if(dRes.error){if(!cancelled){setError(dRes.error.message);setLoading(false)};return}
-        if(!cancelled){setProduct({...p,divisionName:divisionRes.data?.division_name||''});setCompany(co.data);setBrand(br.data);setDistributors(dRes.data||[]);setProductSpecificDistributors(directIds.length>0)}
+        if(!cancelled){setProduct({...p,divisionName:divisionRes.data?.division_name||''});setCompany(co.data);setBrand(br.data);setDivision(divisionRes.data||null);setDistributors(dRes.data||[]);setProductSpecificDistributors(directIds.length>0)}
       }
       if(!cancelled)setLoading(false)
     }
@@ -83,7 +84,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
       {!loading && product && <div className="product-detail-layout">
         <div className="product-detail-main">
           <p className="section-kicker">PRODUCT DETAILS</p>
-          <div className="product-detail-title-row"><span className="product-detail-icon"><Package size={24}/></span><div><h1>{product.product_name}</h1>{brand?.brand_name&&<p>{brand.brand_name}</p>}{product.divisionName&&<p>Division: {product.divisionName}</p>}</div></div>
+          <div className="product-detail-title-row"><span className="product-detail-icon"><Package size={24}/></span><div><h1>{product.product_name}</h1>{brand?.brand_name&&<p>Brand: <button type="button" className="product-entity-link" onClick={()=>onOpenCatalogEntity?.('brand',brand.id)}>{brand.brand_name}</button></p>}{division?.division_name&&<p>Division: <button type="button" className="product-entity-link" onClick={()=>onOpenCatalogEntity?.('division',division.id)}>{division.division_name}</button></p>}</div></div>
           {specs&&<p className="product-detail-specs">{specs}</p>}
           <div className="product-detail-company"><Building2 size={18}/><div><span>Company</span><strong>{company?.company_name||'Company not assigned'}</strong></div>{company&&<button type="button" onClick={()=>onOpenCompany(company.id)} aria-label="Open company profile"><ArrowRight size={17}/></button>}</div>
           <div className="product-detail-distributors"><div className="product-detail-section-heading"><div><h2>{productSpecificDistributors?'Product-linked distributors':'Company distributors'}</h2><p>{productSpecificDistributors?'These distributors are linked to this product. Confirm current stock before ordering.':'These distributors are listed for the company; handling of this specific product has not been confirmed.'}</p></div><span>{distributors.length}</span></div>
@@ -96,7 +97,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
       <div className="browse-search"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, brands, companies…" aria-label="Search products"/></div>
       {loading&&<div className="result-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}
       {!loading&&error&&<div className="result-state">{error}</div>}
-      {!loading&&!error&&<div className="browse-grid product-directory-grid">{filtered.map(p=><button type="button" className="product-directory-card" key={p.id} onClick={()=>onOpenProduct(p.id)}><span className="product-directory-icon"><Package size={19}/></span><span className="product-directory-copy"><strong>{p.product_name}</strong>{p.brandName&&<span>{p.brandName}</span>}{p.divisionName&&<span>Division: {p.divisionName}</span>}<small>Company: {p.companyName}</small>{[p.generic_name,p.strength,p.dosage_form].filter(Boolean).length>0&&<small>{[p.generic_name,p.strength,p.dosage_form].filter(Boolean).join(' · ')}</small>}</span><ArrowRight size={17}/></button>)}</div>}
+      {!loading&&!error&&<div className="browse-grid product-directory-grid">{filtered.map(p=><article className="product-directory-card" key={p.id}><span className="product-directory-icon"><Package size={19}/></span><span className="product-directory-copy"><button type="button" className="product-directory-name" onClick={()=>onOpenProduct(p.id)}>{p.product_name}<ArrowRight size={14}/></button>{p.brandName&&<span>Brand: <button type="button" className="product-entity-link" onClick={()=>onOpenCatalogEntity?.('brand',p.brand_id)}>{p.brandName}</button></span>}{p.divisionName&&<span>Division: <button type="button" className="product-entity-link" onClick={()=>onOpenCatalogEntity?.('division',p.division_id)}>{p.divisionName}</button></span>}<small>Company: <button type="button" className="product-entity-link" onClick={()=>onOpenCompany(p.company_id)}>{p.companyName}</button></small>{[p.generic_name,p.strength,p.dosage_form].filter(Boolean).length>0&&<small>{[p.generic_name,p.strength,p.dosage_form].filter(Boolean).join(' · ')}</small>}</span></article>)}</div>}
       {!loading&&!error&&!filtered.length&&<div className="result-state">No matching products found.</div>}
     </>}
   </div></section>
