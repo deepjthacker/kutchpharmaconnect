@@ -699,7 +699,7 @@ export default function App(){
       const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
       const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
       const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
-        fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
+        fetchByIds(products.map(product=>product.id),ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
         fetchByIds(productBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
         fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
@@ -892,7 +892,7 @@ export default function App(){
         fetchByIds(profileProductBrandIds,ids=>supabase.from('brands').select('id,brand_name,division_id,company_id').in('id',ids).eq('status','active')),
         supabase.from('brands').select('id,brand_name,division_id,company_id').in('company_id',profileCompanyIds).eq('status','active').order('brand_name'),
         profileCompanyIds.length?fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').in('company_id',profileCompanyIds).eq('status','active').order('id')):{data:[],error:null},
-        fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
+        fetchByIds(catalogProducts.map(product=>product.id),ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
         fetchByIds(profileProductDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
       const profileCompanyMap=new Map(familyRows.map(company=>[company.id,company]))
