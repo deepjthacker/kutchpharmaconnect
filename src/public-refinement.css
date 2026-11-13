@@ -286,3 +286,73 @@ html[data-theme="dark"] .catalog-product-distributor-heading strong{background:#
 .product-load-more:disabled{opacity:.65;cursor:wait}
 html[data-theme="dark"] .product-load-more{background:#17263b;border-color:#354b68;color:#dce8fa}
 html[data-theme="dark"] .product-load-more:hover:not(:disabled){background:#20334e;border-color:#5978a8}
+
+
+/* Accessible compact navigation for phones and narrow tablets. */
+.mobile-nav-toggle{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  flex:none;
+  border:1px solid #d6e1e8;
+  border-radius:11px;
+  background:#fff;
+  color:#244b72;
+  cursor:pointer;
+}
+@media(max-width:760px){
+  .header-inner{position:relative!important;justify-content:space-between!important}
+  .mobile-nav-toggle{display:inline-flex}
+  .header-nav{
+    display:none!important;
+    position:absolute!important;
+    top:calc(100% + 7px);
+    left:0;
+    right:0;
+    z-index:60;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:4px!important;
+    padding:9px!important;
+    border:1px solid #dce5ed;
+    border-radius:13px;
+    background:#fff;
+    box-shadow:0 14px 34px rgba(20,45,67,.16);
+  }
+  .header-nav.is-open{display:flex!important}
+  .header-nav button{
+    display:flex!important;
+    align-items:center;
+    justify-content:flex-start!important;
+    width:100%;
+    min-height:44px!important;
+    padding:10px 12px!important;
+    border-radius:9px;
+    font-size:13px!important;
+    text-align:left;
+  }
+  .header-nav .admin-nav-button{
+    width:100%!important;
+    max-width:none!important;
+    min-height:44px!important;
+    padding:10px 12px!important;
+    font-size:12px!important;
+  }
+}
+html[data-theme="dark"] .mobile-nav-toggle{
+  border-color:#344862;
+  background:#17283d;
+  color:#e2edf9;
+}
+@media(max-width:760px){
+  html[data-theme="dark"] .header-nav{
+    border-color:#344862;
+    background:#142337;
+    box-shadow:0 14px 34px rgba(0,0,0,.35);
+  }
+  html[data-theme="dark"] .header-nav button:not(.admin-nav-button){
+    color:#dce8f6;
+  }
+}
