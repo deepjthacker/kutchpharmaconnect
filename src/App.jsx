@@ -40,6 +40,10 @@ const enrichCatalogProducts=(products,companies,divisions,brands,relationships,p
   const divisionMap=new Map((divisions||[]).map(row=>[row.id,row]))
   const brandMap=new Map((brands||[]).map(row=>[row.id,row]))
   const distributorMap=new Map((distributors||[]).map(row=>[row.id,row]))
+  const relationshipsByCompany=new Map()
+  ;(relationships||[]).forEach(rel=>{const rows=relationshipsByCompany.get(rel.company_id)||[];rows.push(rel);relationshipsByCompany.set(rel.company_id,rows)})
+  const linksByProduct=new Map()
+  ;(productLinks||[]).forEach(link=>{const rows=linksByProduct.get(link.product_id)||[];rows.push(link);linksByProduct.set(link.product_id,rows)})
   return (products||[]).map(product=>{
     const bestByDistributor=new Map()
     const add=(distributorId,scope,locationId=null,territory=null,verificationStatus=null)=>{
@@ -49,8 +53,8 @@ const enrichCatalogProducts=(products,companies,divisions,brands,relationships,p
       const previous=bestByDistributor.get(distributorId)
       if(!previous||priority>previous.priority)bestByDistributor.set(distributorId,{...distributor,scope,priority,locationId,territory,verificationStatus})
     }
-    ;(productLinks||[]).filter(link=>link.product_id===product.id).forEach(link=>add(link.distributor_id,'product',link.location_id,link.territory,link.verification_status))
-    ;(relationships||[]).filter(rel=>rel.company_id===product.company_id).forEach(rel=>{
+    ;(linksByProduct.get(product.id)||[]).forEach(link=>add(link.distributor_id,'product',link.location_id,link.territory,link.verification_status))
+    ;(relationshipsByCompany.get(product.company_id)||[]).forEach(rel=>{
       if(product.brand_id&&rel.brand_id===product.brand_id)add(rel.distributor_id,'brand',rel.location_id,rel.territory,rel.verification_status)
       else if(product.division_id&&!rel.brand_id&&rel.division_id===product.division_id)add(rel.distributor_id,'division',rel.location_id,rel.territory,rel.verification_status)
       else if(!rel.division_id&&!rel.brand_id)add(rel.distributor_id,'company',rel.location_id,rel.territory,rel.verification_status)
