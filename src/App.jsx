@@ -1594,18 +1594,29 @@ export default function App(){
           <a className="brand" href={import.meta.env.BASE_URL} aria-label="KutchPharmaConnect home">
             <span className="brand-text">KutchPharmaConnect</span>
           </a>
-          <button
-            className="mobile-nav-toggle"
-            type="button"
-            onClick={()=>setMobileMenuOpen(open=>!open)}
-            aria-controls="kpc-primary-navigation"
-            aria-expanded={mobileMenuOpen}
-            aria-haspopup="true"
-            aria-label={mobileMenuOpen?'Close navigation menu':'Open navigation menu'}
-            title={mobileMenuOpen?'Close menu':'Open menu'}
-          >
-            {mobileMenuOpen?<X size={20}/>:<Menu size={20}/>}
-          </button>
+          <div className="header-actions">
+            <button
+              className="header-theme-toggle"
+              type="button"
+              onClick={()=>setTheme(current=>current==='dark'?'light':'dark')}
+              aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
+              title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
+            >
+              {theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}
+            </button>
+            <button
+              className="mobile-nav-toggle"
+              type="button"
+              onClick={()=>setMobileMenuOpen(open=>!open)}
+              aria-controls="kpc-primary-navigation"
+              aria-expanded={mobileMenuOpen}
+              aria-haspopup="true"
+              aria-label={mobileMenuOpen?'Close navigation menu':'Open navigation menu'}
+              title={mobileMenuOpen?'Close menu':'Open menu'}
+            >
+              {mobileMenuOpen?<X size={20}/>:<Menu size={20}/>}
+            </button>
+          </div>
           <nav id="kpc-primary-navigation" aria-label="Site navigation" className={`header-nav${mobileMenuOpen?' is-open':''}`}>
             <div className="menu-browse-items">
               <button className="menu-item" onClick={()=>openBrowseDirectory('companies')}><Building2 size={17}/><span>Browse Companies</span><ArrowRight size={15}/></button>
@@ -1614,18 +1625,6 @@ export default function App(){
               <button className="menu-item" onClick={()=>openBrowseDirectory('brands')}><Package size={17}/><span>Browse Brands</span><ArrowRight size={15}/></button>
               <button className="menu-item" onClick={()=>openBrowseDirectory('divisions')}><Building2 size={17}/><span>Browse Divisions</span><ArrowRight size={15}/></button>
               <button className="menu-item" onClick={()=>openBrowseDirectory('products')}><Package size={17}/><span>Browse Products</span><ArrowRight size={15}/></button>
-            </div>
-            <div className="menu-secondary-items">
-              <button
-                className="menu-theme-button"
-                type="button"
-                onClick={()=>{setMobileMenuOpen(false);setTheme(current=>current==='dark'?'light':'dark')}}
-                aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
-                title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
-              >
-                {theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}
-                <span>{theme==='dark'?'Light mode':'Dark mode'}</span>
-              </button>
             </div>
             <div className="menu-footer">
               <button type="button" onClick={()=>{setMobileMenuOpen(false);if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-menu-button">
