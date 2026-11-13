@@ -143,7 +143,7 @@ export default function App(){
     const distributorSlug=url.searchParams.get('d')
     if(distributorSlug)return {kpc:'distributorSlug',slug:distributorSlug}
     if(['privacy','terms','disclaimer','about','contact','corrections'].includes(view))return {kpc:'policy',type:view}
-    if(view==='companies'||view==='distributors'||view==='locations'||view==='products'){
+    if(view==='companies'||view==='distributors'||view==='locations'||view==='brands'||view==='divisions'||view==='products'){
       return {kpc:'browse',type:view,category:url.searchParams.get('category')||null}
     }
     if(view==='profile'){
@@ -1601,6 +1601,8 @@ export default function App(){
               <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/><span>Browse Companies</span><ArrowRight size={15}/></button>
               <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/><span>Browse Distributors</span><ArrowRight size={15}/></button>
               <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'locations'});setBrowse('locations');setBrowseCategory(null)}}><MapPin size={17}/><span>Browse Locations</span><ArrowRight size={15}/></button>
+              <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'brands'});setBrowse('brands');setBrowseCategory(null)}}><Package size={17}/><span>Browse Brands</span><ArrowRight size={15}/></button>
+              <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'divisions'});setBrowse('divisions');setBrowseCategory(null)}}><Building2 size={17}/><span>Browse Divisions</span><ArrowRight size={15}/></button>
               <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'products'});setBrowse('products');setBrowseCategory(null);setProfile(null);setAdmin(false)}}><Package size={17}/><span>Browse Products</span><ArrowRight size={15}/></button>
             </div>
             <div className="menu-secondary-items">
