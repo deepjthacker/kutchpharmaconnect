@@ -471,3 +471,10 @@ html[data-theme="dark"] .header-nav .menu-theme-button{color:#b7c7dc}
   .header-inner{justify-content:space-between!important}
   .header-nav{top:calc(100% + 7px)!important}
 }
+
+
+/* Ensure every directory entry remains visible in the hamburger menu.
+   Older narrow-screen nth-child rules were hiding the first three menu items. */
+.header-nav .menu-browse-items > .menu-item{
+  display:flex!important;
+}
