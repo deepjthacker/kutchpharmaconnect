@@ -888,7 +888,7 @@ export default function App(){
         fetchByIds(profileProductBrandIds,ids=>supabase.from('brands').select('id,brand_name,division_id,company_id').in('id',ids).eq('status','active')),
         supabase.from('brands').select('id,brand_name,division_id,company_id').in('company_id',profileCompanyIds).eq('status','active').order('brand_name'),
         profileCompanyIds.length?fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').in('company_id',profileCompanyIds).eq('status','active').order('id')):{data:[],error:null},
-        fetchByIds(catalogProductIds,ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
+        fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
         fetchByIds(profileProductDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
       const profileBrandMap=new Map((profileBrandsRes.data||[]).map(brand=>[brand.id,brand.brand_name]))
