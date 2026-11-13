@@ -170,7 +170,7 @@ export default function App(){
     }else if(initial.kpc==='policy'){
       setPolicyPage(initial.type)
     }else if(initial.q){
-      setQ(initial.q);setSearched(true)
+      setQ(initial.q);setSearched(true);search(initial.q)
     }
     const onPopState=e=>{
       const route=e.state?.kpc?e.state:routeFromLocation()
@@ -302,7 +302,6 @@ export default function App(){
       if(term===lastSearchTermRef.current)return
       lastSearchTermRef.current=term
       loadSuggestions(term)
-      search(term)
     },350)
     return()=>clearTimeout(t)
   },[q])
