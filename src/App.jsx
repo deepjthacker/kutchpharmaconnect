@@ -975,6 +975,11 @@ export default function App(){
 
   function renderProfile(){
     const relationshipQuery = relationshipSearch.trim().toLowerCase()
+    const catalogQuery=catalogSearch.trim().toLowerCase()
+    const visibleCatalog=(profile?.entity?.catalog||[]).filter(product=>
+      [product.product_name,product.generic_name,product.strength,product.dosage_form,product.brand_name,product.division_name,product.company_name]
+        .filter(Boolean).join(' ').toLowerCase().includes(catalogQuery)
+    )
     const visibleRelationships = (profile?.relationships || []).filter(rel => {
       if (profile?.type !== 'distributor' || !relationshipQuery) return true
       return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name]
@@ -1207,11 +1212,26 @@ export default function App(){
                 )}
               </div>
 
-                  {profile.type==='company' && profile.entity.catalog?.length > 0 && <div className="profile-list">
-                    <div className="profile-list-title">Product catalogue <span className="profile-catalog-count">{profile.entity.catalog.length} listed</span></div>
-                    <p className="result-meta">A preview of this company group's catalogue. Select a product to view its brand, division and distributor details.</p>
-                    {profile.entity.catalog.slice(0,8).map(product=><div className="profile-rel company-product-row" key={product.id}><div><button className="profile-link-button" onClick={()=>openProfile('product',product.id)}>{product.product_name}</button>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
-                    {profile.entity.catalog.length>8 && <p className="result-meta">Showing 8 of {profile.entity.catalog.length} products. Use search to find the complete catalogue.</p>}
+                  {profile.type==='division' && profile.entity.brands?.length>0 && <div className="profile-list">
+                    <div className="profile-list-title">Brands in this division <span className="profile-catalog-count">{profile.entity.brands.length}</span></div>
+                    <div className="profile-structure-chips">{profile.entity.brands.map(brand=><button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>{brand.brand_name}<ArrowRight size={13}/></button>)}</div>
+                  </div>}
+
+                  {profile.type==='brand' && <div className="profile-list catalog-entity-hierarchy">
+                    <div className="profile-list-title">Brand hierarchy</div>
+                    {profile.entity.division && <div className="product-hierarchy-row"><small>Division</small><button className="profile-link-button" onClick={()=>openProfile('division',profile.entity.division.id)}>{profile.entity.division.division_name}<ArrowRight size={13}/></button></div>}
+                    {profile.entity.company && <div className="product-hierarchy-row"><small>Company</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.company.id)}>{profile.entity.company.company_name}<ArrowRight size={13}/></button></div>}
+                  </div>}
+
+                  {['company','division','brand'].includes(profile.type) && <div className="profile-list profile-product-catalogue">
+                    <div className="profile-list-title">{profile.type==='company'?'Company product catalogue':profile.type==='division'?'Division product catalogue':'Brand product catalogue'} <span className="profile-catalog-count">{visibleCatalog.length} of {(profile.entity.catalog||[]).length}</span></div>
+                    <p className="result-meta">{profile.type==='company'?'Products across this company and its listed operating subsidiaries.':profile.type==='division'?'Every active product assigned to this division, including products whose brand may be unfamiliar.':'Every active product assigned to this brand, with its owning division and company.'} Select a product to view its distributor relationships.</p>
+                    <label className="catalog-search">
+                      <Search size={16}/>
+                      <input type="search" value={catalogSearch} onChange={e=>setCatalogSearch(e.target.value)} placeholder="Find a product by name, brand, division or composition…" aria-label="Search this product catalogue"/>
+                      {catalogSearch&&<button type="button" onClick={()=>setCatalogSearch('')} aria-label="Clear product catalogue search"><X size={15}/></button>}
+                    </label>
+                    {visibleCatalog.length>0?<div className="catalog-product-grid">{visibleCatalog.map(product=><CatalogProductCard key={product.id} product={product} onOpenProfile={openProfile}/>)}</div>:<div className="result-state">{catalogSearch?'No products match this catalogue search.':'No active products are currently linked to this page.'}</div>}
                   </div>}
 
             </div>
