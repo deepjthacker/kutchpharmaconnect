@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Search, Building2, Truck, Package, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
+import { Search, Building2, Truck, Package, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon, Menu } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 import { applyFlexibleSearch, rankSearchItems } from './lib/searchUtils'
@@ -114,7 +114,15 @@ export default function App(){
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null),[policyPage,setPolicyPage]=useState(null)
   const navigationHistoryRef=useRef(false)
+  const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[catalogSearch,setCatalogSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+
+  useEffect(()=>{
+    if(!mobileMenuOpen)return
+    const closeMobileMenu=e=>{if(e.key==='Escape')setMobileMenuOpen(false)}
+    document.addEventListener('keydown',closeMobileMenu)
+    return()=>document.removeEventListener('keydown',closeMobileMenu)
+  },[mobileMenuOpen])
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -1576,22 +1584,32 @@ export default function App(){
           <a className="brand" href={import.meta.env.BASE_URL} aria-label="KutchPharmaConnect home">
             <span className="brand-text">KutchPharmaConnect</span>
           </a>
-          <nav className="header-nav">
-            <button onClick={()=>{pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
-            <button onClick={()=>{pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
-            <button onClick={()=>{pushRoute('browse',{type:'locations'});setBrowse('locations');setBrowseCategory(null)}}>Locations</button>
-            <button onClick={()=>{pushRoute('browse',{type:'products'});setBrowse('products');setBrowseCategory(null);setProfile(null);setAdmin(false)}}>Products</button>
+          <button
+            className="mobile-nav-toggle"
+            type="button"
+            onClick={()=>setMobileMenuOpen(open=>!open)}
+            aria-controls="kpc-primary-navigation"
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen?'Close navigation menu':'Open navigation menu'}
+            title={mobileMenuOpen?'Close menu':'Open menu'}
+          >
+            {mobileMenuOpen?<X size={19}/>:<Menu size={19}/>}
+          </button>
+          <nav id="kpc-primary-navigation" aria-label="Primary navigation" className={`header-nav${mobileMenuOpen?' is-open':''}`}>
+            <button onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
+            <button onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
+            <button onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'products'});setBrowse('products');setBrowseCategory(null);setProfile(null);setAdmin(false)}}>Products</button>
             <button
               className="theme-toggle"
               type="button"
-              onClick={()=>setTheme(current=>current==='dark'?'light':'dark')}
+              onClick={()=>{setMobileMenuOpen(false);setTheme(current=>current==='dark'?'light':'dark')}}
               aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
               title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
             >
               {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
               <span>{theme==='dark'?'Light':'Dark'}</span>
             </button>
-            <button type="button" onClick={()=>{if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-nav-button">{session?<><UserRound size={15}/><span>Admin Dashboard</span></>:<><UserRound size={15}/><span>Log in</span></>}</button>
+            <button type="button" onClick={()=>{setMobileMenuOpen(false);if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-nav-button">{session?<><UserRound size={15}/><span>Admin Dashboard</span></>:<><UserRound size={15}/><span>Log in</span></>}</button>
           </nav>
         </div>
       </header>
