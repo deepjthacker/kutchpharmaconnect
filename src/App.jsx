@@ -1270,7 +1270,7 @@ export default function App(){
               <Search size={22}/>
               <input
                 value={q}
-                onChange={e => {setQ(e.target.value);setSearchFilter('all');setShowSuggestions(true)}}
+                onChange={e => {searchRequestRef.current++;setLoading(false);setSearched(false);setResults([]);setError('');setQ(e.target.value);setSearchFilter('all');setShowSuggestions(true)}}
                 onFocus={()=>q.trim().length>=2&&setShowSuggestions(true)}
                 onKeyDown={e=>{if(e.key==='Escape')setShowSuggestions(false)}}
                 type="search"
