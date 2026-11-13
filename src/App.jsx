@@ -62,6 +62,7 @@ const enrichCatalogProducts=(products,companies,divisions,brands,relationships,p
       ...product,
       company_name:company?.company_name||'Company not assigned',
       company_id:company?.id||product.company_id||null,
+      parent_company_id:company?.parent_company_id||null,
       parent_company_name:company?.parent_company_id?companyMap.get(company.parent_company_id)?.company_name||null:null,
       brand_name:brand?.brand_name||null,
       division_name:division?.division_name||null,
@@ -692,12 +693,13 @@ export default function App(){
       const productIds=products.map(product=>product.id)
       const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
       const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
-      const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
+      const [productLinksRes,productBrandsRes,productDivisionsRes,parentCompanyRes]=await Promise.all([
         fetchByIds(productIds,ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
         fetchByIds(productBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
-        fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
+        fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active')),
+        entityRes.data.company_id ? Promise.resolve({data:null,error:null}) : Promise.resolve({data:null,error:null})
       ])
-      if(productLinksRes.error||productBrandsRes.error||productDivisionsRes.error)throw productLinksRes.error||productBrandsRes.error||productDivisionsRes.error
+      if(productLinksRes.error||productBrandsRes.error||productDivisionsRes.error||parentCompanyRes.error)throw productLinksRes.error||productBrandsRes.error||productDivisionsRes.error||parentCompanyRes.error
 
       const allRelations=allRelationsRes.data||[]
       const pageBrands=isDivision?(divisionBrandsRes.data||[]):[]
@@ -736,7 +738,8 @@ export default function App(){
         type,
         entity:{
           ...entity,
-          parentCompany:companyRes.data,
+          company:companyRes.data,
+          parentCompany:null,
           division:divisionRes.data||null,
           brands:pageBrands,
           catalog:enrichedCatalog
