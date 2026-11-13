@@ -283,7 +283,13 @@ export default function App(){
     ;(pr.data||[]).forEach(x=>{
       if(!seen.has('product-'+x.id)){seen.add('product-'+x.id);next.push({type:'product',id:x.id,label:x.product_name,meta:'Product'})}
     })
-    setSuggestions(next.slice(0,10))
+    // Prefer exact/prefix matches and keep the dropdown deliberately short.
+    const normalizedTerm=term.trim().toLowerCase()
+    const ranked=next.sort((a,b)=>{
+      const rank=item=>item.label.toLowerCase()===normalizedTerm?0:item.label.toLowerCase().startsWith(normalizedTerm)?1:2
+      return rank(a)-rank(b)||a.label.localeCompare(b.label)
+    })
+    setSuggestions(ranked.slice(0,5))
     setSuggestionLoading(false)
   }
 
@@ -443,6 +449,22 @@ export default function App(){
 
     const cards=[]
     const seen=new Set()
+
+    // Brand matches are first-class results, not just a trigger for company relationships.
+    if(brandRows.length){
+      const brandCompanyIds=[...new Set(brandRows.map(row=>row.company_id).filter(Boolean))]
+      const brandCompanyRes=brandCompanyIds.length?await supabase.from('companies').select('id,company_name,image_url').in('id',brandCompanyIds).eq('status','active'):{data:[],error:null}
+      if(brandCompanyRes.error){setError(brandCompanyRes.error.message);setResults([]);setLoading(false);return}
+      const brandCompanyMap=new Map((brandCompanyRes.data||[]).map(company=>[company.id,company]))
+      brandRows.forEach(brand=>{
+        const owner=brandCompanyMap.get(brand.company_id)
+        const key='brand-'+brand.id
+        if(!seen.has(key)){
+          seen.add(key)
+          cards.push({type:'brand',id:brand.id,title:brand.brand_name,companyId:brand.company_id,companyName:owner?.company_name||'Company not assigned',imageUrl:owner?.image_url||null})
+        }
+      })
+    }
 
     // Show division catalogue matches with their owning company, even without a distributor listing.
     if(divisionRows.length){
@@ -1125,12 +1147,21 @@ export default function App(){
             {showSuggestions && q.trim().length>=2 && (
               <div className="search-suggestions">
                 <div className="suggestion-heading">
-                  <span>QUICK RESULTS</span>
+                  <span>QUICK RESULTS · UP TO 5</span>
                   {suggestionLoading && <LoaderCircle className="spin" size={13}/>}
                 </div>
-                {!suggestionLoading && suggestions.length>0 ? (
+                <div className="quick-search-filters" role="group" aria-label="Filter quick results by type">
+                  {[
+                    {id:'all',label:'All'},
+                    {id:'product',label:'Products'},
+                    {id:'brand',label:'Brands'},
+                    {id:'division',label:'Divisions'},
+                    {id:'company',label:'Companies'}
+                  ].map(option=><button key={option.id} type="button" className={searchFilter===option.id?'is-active':''} aria-pressed={searchFilter===option.id} onMouseDown={e=>e.preventDefault()} onClick={()=>setSearchFilter(option.id)}>{option.label}</button>)}
+                </div>
+                {!suggestionLoading && suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).length>0 ? (
                   <div className="suggestion-list">
-                    {suggestions.map(item=>(
+                    {suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).map(item=>(
                       <button className="suggestion-item" key={item.type+'-'+item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>chooseSuggestion(item)}>
                         <span className={`suggestion-icon ${item.type==='distributor'?'suggestion-distributor':''}`}>
                           {item.type==='company'?<Building2 size={15}/>:item.type==='distributor'?<Truck size={15}/>:<ArrowRight size={15}/>}
@@ -1144,7 +1175,7 @@ export default function App(){
                     ))}
                   </div>
                 ) : !suggestionLoading ? (
-                  <div className="suggestion-empty">No direct matches yet. Press Search to run the full directory search.</div>
+                  <div className="suggestion-empty">{suggestions.length ? 'No quick matches in this type. Choose another filter or view all.' : 'No direct matches yet. Press Search to run the full directory search.'}</div>
                 ) : null}
               </div>
             )}
@@ -1166,8 +1197,9 @@ export default function App(){
                     {[
                       { id: 'all', label: 'All results', count: results.length },
                       { id: 'product', label: 'Products', count: results.filter(item => item.type === 'product').length },
-                      { id: 'company', label: 'Companies', count: results.filter(item => item.type === 'company').length },
+                      { id: 'brand', label: 'Brands', count: results.filter(item => item.type === 'brand').length },
                       { id: 'division', label: 'Divisions', count: results.filter(item => item.type === 'division').length },
+                      { id: 'company', label: 'Companies', count: results.filter(item => item.type === 'company').length },
                       { id: 'relationship', label: 'Distributor listings', count: results.filter(item => item.type === 'relationship').length }
                     ].filter(item => item.id === 'all' || item.count > 0).map(item => (
                       <button
@@ -1183,6 +1215,13 @@ export default function App(){
                   </div>
                   <div className="results-list">
                     {results.filter(item => searchFilter === 'all' || item.type === searchFilter).map(r => {
+                      if (r.type === 'brand') return (
+                        <div className="result-card result-card-clickable" key={'brand-'+r.id} role="link" tabIndex={0} onClick={()=>openProfile('brand',r.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('brand',r.id)}}}>
+                          <div className="result-icon">{r.imageUrl?<img src={r.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}}/>:<Package size={19}/>}</div>
+                          <div className="result-copy"><strong>{r.title}</strong><span className="result-division">Brand</span><span className="result-relation">Company: {r.companyName}</span><span className="result-meta">Open brand profile to view its products and distributor relationships.</span></div>
+                          <button className="result-open" aria-label={`Open ${r.title} brand profile`} onClick={e=>{e.stopPropagation();openProfile('brand',r.id)}}><ArrowRight size={18}/></button>
+                        </div>
+                      )
                       if (r.type === 'company') return (
                         <div className="result-card result-card-clickable" key={'company-'+r.id} role="link" tabIndex={0} onClick={() => openProfile('company',r.id)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('company',r.id)}}}>
                           <div className="result-icon">{r.imageUrl ? <img src={r.imageUrl} alt={`${r.title} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>}</div>
