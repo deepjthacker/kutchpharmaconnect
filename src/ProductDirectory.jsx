@@ -50,7 +50,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
         const vm=new Map((divisionRes.data||[]).map(x=>[x.id,x.division_name]))
         if(!cancelled)setItems((products||[]).map(x=>({...x,companyName:cm.get(x.company_id)||'Company not assigned',brandName:bm.get(x.brand_id)||'',divisionName:vm.get(x.division_id)||''})))
       } else {
-        const {data:p,error:pe}=await supabase.from('products').select('id,product_name,company_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('id',productId).eq('status','active').maybeSingle()
+        const {data:p,error:pe}=await supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('id',productId).eq('status','active').maybeSingle()
         if(pe||!p){if(!cancelled){setError(pe?.message||'This product could not be found.');setLoading(false)};return}
         const [co,br,direct,companyRels,divisionRes]=await Promise.all([
           p.company_id ? supabase.from('companies').select('id,company_name,short_name').eq('id',p.company_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null}),
