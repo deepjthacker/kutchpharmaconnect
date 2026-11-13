@@ -278,3 +278,11 @@ html[data-theme="dark"] .catalog-product-distributor>span{background:#263a54;col
 html[data-theme="dark"] .catalog-product-distributor-heading strong{background:#263d62;color:#c1d6fa}
 @media(max-width:760px){.catalog-product-grid{grid-template-columns:1fr}}
 @media(max-width:440px){.catalog-product-card{padding:13px}.catalog-product-hierarchy{gap:8px}.catalog-product-distributor{flex-wrap:wrap}.catalog-product-distributor>span{max-width:none}}
+
+
+.product-load-more-wrap{display:flex;justify-content:center;margin:24px 0 8px}
+.product-load-more{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:1px solid #d5dfed;border-radius:11px;background:#fff;color:#234b8e;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(24,48,86,.04)}
+.product-load-more:hover:not(:disabled){border-color:#9fb4d8;background:#f5f8fd}
+.product-load-more:disabled{opacity:.65;cursor:wait}
+html[data-theme="dark"] .product-load-more{background:#17263b;border-color:#354b68;color:#dce8fa}
+html[data-theme="dark"] .product-load-more:hover:not(:disabled){background:#20334e;border-color:#5978a8}
