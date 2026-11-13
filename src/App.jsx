@@ -1590,26 +1590,36 @@ export default function App(){
             onClick={()=>setMobileMenuOpen(open=>!open)}
             aria-controls="kpc-primary-navigation"
             aria-expanded={mobileMenuOpen}
+            aria-haspopup="true"
             aria-label={mobileMenuOpen?'Close navigation menu':'Open navigation menu'}
             title={mobileMenuOpen?'Close menu':'Open menu'}
           >
-            {mobileMenuOpen?<X size={19}/>:<Menu size={19}/>}
+            {mobileMenuOpen?<X size={20}/>:<Menu size={20}/>}
           </button>
-          <nav id="kpc-primary-navigation" aria-label="Primary navigation" className={`header-nav${mobileMenuOpen?' is-open':''}`}>
-            <button onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}>Companies</button>
-            <button onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}>Distributors</button>
-            <button onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'products'});setBrowse('products');setBrowseCategory(null);setProfile(null);setAdmin(false)}}>Products</button>
-            <button
-              className="theme-toggle"
-              type="button"
-              onClick={()=>{setMobileMenuOpen(false);setTheme(current=>current==='dark'?'light':'dark')}}
-              aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
-              title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
-            >
-              {theme==='dark'?<Sun size={15}/>:<Moon size={15}/>}
-              <span>{theme==='dark'?'Light':'Dark'}</span>
-            </button>
-            <button type="button" onClick={()=>{setMobileMenuOpen(false);if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-nav-button">{session?<><UserRound size={15}/><span>Admin Dashboard</span></>:<><UserRound size={15}/><span>Log in</span></>}</button>
+          <nav id="kpc-primary-navigation" aria-label="Site navigation" className={`header-nav${mobileMenuOpen?' is-open':''}`}>
+            <div className="menu-browse-items">
+              <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'companies'});setBrowse('companies');setBrowseCategory(null)}}><Building2 size={17}/><span>Browse Companies</span><ArrowRight size={15}/></button>
+              <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'distributors'});setBrowse('distributors');setBrowseCategory(null)}}><Truck size={17}/><span>Browse Distributors</span><ArrowRight size={15}/></button>
+              <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'locations'});setBrowse('locations');setBrowseCategory(null)}}><MapPin size={17}/><span>Browse Locations</span><ArrowRight size={15}/></button>
+              <button className="menu-item" onClick={()=>{setMobileMenuOpen(false);pushRoute('browse',{type:'products'});setBrowse('products');setBrowseCategory(null);setProfile(null);setAdmin(false)}}><Package size={17}/><span>Browse Products</span><ArrowRight size={15}/></button>
+            </div>
+            <div className="menu-secondary-items">
+              <button
+                className="menu-theme-button"
+                type="button"
+                onClick={()=>{setMobileMenuOpen(false);setTheme(current=>current==='dark'?'light':'dark')}}
+                aria-label={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
+                title={theme==='dark'?'Switch to light mode':'Switch to dark mode'}
+              >
+                {theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}
+                <span>{theme==='dark'?'Light mode':'Dark mode'}</span>
+              </button>
+            </div>
+            <div className="menu-footer">
+              <button type="button" onClick={()=>{setMobileMenuOpen(false);if(session){pushRoute('admin');setProfile(null);setBrowse(null);setAdmin(true)}else setAuthOpen(true)}} className="admin-menu-button">
+                <UserRound size={16}/><span>{session?'Admin Dashboard':'Admin Login'}</span>
+              </button>
+            </div>
           </nav>
         </div>
       </header>
