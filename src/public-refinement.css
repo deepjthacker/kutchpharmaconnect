@@ -375,8 +375,6 @@ html[data-theme="dark"] .mobile-nav-toggle{
   transition:background .16s,border-color .16s,transform .16s;
 }
 .mobile-nav-toggle:hover{background:#f2f6fc;border-color:#b8c9e5}
-.header-nav,
-@media(max-width:760px){.header-nav{left:auto!important;right:0!important;width:min(330px,calc(100vw - 32px))!important}}
 .header-nav{
   display:none!important;
   position:absolute!important;
