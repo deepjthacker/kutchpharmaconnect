@@ -34,6 +34,42 @@ const mapsLink=entity=>{
   return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:null
 }
 const mapsLabel=entity=>entity?.maps_url?'Directions':'Find on Maps'
+
+const enrichCatalogProducts=(products,companies,divisions,brands,relationships,productLinks,distributors)=>{
+  const companyMap=new Map((companies||[]).map(row=>[row.id,row]))
+  const divisionMap=new Map((divisions||[]).map(row=>[row.id,row]))
+  const brandMap=new Map((brands||[]).map(row=>[row.id,row]))
+  const distributorMap=new Map((distributors||[]).map(row=>[row.id,row]))
+  return (products||[]).map(product=>{
+    const bestByDistributor=new Map()
+    const add=(distributorId,scope,locationId=null,territory=null,verificationStatus=null)=>{
+      const distributor=distributorMap.get(distributorId)
+      if(!distributor)return
+      const priority={company:1,division:2,brand:3,product:4}[scope]||0
+      const previous=bestByDistributor.get(distributorId)
+      if(!previous||priority>previous.priority)bestByDistributor.set(distributorId,{...distributor,scope,priority,locationId,territory,verificationStatus})
+    }
+    ;(productLinks||[]).filter(link=>link.product_id===product.id).forEach(link=>add(link.distributor_id,'product',link.location_id,link.territory,link.verification_status))
+    ;(relationships||[]).filter(rel=>rel.company_id===product.company_id).forEach(rel=>{
+      if(product.brand_id&&rel.brand_id===product.brand_id)add(rel.distributor_id,'brand',rel.location_id,rel.territory,rel.verification_status)
+      else if(product.division_id&&!rel.brand_id&&rel.division_id===product.division_id)add(rel.distributor_id,'division',rel.location_id,rel.territory,rel.verification_status)
+      else if(!rel.division_id&&!rel.brand_id)add(rel.distributor_id,'company',rel.location_id,rel.territory,rel.verification_status)
+    })
+    const company=companyMap.get(product.company_id)
+    const brand=brandMap.get(product.brand_id)
+    const division=divisionMap.get(product.division_id)
+    return {
+      ...product,
+      company_name:company?.company_name||'Company not assigned',
+      company_id:company?.id||product.company_id||null,
+      parent_company_name:company?.parent_company_id?companyMap.get(company.parent_company_id)?.company_name||null:null,
+      brand_name:brand?.brand_name||null,
+      division_name:division?.division_name||null,
+      distributors:[...bestByDistributor.values()].map(({priority,...distributor})=>distributor).sort((a,b)=>a.distributor_name.localeCompare(b.distributor_name))
+    }
+  })
+}
+
 const trackEvent=(name,params={})=>{
   if(typeof window!=='undefined'&&typeof window.gtag==='function'){
     window.gtag('event',name,params)
@@ -47,7 +83,7 @@ export default function App(){
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null),[policyPage,setPolicyPage]=useState(null)
   const navigationHistoryRef=useRef(false)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[catalogSearch,setCatalogSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
