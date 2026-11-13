@@ -694,7 +694,7 @@ export default function App(){
       const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
       const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
       const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
-        fetchByIds(productIds,ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
+        fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
         fetchByIds(productBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
         fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
