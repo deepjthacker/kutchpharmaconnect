@@ -1015,7 +1015,7 @@ export default function App(){
                     </p>
                     <h2>{profile.entity?.product_name || profile.entity?.company_name || profile.entity?.division_name || profile.entity?.brand_name || profile.entity?.distributor_name}</h2>
                      {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.company && <span className="profile-parent-inline">Company: <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.company.id)}>{profile.entity.company.company_name}</button></span>}
-                     {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: {profile.entity.division.division_name}</span>}
+                     {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: <button className="profile-link-button" onClick={()=>openProfile('division',profile.entity.division.id)}>{profile.entity.division.division_name}</button></span>}
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
