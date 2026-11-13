@@ -640,6 +640,7 @@ export default function App(){
 
   async function openCatalogProfile(type,id,options={}){
     setRelationshipSearch('')
+    setCatalogSearch('')
     if(options.history!==false)pushRoute('profile',{type,id})
     setProfileLoading(true);setError('')
     try{
@@ -649,38 +650,74 @@ export default function App(){
         : await supabase.from('brands').select('id,brand_name,company_id,division_id').eq('id',id).eq('status','active').maybeSingle()
       if(entityRes.error||!entityRes.data)throw entityRes.error||new Error('This '+type+' could not be found.')
       const entity=entityRes.data
-      const [companyRes,relRes,productRes,divisionRes,brandRes]=await Promise.all([
+      const [companyRes,allRelationsRes,productRes,divisionRes,divisionBrandsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',entity.company_id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',entity.company_id).eq('status','active').order('id')),
         isDivision
           ? fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('division_id',id).eq('status','active').order('product_name'))
           : fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('brand_id',id).eq('status','active').order('product_name')),
-        isDivision ? Promise.resolve({data:[],error:null}) : (entity.division_id ? supabase.from('divisions').select('id,division_name').eq('id',entity.division_id).maybeSingle() : Promise.resolve({data:null,error:null})),
+        isDivision ? Promise.resolve({data:null,error:null}) : (entity.division_id ? supabase.from('divisions').select('id,division_name,company_id').eq('id',entity.division_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null})),
         isDivision ? supabase.from('brands').select('id,brand_name,company_id,division_id').eq('division_id',id).eq('status','active').order('brand_name') : Promise.resolve({data:[],error:null})
       ])
-      const failure=companyRes.error||relRes.error||productRes.error||divisionRes.error||brandRes.error
+      const failure=companyRes.error||allRelationsRes.error||productRes.error||divisionRes.error||divisionBrandsRes.error
       if(failure)throw failure
       if(!companyRes.data)throw new Error('The parent company for this '+type+' is unavailable.')
-      const allRels=(relRes.data||[]).filter(rel=>isDivision?(rel.division_id===id||(!rel.division_id&&!rel.brand_id)):(rel.brand_id===id||(!rel.division_id&&!rel.brand_id))).map(rel=>({...rel,isCompanyLevel:!rel.division_id&&!rel.brand_id}))
-      const distributorIds=[...new Set(allRels.map(rel=>rel.distributor_id))]
-      const locationIds=[...new Set(allRels.map(rel=>rel.location_id).filter(Boolean))]
-      const [dRes,lRes]=await Promise.all([
+
+      const products=productRes.data||[]
+      const productIds=products.map(product=>product.id)
+      const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
+      const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
+      const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
+        fetchByIds(productIds,ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
+        fetchByIds(productBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
+        fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
+      ])
+      if(productLinksRes.error||productBrandsRes.error||productDivisionsRes.error)throw productLinksRes.error||productBrandsRes.error||productDivisionsRes.error
+
+      const allRelations=allRelationsRes.data||[]
+      const pageBrands=isDivision?(divisionBrandsRes.data||[]):[]
+      const brandIdsForDivision=new Set(pageBrands.map(brand=>brand.id))
+      const pageRelationships=allRelations.filter(rel=>{
+        if(isDivision){
+          return rel.division_id===id||(rel.brand_id&&brandIdsForDivision.has(rel.brand_id))||(!rel.division_id&&!rel.brand_id)
+        }
+        return rel.brand_id===id||(!rel.brand_id&&entity.division_id&&rel.division_id===entity.division_id)||(!rel.division_id&&!rel.brand_id)
+      })
+      const distributorIds=[...new Set([...allRelations.map(rel=>rel.distributor_id),...(productLinksRes.data||[]).map(link=>link.distributor_id)].filter(Boolean))]
+      const locationIds=[...new Set([...allRelations.map(rel=>rel.location_id),...(productLinksRes.data||[]).map(link=>link.location_id)].filter(Boolean))]
+      const [distributorsRes,locationsRes]=await Promise.all([
         fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url').in('id',ids).eq('status','active')),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
       ])
-      if(dRes.error||lRes.error)throw dRes.error||lRes.error
-      const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
-      const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      const divisionMap=new Map()
-      if(!isDivision&&divisionRes.data)divisionMap.set(divisionRes.data.id,divisionRes.data)
-      const brandRows=isDivision?(brandRes.data||[]):[]
-      const [brandProductRes,divisionProductRes]=await Promise.all([
-        (productRes.data||[]).length?supabase.from('brands').select('id,brand_name').in('id',[...new Set(productRes.data.map(x=>x.brand_id).filter(Boolean))]):Promise.resolve({data:[],error:null}),
-        isDivision?Promise.resolve({data:[],error:null}):Promise.resolve({data:[],error:null})
-      ])
-      if(brandProductRes.error)throw brandProductRes.error
-      const productBrandMap=new Map((brandProductRes.data||[]).map(x=>[x.id,x.brand_name]))
-      setProfile({type,entity:{...entity,parentCompany:companyRes.data,division:divisionRes.data||null,brands:brandRows,catalog:(productRes.data||[]).map(product=>({...product,brand_name:product.brand_id?productBrandMap.get(product.brand_id):null})).filter(product=>isDivision?product.division_id===id:product.brand_id===id)},relationships:allRels.map(rel=>({...rel,company:companyRes.data,division:rel.division_id?divisionMap.get(rel.division_id):null,distributor:dm.get(rel.distributor_id),location:rel.location_id?lm.get(rel.location_id):null})).filter(rel=>rel.distributor)})
+      if(distributorsRes.error||locationsRes.error)throw distributorsRes.error||locationsRes.error
+      const companyRows=[companyRes.data]
+      const divisionRows=[...(productDivisionsRes.data||[]),...(divisionRes.data?[divisionRes.data]:[])]
+      const brandRows=[...pageBrands,...(productBrandsRes.data||[])]
+      const uniqueById=rows=>[...new Map(rows.filter(Boolean).map(row=>[row.id,row])).values()]
+      const enrichedCatalog=enrichCatalogProducts(
+        products,
+        companyRows,
+        uniqueById(divisionRows),
+        uniqueById(brandRows),
+        allRelations,
+        productLinksRes.data||[],
+        distributorsRes.data||[]
+      )
+      const dm=new Map((distributorsRes.data||[]).map(row=>[row.id,row]))
+      const lm=new Map((locationsRes.data||[]).map(row=>[row.id,row]))
+      const vm=new Map(uniqueById(divisionRows).map(row=>[row.id,row]))
+      const bm=new Map(uniqueById(brandRows).map(row=>[row.id,row]))
+      setProfile({
+        type,
+        entity:{
+          ...entity,
+          parentCompany:companyRes.data,
+          division:divisionRes.data||null,
+          brands:pageBrands,
+          catalog:enrichedCatalog
+        },
+        relationships:pageRelationships.map(rel=>({...rel,company:companyRes.data,division:rel.division_id?vm.get(rel.division_id):null,brand:rel.brand_id?bm.get(rel.brand_id):null,distributor:dm.get(rel.distributor_id),location:rel.location_id?lm.get(rel.location_id):null})).filter(rel=>rel.distributor)
+      })
       trackEvent(type+'_view',{entity_type:type})
     }catch(err){setError(err?.message||'Unable to load '+type+' profile.')}
     setProfileLoading(false)
