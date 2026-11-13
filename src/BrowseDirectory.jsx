@@ -47,6 +47,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
+  const [selectedLocationId,setSelectedLocationId]=useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -257,6 +258,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
   const formatLocation = location =>
     [location.city, location.district, location.state].filter(Boolean).join(', ')
+  const selectedLocation=items.find(item=>item.id===selectedLocationId)||null
 
   return (
     <section className="browse-section">
@@ -268,8 +270,8 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         <div className="browse-header">
           <div>
             <p className="section-kicker">DIRECTORY</p>
-            <h1>{isLocations ? 'Kutch Locations' : isCompanies ? 'Companies' : 'Distributors'}</h1>
-            <p>{isLocations ? 'Browse Kutch locations with active company and distributor relationships.' : isCompanies
+            <h1>{isLocations && selectedLocation ? formatLocation(selectedLocation) : isLocations ? 'Kutch Locations' : isCompanies ? 'Companies' : 'Distributors'}</h1>
+            <p>{isLocations && selectedLocation ? 'Companies and distributor listings associated with this location.' : isLocations ? 'Select a location to see the complete company and distributor list for that area.' : isCompanies
               ? 'Browse active companies with current Kutch distributorship relationships.'
               : 'Browse active distributors and the companies they currently handle.'}</p>
           </div>
@@ -300,7 +302,29 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
         {!loading && error && <div className="result-state">{error}</div>}
 
-        {!loading && !error && filtered.length > 0 && (
+        {!loading && !error && isLocations && selectedLocation && (
+          <div className="location-detail-panel">
+            <button type="button" className="location-detail-back" onClick={()=>setSelectedLocationId('')}><ArrowLeft size={15}/> All locations</button>
+            <div className="location-detail-summary">
+              <div><strong>{selectedLocation.companies.length} companies</strong><span>Listed for this location</span></div>
+              <div><strong>{selectedLocation.distributors.length} distributors</strong><span>With active relationships</span></div>
+            </div>
+            <section className="location-detail-section">
+              <h2><Building2 size={17}/> Companies in {selectedLocation.city}</h2>
+              {selectedLocation.companies.length ? <div className="location-detail-list">
+                {selectedLocation.companies.slice().sort((a,b)=>a.company_name.localeCompare(b.company_name)).map(company=><button type="button" key={company.id} onClick={()=>onOpenProfile('company',company.id)}><span>{company.company_name}</span><ArrowRight size={15}/></button>)}
+              </div> : <p className="result-state">No company relationships are listed for this location.</p>}
+            </section>
+            <section className="location-detail-section">
+              <h2><Truck size={17}/> Distributors in {selectedLocation.city}</h2>
+              {selectedLocation.distributors.length ? <div className="location-detail-list">
+                {selectedLocation.distributors.slice().sort((a,b)=>a.distributor_name.localeCompare(b.distributor_name)).map(distributor=><button type="button" key={distributor.id} onClick={()=>onOpenProfile('distributor',distributor.id)}><span>{distributor.distributor_name}</span><ArrowRight size={15}/></button>)}
+              </div> : <p className="result-state">No distributor relationships are listed for this location.</p>}
+            </section>
+          </div>
+        )}
+
+        {!loading && !error && isLocations && !selectedLocation && filtered.length > 0 && (
           <div className="browse-grid">
             {filtered.map(item => (
               <div className="browse-card" key={item.id}>
@@ -316,6 +340,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                         {item.companies.slice(0,4).map(x => <button key={x.id} type="button" onClick={e => {e.stopPropagation();onOpenProfile('company',x.id)}}>{x.company_name}</button>)}
                       </div>
                       <small>{item.companies.length} companies • {item.distributors.length} distributors</small>
+                      <button type="button" className="location-open-button" onClick={e=>{e.stopPropagation();setSelectedLocationId(item.id)}}>View all companies <ArrowRight size={14}/></button>
                     </>
                   ) : (
                     <>
@@ -347,7 +372,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           </div>
         )}
 
-        {!loading && !error && filtered.length === 0 && (
+        {!loading && !error && isLocations && selectedLocation && selectedLocation.companies.length===0 && selectedLocation.distributors.length===0 && <div className="result-state">No active relationships are listed for this location.</div>}
+
+        {!loading && !error && !selectedLocation && filtered.length === 0 && (
           <div className="result-state">No matching {isLocations ? 'locations' : isCompanies ? 'companies' : 'distributors'} found.</div>
         )}
       </div>

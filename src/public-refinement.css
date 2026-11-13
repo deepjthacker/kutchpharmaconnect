@@ -199,3 +199,38 @@ html[data-theme="dark"] .profile-structure-chip:hover{background:#1b3945;border-
 html[data-theme="dark"] .product-hierarchy{background:#142638;border-color:#2b4554}
 html[data-theme="dark"] .product-hierarchy-row{border-color:#2a4050}
 html[data-theme="dark"] .profile-catalog-count{background:#1b3c40;color:#a9d9d1}
+
+
+/* Compact, type-filtered quick search */
+.quick-search-filters{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-bottom:1px solid #e8edf4;background:#fbfcff}
+.quick-search-filters button{min-height:27px;padding:4px 9px;border:1px solid #dce4f0;border-radius:99px;background:#fff;color:#5d6e83;font-size:10px;font-weight:750;cursor:pointer}
+.quick-search-filters button:hover{border-color:#9fb4d8;color:#234b8e}
+.quick-search-filters button.is-active{background:#173a8f;border-color:#173a8f;color:#fff}
+html[data-theme="dark"] .quick-search-filters{background:#1b2a40;border-color:#344862}
+html[data-theme="dark"] .quick-search-filters button{background:#22324a;border-color:#3b506e;color:#d5e1f2}
+html[data-theme="dark"] .quick-search-filters button.is-active{background:#315da7;border-color:#4777c4;color:#fff}
+
+/* Location cards open a complete location-specific company/distributor directory */
+.location-open-button{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-top:9px;padding:7px 10px;border:1px solid #dce5f1;border-radius:8px;background:#f5f8fd;color:#234b8e;font-size:10px;font-weight:800;cursor:pointer}
+.location-open-button:hover{background:#eaf0fb;border-color:#b7c9e6}
+.location-detail-panel{display:grid;gap:20px;margin-top:22px;padding:22px;border:1px solid #dce5f1;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(24,48,86,.045)}
+.location-detail-back{display:inline-flex;align-items:center;gap:7px;justify-self:start;padding:7px 10px;border:1px solid #dce5f1;border-radius:9px;background:#f7f9fd;color:#31558f;font-size:11px;font-weight:750;cursor:pointer}
+.location-detail-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.location-detail-summary>div{display:grid;gap:4px;padding:13px;border-radius:11px;background:#f4f7fc}
+.location-detail-summary strong{color:#193b70;font-size:20px;letter-spacing:-.03em}
+.location-detail-summary span{color:#738398;font-size:10px}
+.location-detail-section{display:grid;gap:10px}
+.location-detail-section h2{display:flex;align-items:center;gap:8px;margin:0;color:#183a70;font-size:14px}
+.location-detail-section h2 svg{color:#3159a8}
+.location-detail-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.location-detail-list button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:11px 12px;border:1px solid #e1e8f2;border-radius:10px;background:#fff;color:#29435f;text-align:left;font-size:11px;font-weight:700;cursor:pointer}
+.location-detail-list button span{overflow-wrap:anywhere}
+.location-detail-list button svg{flex:none;color:#7f94b3}
+.location-detail-list button:hover{background:#f5f8fd;border-color:#b7c9e6;color:#173a8f}
+html[data-theme="dark"] .location-open-button,html[data-theme="dark"] .location-detail-back{background:#22324a;border-color:#3b506e;color:#cbdcff}
+html[data-theme="dark"] .location-detail-panel{background:#19273b;border-color:#344862}
+html[data-theme="dark"] .location-detail-summary>div{background:#22324a}
+html[data-theme="dark"] .location-detail-summary strong,html[data-theme="dark"] .location-detail-section h2{color:#e5edfb}
+html[data-theme="dark"] .location-detail-list button{background:#22324a;border-color:#3b506e;color:#e2ebf8}
+html[data-theme="dark"] .location-detail-list button:hover{background:#2b4261;border-color:#6688b7}
+@media(max-width:600px){.location-detail-panel{padding:15px}.location-detail-list{grid-template-columns:1fr}.quick-search-filters{gap:5px}.quick-search-filters button{font-size:9px;padding-inline:8px}}
