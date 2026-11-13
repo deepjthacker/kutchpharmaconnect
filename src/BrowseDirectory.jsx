@@ -77,9 +77,11 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
 
         // Load the active company name map once rather than constructing a long
         // .in() URL from every brand/division company ID.
-        const companyResult = await fetchAllPages(() => supabase
+        const companyIds = [...new Set((data || []).map(item => item.company_id).filter(Boolean))]
+        const companyResult = await fetchByIds(companyIds, ids => supabase
           .from('companies')
           .select('id,company_name')
+          .in('id', ids)
           .eq('status', 'active'))
         if (companyResult.error) {
           if (!cancelled) { setError(companyResult.error.message); setLoading(false) }
@@ -98,21 +100,26 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
       } else if (isCompanies) {
         const { data, error: companyError } = await fetchAllPages(() => supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('status', 'active').order('company_name').order('id'))
         if (companyError) { if (!cancelled) { setError(companyError.message); setLoading(false) }; return }
-        const productResult = await fetchAllPages(() => supabase.from('products').select('id,company_id').eq('status','active'))
+        const companyRows = data || []
+        const ids = companyRows.map(company => company.id)
+        const productResult = await fetchByIds(ids, batchIds => supabase
+          .from('products')
+          .select('id,company_id')
+          .eq('status', 'active')
+          .in('company_id', batchIds))
         if (productResult.error) { if (!cancelled) { setError(productResult.error.message); setLoading(false) }; return }
         const productCounts = new Map()
         ;(productResult.data||[]).forEach(product=>productCounts.set(product.company_id,(productCounts.get(product.company_id)||0)+1))
         const companyNameMap = new Map(data.map(company=>[company.id,company.company_name]))
         const parentIds = new Set(data.map(company=>company.parent_company_id).filter(Boolean))
 
-        const companyRows = data || []
-        const ids = companyRows.map(x => x.id)
-        // Fetch active relationships without sending hundreds of company IDs in one URL.
-        // A large `.in('company_id', ids)` filter can exceed request URL limits and return Bad Request.
-        const relationshipResult = await fetchAllPages(() => supabase
+        // Fetch only relationships belonging to active companies, in short ID batches.
+        // This avoids downloading unrelated rows from the entire distributorships table.
+        const relationshipResult = await fetchByIds(ids, batchIds => supabase
           .from('distributorships')
-          .select('company_id,distributor_id,location_id,category_id,verification_status')
-          .eq('status', 'active'))
+          .select('company_id,distributor_id,location_id,verification_status')
+          .eq('status', 'active')
+          .in('company_id', batchIds))
         const rels = relationshipResult.data
         const relError = relationshipResult.error
 
@@ -122,20 +129,16 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         }
 
         const locationIds = [...new Set((rels || []).map(x => x.location_id).filter(Boolean))]
-        const categoryIds=[...new Set((rels||[]).map(x=>x.category_id).filter(Boolean))]
-        const [locationsResult, catResult] = await Promise.all([
-          locationIds.length ? supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds).eq('status','active') : Promise.resolve({data:[],error:null}),
-          categoryIds.length ? supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active') : Promise.resolve({data:[],error:null})
-        ])
-        if (locationsResult.error || catResult.error) {
-          if (!cancelled) { setError((locationsResult.error || catResult.error).message); setLoading(false) }
+        const locationsResult = locationIds.length
+          ? await fetchByIds(locationIds, ids => supabase.from('locations').select('id,city,district,state,pincode').in('id', ids).eq('status','active'))
+          : { data: [], error: null }
+        if (locationsResult.error) {
+          if (!cancelled) { setError(locationsResult.error.message); setLoading(false) }
           return
         }
         const locations = locationsResult.data || []
-        const catRows = catResult.data || []
         const locationMap = new Map(locations.map(x => [x.id, x]))
         const relationshipMap = new Map()
-        const categoryMap=new Map((catRows||[]).map(x=>[x.id,x.name]))
         ;(rels || []).forEach(rel => {
           const entry = relationshipMap.get(rel.company_id) || { count: 0, verifiedCount: 0, reviewCount: 0, locations: new Map() }
           entry.count += 1
@@ -150,7 +153,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         if (!cancelled) {
           const nextItems=companyRows.map(x => {
             const info = relationshipMap.get(x.id) || { count: 0, locations: new Map() }
-            return { ...x, parentName:x.parent_company_id?companyNameMap.get(x.parent_company_id):null, hasSubsidiaries:parentIds.has(x.id), productCount:productCounts.get(x.id)||0, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()], locationIds:[...info.locations.keys()], categoryNames:[...new Set((rels||[]).filter(r=>r.company_id===x.id).map(r=>categoryMap.get(r.category_id)).filter(Boolean))] }
+            return { ...x, parentName:x.parent_company_id?companyNameMap.get(x.parent_company_id):null, hasSubsidiaries:parentIds.has(x.id), productCount:productCounts.get(x.id)||0, relationshipCount: info.count, verifiedCount: info.verifiedCount, reviewCount: info.reviewCount, locations: [...info.locations.values()], locationIds:[...info.locations.keys()] }
           }).filter(x => x.relationshipCount > 0 || x.parent_company_id || x.hasSubsidiaries || x.productCount > 0)
           browseCache.set(cacheKey,nextItems)
           setItems(nextItems)
@@ -228,9 +231,6 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         }
 
         const locationIds = [...new Set((data || []).map(x => x.city_id).filter(Boolean))]
-        const relationshipCategoryRows = {data:rels||[],error:null}
-        const categoryIds=[...new Set((relationshipCategoryRows.data||[]).map(x=>x.category_id).filter(Boolean))]
-        const categoryRows=categoryIds.length?await supabase.from('categories').select('id,name').in('id',categoryIds).eq('status','active'):{data:[],error:null}
         const { data: locations, error: locationError } = locationIds.length
           ? await supabase.from('locations').select('id,city,district,state,pincode').in('id', locationIds)
           : { data: [], error: null }
@@ -241,13 +241,10 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
         }
 
         const locationMap = new Map((locations || []).map(x => [x.id, x]))
-        const categoryMap = new Map((categoryRows.data || []).map(x => [x.id, x.name]))
         const counts = new Map()
-        const distributorCategoryNames = new Map()
         const distributorLocationIds = new Map()
         ;(rels || []).forEach(x => {
           const entry = counts.get(x.distributor_id) || { count: 0, verifiedCount: 0, reviewCount: 0 }
-          if(x.category_id){const set=distributorCategoryNames.get(x.distributor_id)||new Set();const n=categoryMap.get(x.category_id);if(n)set.add(n);distributorCategoryNames.set(x.distributor_id,set)}
           if(x.location_id){const set=distributorLocationIds.get(x.distributor_id)||new Set();set.add(x.location_id);distributorLocationIds.set(x.distributor_id,set)}
           entry.count += 1
           if (x.verification_status === 'verified') entry.verifiedCount += 1
@@ -262,7 +259,6 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
             relationshipCount: counts.get(x.id)?.count || 0,
             verifiedCount: counts.get(x.id)?.verifiedCount || 0,
             reviewCount: counts.get(x.id)?.reviewCount || 0,
-            categoryNames:[...((distributorCategoryNames.get(x.id)||new Set()))],
             locationIds:[...(distributorLocationIds.get(x.id)||new Set())]
           }))
           browseCache.set(cacheKey,nextItems)
@@ -363,7 +359,7 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
           </div>
         )}
 
-        {!loading && !error && isLocations && !selectedLocation && filtered.length > 0 && (
+        {!loading && !error && !selectedLocation && filtered.length > 0 && (
           <div className="browse-grid">
             {filtered.map(item => (
               <div className="browse-card" key={item.id}>
