@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Search, Building2, Truck, Package, ArrowRight, ShieldCheck, LoaderCircle, MapPin, Phone, MessageCircle, ArrowLeft, UserRound, Flag, X, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
+import { applyFlexibleSearch, rankSearchItems } from './lib/searchUtils'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const ProductDirectory = lazy(() => import('./ProductDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
@@ -309,14 +310,13 @@ export default function App(){
   async function loadSuggestions(term){
     const requestId=++suggestionRequestRef.current
     setSuggestionLoading(true)
-    const p='%'+term.replace(/[%_]/g,'')+'%'
     const [co,di,dv,br,al,pr]=await Promise.all([
-      supabase.from('companies').select('id,company_name,short_name,image_url').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(5),
-      supabase.from('distributors').select('id,distributor_name,contact_person').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(5),
-      supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(5),
-      supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(5),
-      supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(8),
-      supabase.from('products').select('id,product_name,company_id').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p).limit(5)
+      applyFlexibleSearch(supabase.from('companies').select('id,company_name,short_name,image_url').eq('status','active'),['company_name','legal_name','short_name'],term).limit(5),
+      applyFlexibleSearch(supabase.from('distributors').select('id,distributor_name,contact_person').eq('status','active'),['distributor_name','legal_name','contact_person'],term).limit(5),
+      applyFlexibleSearch(supabase.from('divisions').select('id,division_name,company_id').eq('status','active'),['division_name','division_code'],term).limit(5),
+      applyFlexibleSearch(supabase.from('brands').select('id,brand_name,company_id').eq('status','active'),['brand_name'],term).limit(5),
+      applyFlexibleSearch(supabase.from('search_aliases').select('entity_type,entity_id,alias'),['alias'],term).limit(8),
+      applyFlexibleSearch(supabase.from('products').select('id,product_name,company_id').eq('status','active'),['product_name','normalized_product_name','generic_name'],term).limit(5)
     ])
     if(requestId!==suggestionRequestRef.current)return
     if(co.error||di.error||dv.error||br.error||al.error||pr.error){setSuggestions([]);setSuggestionLoading(false);return}
@@ -349,13 +349,8 @@ export default function App(){
     ;(pr.data||[]).forEach(x=>{
       if(!seen.has('product-'+x.id)){seen.add('product-'+x.id);next.push({type:'product',id:x.id,label:x.product_name,meta:'Product'})}
     })
-    // Prefer exact/prefix matches and keep the dropdown deliberately short.
-    const normalizedTerm=term.trim().toLowerCase()
-    const ranked=next.sort((a,b)=>{
-      const rank=item=>item.label.toLowerCase()===normalizedTerm?0:item.label.toLowerCase().startsWith(normalizedTerm)?1:2
-      return rank(a)-rank(b)||a.label.localeCompare(b.label)
-    })
-    setSuggestions(ranked.slice(0,25))
+    // Rank punctuation-insensitive and near-spelling matches before showing suggestions.
+    setSuggestions(rankSearchItems(next,term,item=>item.label).slice(0,25))
     setSuggestionLoading(false)
   }
 
@@ -426,16 +421,13 @@ export default function App(){
     window.history.replaceState({kpc:'home',q:term.trim()},'',searchUrl.pathname+searchUrl.search+searchUrl.hash)
     trackEvent('search',{search_term:term.trim()})
 
-    const cleanTerm=term.trim().replace(/[%_]/g,'')
-    const p='%'+cleanTerm+'%'
-
     const [co,di,dv,br,al,loc] = await Promise.all([
-      supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('status','active').or('company_name.ilike.'+p+',legal_name.ilike.'+p+',short_name.ilike.'+p).limit(12),
-      supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active').or('distributor_name.ilike.'+p+',legal_name.ilike.'+p+',contact_person.ilike.'+p).limit(12),
-      supabase.from('divisions').select('id,division_name,company_id').eq('status','active').or('division_name.ilike.'+p+',division_code.ilike.'+p).limit(12),
-      supabase.from('brands').select('id,brand_name,company_id').eq('status','active').ilike('brand_name',p).limit(12),
-      supabase.from('search_aliases').select('entity_type,entity_id,alias').ilike('alias',p).limit(24),
-      supabase.from('locations').select('id,city,district,state,pincode').or('city.ilike.'+p+',district.ilike.'+p+',state.ilike.'+p+',pincode.ilike.'+p).limit(12)
+      applyFlexibleSearch(supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('status','active'),['company_name','legal_name','short_name'],term).limit(12),
+      applyFlexibleSearch(supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,address,city_id,maps_url').eq('status','active'),['distributor_name','legal_name','contact_person'],term).limit(12),
+      applyFlexibleSearch(supabase.from('divisions').select('id,division_name,company_id').eq('status','active'),['division_name','division_code'],term).limit(12),
+      applyFlexibleSearch(supabase.from('brands').select('id,brand_name,company_id').eq('status','active'),['brand_name'],term).limit(12),
+      applyFlexibleSearch(supabase.from('search_aliases').select('entity_type,entity_id,alias'),['alias'],term).limit(24),
+      applyFlexibleSearch(supabase.from('locations').select('id,city,district,state,pincode'),['city','district','state','pincode'],term).limit(12)
     ])
 
     const err=co.error||di.error||dv.error||br.error||al.error||loc.error
@@ -609,9 +601,19 @@ export default function App(){
     })
 
     // Product matches are searchable independently from distributorship records.
-    const productRes=await supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').or('product_name.ilike.'+p+',normalized_product_name.ilike.'+p+',generic_name.ilike.'+p+(searchedBrandIds.size?',brand_id.in.('+[...searchedBrandIds].join(',')+')':'')).limit(20)
-    if(productRes.error){setError(productRes.error.message);setResults([]);setLoading(false);return}
-    const productRows=productRes.data||[]
+    const productSearchQuery=applyFlexibleSearch(
+      supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active'),
+      ['product_name','normalized_product_name','generic_name','strength','dosage_form','pack_size'],
+      term
+    )
+    const [productRes,brandProductRes]=await Promise.all([
+      productSearchQuery.limit(60),
+      searchedBrandIds.size
+        ? supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').in('brand_id',[...searchedBrandIds]).limit(60)
+        : Promise.resolve({data:[],error:null})
+    ])
+    if(productRes.error||brandProductRes.error){setError((productRes.error||brandProductRes.error).message);setResults([]);setLoading(false);return}
+    const productRows=[...new Map([...(productRes.data||[]),...(brandProductRes.data||[])].map(product=>[product.id,product])).values()]
     const productCompanyIds=[...new Set(productRows.map(product=>product.company_id).filter(Boolean))]
     const productBrandIds=[...new Set(productRows.map(product=>product.brand_id).filter(Boolean))]
     const productDivisionIds=[...new Set(productRows.map(product=>product.division_id).filter(Boolean))]
@@ -644,7 +646,7 @@ export default function App(){
     })
 
     if(requestId!==searchRequestRef.current)return
-    setResults(cards)
+    setResults(rankSearchItems(cards,term,item=>[item.title,item.subtitle,item.specs,item.companyName].filter(Boolean).join(' ')))
     setLoading(false)
     } catch (searchError) {
       if(requestId!==searchRequestRef.current)return
