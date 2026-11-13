@@ -23,12 +23,12 @@ export function applyFlexibleSearch(query, fields, term) {
   const tokens = searchTokens(term)
   if (!tokens.length) return query
 
-  return tokens.reduce((current, token) => {
+  const groups = tokens.map(token => {
     const fragment = token.length >= 5 ? token.slice(0, 4) : token
     const pattern = '%' + fragment.replace(/[%_]/g, '') + '%'
-    const expression = fields.map(field => field + '.ilike.' + pattern).join(',')
-    return current.or(expression)
-  }, query)
+    return 'or(' + fields.map(field => field + '.ilike.' + pattern).join(',') + ')'
+  })
+  return query.or('and(' + groups.join(',') + ')')
 }
 
 function editDistance(left, right) {
