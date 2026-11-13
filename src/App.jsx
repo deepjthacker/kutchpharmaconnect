@@ -34,6 +34,72 @@ const mapsLink=entity=>{
   return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:null
 }
 const mapsLabel=entity=>entity?.maps_url?'Directions':'Find on Maps'
+
+const enrichCatalogProducts=(products,companies,divisions,brands,relationships,productLinks,distributors)=>{
+  const companyMap=new Map((companies||[]).map(row=>[row.id,row]))
+  const divisionMap=new Map((divisions||[]).map(row=>[row.id,row]))
+  const brandMap=new Map((brands||[]).map(row=>[row.id,row]))
+  const distributorMap=new Map((distributors||[]).map(row=>[row.id,row]))
+  const relationshipsByCompany=new Map()
+  ;(relationships||[]).forEach(rel=>{const rows=relationshipsByCompany.get(rel.company_id)||[];rows.push(rel);relationshipsByCompany.set(rel.company_id,rows)})
+  const linksByProduct=new Map()
+  ;(productLinks||[]).forEach(link=>{const rows=linksByProduct.get(link.product_id)||[];rows.push(link);linksByProduct.set(link.product_id,rows)})
+  return (products||[]).map(product=>{
+    const bestByDistributor=new Map()
+    const add=(distributorId,scope,locationId=null,territory=null,verificationStatus=null)=>{
+      const distributor=distributorMap.get(distributorId)
+      if(!distributor)return
+      const priority={company:1,division:2,brand:3,product:4}[scope]||0
+      const previous=bestByDistributor.get(distributorId)
+      if(!previous||priority>previous.priority)bestByDistributor.set(distributorId,{...distributor,scope,priority,locationId,territory,verificationStatus})
+    }
+    ;(linksByProduct.get(product.id)||[]).forEach(link=>add(link.distributor_id,'product',link.location_id,link.territory,link.verification_status))
+    ;(relationshipsByCompany.get(product.company_id)||[]).forEach(rel=>{
+      if(product.brand_id&&rel.brand_id===product.brand_id)add(rel.distributor_id,'brand',rel.location_id,rel.territory,rel.verification_status)
+      else if(product.division_id&&!rel.brand_id&&rel.division_id===product.division_id)add(rel.distributor_id,'division',rel.location_id,rel.territory,rel.verification_status)
+      else if(!rel.division_id&&!rel.brand_id)add(rel.distributor_id,'company',rel.location_id,rel.territory,rel.verification_status)
+    })
+    const company=companyMap.get(product.company_id)
+    const brand=brandMap.get(product.brand_id)
+    const division=divisionMap.get(product.division_id)
+    return {
+      ...product,
+      company_name:company?.company_name||'Company not assigned',
+      company_id:company?.id||product.company_id||null,
+      parent_company_id:company?.parent_company_id||null,
+      parent_company_name:company?.parent_company_id?companyMap.get(company.parent_company_id)?.company_name||null:null,
+      brand_name:brand?.brand_name||null,
+      division_name:division?.division_name||null,
+      distributors:[...bestByDistributor.values()].map(({priority,...distributor})=>distributor).sort((a,b)=>a.distributor_name.localeCompare(b.distributor_name))
+    }
+  })
+}
+
+
+function CatalogProductCard({product,onOpenProfile}){
+  const visibleDistributors=(product.distributors||[]).slice(0,3)
+  return <article className="catalog-product-card">
+    <div className="catalog-product-main">
+      <button type="button" className="catalog-product-name" onClick={()=>onOpenProfile('product',product.id)}>{product.product_name}<ArrowRight size={14}/></button>
+      {product.generic_name&&<span className="catalog-product-generic">{product.generic_name}</span>}
+      {[product.strength,product.dosage_form,product.pack_size].filter(Boolean).length>0&&<small className="catalog-product-specs">{[product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small>}
+    </div>
+    <div className="catalog-product-hierarchy">
+      {product.company_id&&<span><small>Company</small><button type="button" onClick={()=>onOpenProfile('company',product.company_id)}>{product.company_name}</button></span>}
+      {product.brand_id&&product.brand_name&&<span><small>Brand</small><button type="button" onClick={()=>onOpenProfile('brand',product.brand_id)}>{product.brand_name}</button></span>}
+      {product.division_id&&product.division_name&&<span><small>Division</small><button type="button" onClick={()=>onOpenProfile('division',product.division_id)}>{product.division_name}</button></span>}
+      {product.parent_company_id&&product.parent_company_name&&<span><small>Parent</small><button type="button" onClick={()=>onOpenProfile('company',product.parent_company_id)}>{product.parent_company_name}</button></span>}
+    </div>
+    <div className="catalog-product-distributors">
+      <div className="catalog-product-distributor-heading"><small>Distributors in Kutch</small><strong>{(product.distributors||[]).length}</strong></div>
+      {visibleDistributors.length>0?<div className="catalog-product-distributor-list">{visibleDistributors.map(distributor=><div key={distributor.id} className="catalog-product-distributor">
+        <button type="button" onClick={()=>onOpenProfile('distributor',distributor.id)}>{distributor.distributor_name}</button>
+        <span>{distributor.scope==='product'?'Product':distributor.scope==='brand'?'Brand':distributor.scope==='division'?'Division':'Company'} listing</span>
+      </div>)}{(product.distributors||[]).length>3&&<small className="catalog-product-more">+{product.distributors.length-3} more distributors</small>}</div>:<span className="catalog-product-no-distributor">No active distributor relationship listed</span>}
+    </div>
+  </article>
+}
+
 const trackEvent=(name,params={})=>{
   if(typeof window!=='undefined'&&typeof window.gtag==='function'){
     window.gtag('event',name,params)
@@ -47,7 +113,7 @@ export default function App(){
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
   const [reportTarget,setReportTarget]=useState(null),[policyPage,setPolicyPage]=useState(null)
   const navigationHistoryRef=useRef(false)
-  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
+  const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[catalogSearch,setCatalogSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
 
   useEffect(()=>{
     const closeOnEscape=e=>{
@@ -604,6 +670,7 @@ export default function App(){
 
   async function openCatalogProfile(type,id,options={}){
     setRelationshipSearch('')
+    setCatalogSearch('')
     if(options.history!==false)pushRoute('profile',{type,id})
     setProfileLoading(true);setError('')
     try{
@@ -613,38 +680,74 @@ export default function App(){
         : await supabase.from('brands').select('id,brand_name,company_id,division_id').eq('id',id).eq('status','active').maybeSingle()
       if(entityRes.error||!entityRes.data)throw entityRes.error||new Error('This '+type+' could not be found.')
       const entity=entityRes.data
-      const [companyRes,relRes,productRes,divisionRes,brandRes]=await Promise.all([
+      const [companyRes,allRelationsRes,productRes,divisionRes,divisionBrandsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',entity.company_id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',entity.company_id).eq('status','active').order('id')),
         isDivision
           ? fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('division_id',id).eq('status','active').order('product_name'))
           : fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('brand_id',id).eq('status','active').order('product_name')),
-        isDivision ? Promise.resolve({data:[],error:null}) : (entity.division_id ? supabase.from('divisions').select('id,division_name').eq('id',entity.division_id).maybeSingle() : Promise.resolve({data:null,error:null})),
+        isDivision ? Promise.resolve({data:null,error:null}) : (entity.division_id ? supabase.from('divisions').select('id,division_name,company_id').eq('id',entity.division_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null})),
         isDivision ? supabase.from('brands').select('id,brand_name,company_id,division_id').eq('division_id',id).eq('status','active').order('brand_name') : Promise.resolve({data:[],error:null})
       ])
-      const failure=companyRes.error||relRes.error||productRes.error||divisionRes.error||brandRes.error
+      const failure=companyRes.error||allRelationsRes.error||productRes.error||divisionRes.error||divisionBrandsRes.error
       if(failure)throw failure
       if(!companyRes.data)throw new Error('The parent company for this '+type+' is unavailable.')
-      const allRels=(relRes.data||[]).filter(rel=>isDivision?(rel.division_id===id||(!rel.division_id&&!rel.brand_id)):(rel.brand_id===id||(!rel.division_id&&!rel.brand_id))).map(rel=>({...rel,isCompanyLevel:!rel.division_id&&!rel.brand_id}))
-      const distributorIds=[...new Set(allRels.map(rel=>rel.distributor_id))]
-      const locationIds=[...new Set(allRels.map(rel=>rel.location_id).filter(Boolean))]
-      const [dRes,lRes]=await Promise.all([
+
+      const products=productRes.data||[]
+      const productBrandIds=[...new Set(products.map(product=>product.brand_id).filter(Boolean))]
+      const productDivisionIds=[...new Set(products.map(product=>product.division_id).filter(Boolean))]
+      const [productLinksRes,productBrandsRes,productDivisionsRes]=await Promise.all([
+        fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
+        fetchByIds(productBrandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
+        fetchByIds(productDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
+      ])
+      if(productLinksRes.error||productBrandsRes.error||productDivisionsRes.error)throw productLinksRes.error||productBrandsRes.error||productDivisionsRes.error
+
+      const allRelations=allRelationsRes.data||[]
+      const pageBrands=isDivision?(divisionBrandsRes.data||[]):[]
+      const brandIdsForDivision=new Set(pageBrands.map(brand=>brand.id))
+      const pageRelationships=allRelations.filter(rel=>{
+        if(isDivision){
+          return rel.division_id===id||(rel.brand_id&&brandIdsForDivision.has(rel.brand_id))||(!rel.division_id&&!rel.brand_id)
+        }
+        return rel.brand_id===id||(!rel.brand_id&&entity.division_id&&rel.division_id===entity.division_id)||(!rel.division_id&&!rel.brand_id)
+      })
+      const distributorIds=[...new Set([...allRelations.map(rel=>rel.distributor_id),...(productLinksRes.data||[]).map(link=>link.distributor_id)].filter(Boolean))]
+      const locationIds=[...new Set([...allRelations.map(rel=>rel.location_id),...(productLinksRes.data||[]).map(link=>link.location_id)].filter(Boolean))]
+      const [distributorsRes,locationsRes]=await Promise.all([
         fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url').in('id',ids).eq('status','active')),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
       ])
-      if(dRes.error||lRes.error)throw dRes.error||lRes.error
-      const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
-      const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      const divisionMap=new Map()
-      if(!isDivision&&divisionRes.data)divisionMap.set(divisionRes.data.id,divisionRes.data)
-      const brandRows=isDivision?(brandRes.data||[]):[]
-      const [brandProductRes,divisionProductRes]=await Promise.all([
-        (productRes.data||[]).length?supabase.from('brands').select('id,brand_name').in('id',[...new Set(productRes.data.map(x=>x.brand_id).filter(Boolean))]):Promise.resolve({data:[],error:null}),
-        isDivision?Promise.resolve({data:[],error:null}):Promise.resolve({data:[],error:null})
-      ])
-      if(brandProductRes.error)throw brandProductRes.error
-      const productBrandMap=new Map((brandProductRes.data||[]).map(x=>[x.id,x.brand_name]))
-      setProfile({type,entity:{...entity,parentCompany:companyRes.data,division:divisionRes.data||null,brands:brandRows,catalog:(productRes.data||[]).map(product=>({...product,brand_name:product.brand_id?productBrandMap.get(product.brand_id):null})).filter(product=>isDivision?product.division_id===id:product.brand_id===id)},relationships:allRels.map(rel=>({...rel,company:companyRes.data,division:rel.division_id?divisionMap.get(rel.division_id):null,distributor:dm.get(rel.distributor_id),location:rel.location_id?lm.get(rel.location_id):null})).filter(rel=>rel.distributor)})
+      if(distributorsRes.error||locationsRes.error)throw distributorsRes.error||locationsRes.error
+      const companyRows=[companyRes.data]
+      const divisionRows=[...(productDivisionsRes.data||[]),...(divisionRes.data?[divisionRes.data]:[])]
+      const brandRows=[...pageBrands,...(productBrandsRes.data||[])]
+      const uniqueById=rows=>[...new Map(rows.filter(Boolean).map(row=>[row.id,row])).values()]
+      const enrichedCatalog=enrichCatalogProducts(
+        products,
+        companyRows,
+        uniqueById(divisionRows),
+        uniqueById(brandRows),
+        allRelations,
+        productLinksRes.data||[],
+        distributorsRes.data||[]
+      )
+      const dm=new Map((distributorsRes.data||[]).map(row=>[row.id,row]))
+      const lm=new Map((locationsRes.data||[]).map(row=>[row.id,row]))
+      const vm=new Map(uniqueById(divisionRows).map(row=>[row.id,row]))
+      const bm=new Map(uniqueById(brandRows).map(row=>[row.id,row]))
+      setProfile({
+        type,
+        entity:{
+          ...entity,
+          company:companyRes.data,
+          parentCompany:null,
+          division:divisionRes.data||null,
+          brands:pageBrands,
+          catalog:enrichedCatalog
+        },
+        relationships:pageRelationships.map(rel=>({...rel,company:companyRes.data,division:rel.division_id?vm.get(rel.division_id):null,brand:rel.brand_id?bm.get(rel.brand_id):null,distributor:dm.get(rel.distributor_id),location:rel.location_id?lm.get(rel.location_id):null})).filter(rel=>rel.distributor)
+      })
       trackEvent(type+'_view',{entity_type:type})
     }catch(err){setError(err?.message||'Unable to load '+type+' profile.')}
     setProfileLoading(false)
@@ -742,6 +845,7 @@ export default function App(){
   }
 
   async function openProfile(type,id,options={}){
+    setCatalogSearch('')
     if(type==='product')return openProductProfile(id,options)
     if(type==='division'||type==='brand')return openCatalogProfile(type,id,options)
     setRelationshipSearch('')
@@ -779,23 +883,29 @@ export default function App(){
         profileCompanyIds.length?fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null},
         supabase.from('divisions').select('id,division_name,company_id').in('company_id',profileCompanyIds).eq('status','active').order('division_name')
       ])
-      const profileProductBrandIds=[...new Set((catalogRes.data||[]).map(product=>product.brand_id).filter(Boolean))]
-      const [profileBrandsRes,companyBrandsRes]=await Promise.all([
-        profileProductBrandIds.length?supabase.from('brands').select('id,brand_name,division_id').in('id',profileProductBrandIds).eq('status','active'):{data:[],error:null},
-        supabase.from('brands').select('id,brand_name,division_id,company_id').in('company_id',profileCompanyIds).eq('status','active').order('brand_name')
+      const catalogProducts=catalogRes.data||[]
+      const profileProductBrandIds=[...new Set(catalogProducts.map(product=>product.brand_id).filter(Boolean))]
+      const profileProductDivisionIds=[...new Set(catalogProducts.map(product=>product.division_id).filter(Boolean))]
+      const [profileBrandsRes,companyBrandsRes,catalogRelationsRes,catalogProductLinksRes,profileProductDivisionsRes]=await Promise.all([
+        fetchByIds(profileProductBrandIds,ids=>supabase.from('brands').select('id,brand_name,division_id,company_id').in('id',ids).eq('status','active')),
+        supabase.from('brands').select('id,brand_name,division_id,company_id').in('company_id',profileCompanyIds).eq('status','active').order('brand_name'),
+        profileCompanyIds.length?fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').in('company_id',profileCompanyIds).eq('status','active').order('id')):{data:[],error:null},
+        fetchAllPages(()=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('status','active').order('id')),
+        fetchByIds(profileProductDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
-      const profileBrandMap=new Map((profileBrandsRes.data||[]).map(brand=>[brand.id,brand.brand_name]))
       const profileCompanyMap=new Map(familyRows.map(company=>[company.id,company]))
       if(parentCompanyId&&!profileCompanyMap.has(parentCompanyId)){
         const parentRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id').eq('id',parentCompanyId).eq('status','active').maybeSingle()
         if(parentRes.data)profileCompanyMap.set(parentRes.data.id,parentRes.data)
       }
-      if(familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||companyDivisionsRes.error||profileBrandsRes.error||companyBrandsRes.error){setError((familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||companyDivisionsRes.error||profileBrandsRes.error||companyBrandsRes.error).message);setProfileLoading(false);return}
+      if(familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||companyDivisionsRes.error||profileBrandsRes.error||companyBrandsRes.error||catalogRelationsRes.error||catalogProductLinksRes.error||profileProductDivisionsRes.error){setError((familyRes.error||subsidiaryRelsRes.error||subsidiaryDistributorsRes.error||catalogRes.error||companyDivisionsRes.error||profileBrandsRes.error||companyBrandsRes.error||catalogRelationsRes.error||catalogProductLinksRes.error||profileProductDivisionsRes.error).message);setProfileLoading(false);return}
       if(companyRes.data)rememberRecent('company',id,companyRes.data.company_name)
-      const distributorIds=[...new Set(rels.map(x=>x.distributor_id))]
-      const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
-      const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
-      const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
+      const catalogRelations=catalogRelationsRes.data||[]
+      const catalogProductLinks=catalogProductLinksRes.data||[]
+      const distributorIds=[...new Set([...rels.map(x=>x.distributor_id),...catalogRelations.map(x=>x.distributor_id),...catalogProductLinks.map(x=>x.distributor_id)].filter(Boolean))]
+      const divisionIds=[...new Set([...rels.map(x=>x.division_id),...catalogRelations.map(x=>x.division_id),...(profileProductDivisionsRes.data||[]).map(x=>x.id)].filter(Boolean))]
+      const brandIds=[...new Set([...rels.map(x=>x.brand_id),...catalogRelations.map(x=>x.brand_id),...(profileBrandsRes.data||[]).map(x=>x.id),...(companyBrandsRes.data||[]).map(x=>x.id)].filter(Boolean))]
+      const locationIds=[...new Set([...rels.map(x=>x.location_id),...catalogRelations.map(x=>x.location_id),...catalogProductLinks.map(x=>x.location_id)].filter(Boolean))]
       const [dRes,vRes,bRes,lRes]=await Promise.all([
         fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url').in('id',ids).eq('status','active')),
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids).eq('status','active')),
@@ -805,9 +915,14 @@ export default function App(){
       if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
-      const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
+      const bm=new Map([...(bRes.data||[]),...(companyBrandsRes.data||[]),...(profileBrandsRes.data||[])].map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:(catalogRes.data||[]).map(product=>({...product,brand_name:product.brand_id?profileBrandMap.get(product.brand_id):null,company_name:profileCompanyMap.get(product.company_id)?.company_name||companyRes.data?.company_name}))},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      const catalogCompanies=[...familyRows,companyRes.data].filter(Boolean)
+      const catalogDivisions=[...(companyDivisionsRes.data||divisionsRes.data||[]),...(profileProductDivisionsRes.data||[]),...(vRes.data||[])]
+      const catalogBrands=[...(companyBrandsRes.data||[]),...(profileBrandsRes.data||[]),...(bRes.data||[])]
+      const catalogDistributors=[...(dRes.data||[]),...(subsidiaryDistributorsRes.data||[])]
+      const enrichedCompanyCatalog=enrichCatalogProducts(catalogProducts,catalogCompanies,catalogDivisions,catalogBrands,catalogRelations,catalogProductLinks,catalogDistributors)
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:enrichedCompanyCatalog},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
@@ -861,6 +976,11 @@ export default function App(){
 
   function renderProfile(){
     const relationshipQuery = relationshipSearch.trim().toLowerCase()
+    const catalogQuery=catalogSearch.trim().toLowerCase()
+    const visibleCatalog=(profile?.entity?.catalog||[]).filter(product=>
+      [product.product_name,product.generic_name,product.strength,product.dosage_form,product.brand_name,product.division_name,product.company_name]
+        .filter(Boolean).join(' ').toLowerCase().includes(catalogQuery)
+    )
     const visibleRelationships = (profile?.relationships || []).filter(rel => {
       if (profile?.type !== 'distributor' || !relationshipQuery) return true
       return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name]
@@ -895,8 +1015,8 @@ export default function App(){
                       {profile.type === 'product' ? 'PRODUCT' : profile.type === 'company' ? 'COMPANY' : profile.type === 'division' ? 'DIVISION' : profile.type === 'brand' ? 'BRAND' : 'DISTRIBUTOR'}
                     </p>
                     <h2>{profile.entity?.product_name || profile.entity?.company_name || profile.entity?.division_name || profile.entity?.brand_name || profile.entity?.distributor_name}</h2>
-                     {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.parentCompany && <span className="profile-parent-inline">Part of <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button></span>}
-                     {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: {profile.entity.division.division_name}</span>}
+                     {profile.type !== 'distributor' && profile.type !== 'company' && profile.entity.company && <span className="profile-parent-inline">Company: <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.company.id)}>{profile.entity.company.company_name}</button></span>}
+                     {profile.type === 'brand' && profile.entity.division && <span className="profile-parent-inline">Division: <button className="profile-link-button" onClick={()=>openProfile('division',profile.entity.division.id)}>{profile.entity.division.division_name}</button></span>}
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
@@ -1093,11 +1213,26 @@ export default function App(){
                 )}
               </div>
 
-                  {profile.type==='company' && profile.entity.catalog?.length > 0 && <div className="profile-list">
-                    <div className="profile-list-title">Product catalogue <span className="profile-catalog-count">{profile.entity.catalog.length} listed</span></div>
-                    <p className="result-meta">A preview of this company group's catalogue. Select a product to view its brand, division and distributor details.</p>
-                    {profile.entity.catalog.slice(0,8).map(product=><div className="profile-rel company-product-row" key={product.id}><div><button className="profile-link-button" onClick={()=>openProfile('product',product.id)}>{product.product_name}</button>{product.brand_name&&<span>Brand: {product.brand_name}</span>}{product.company_name!==profile.entity.company_name&&<span>Listed under {product.company_name}</span>}<small>{[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · ')}</small></div></div>)}
-                    {profile.entity.catalog.length>8 && <p className="result-meta">Showing 8 of {profile.entity.catalog.length} products. Use search to find the complete catalogue.</p>}
+                  {profile.type==='division' && profile.entity.brands?.length>0 && <div className="profile-list">
+                    <div className="profile-list-title">Brands in this division <span className="profile-catalog-count">{profile.entity.brands.length}</span></div>
+                    <div className="profile-structure-chips">{profile.entity.brands.map(brand=><button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>{brand.brand_name}<ArrowRight size={13}/></button>)}</div>
+                  </div>}
+
+                  {profile.type==='brand' && <div className="profile-list catalog-entity-hierarchy">
+                    <div className="profile-list-title">Brand hierarchy</div>
+                    {profile.entity.division && <div className="product-hierarchy-row"><small>Division</small><button className="profile-link-button" onClick={()=>openProfile('division',profile.entity.division.id)}>{profile.entity.division.division_name}<ArrowRight size={13}/></button></div>}
+                    {profile.entity.company && <div className="product-hierarchy-row"><small>Company</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.company.id)}>{profile.entity.company.company_name}<ArrowRight size={13}/></button></div>}
+                  </div>}
+
+                  {['company','division','brand'].includes(profile.type) && <div className="profile-list profile-product-catalogue">
+                    <div className="profile-list-title">{profile.type==='company'?'Company product catalogue':profile.type==='division'?'Division product catalogue':'Brand product catalogue'} <span className="profile-catalog-count">{visibleCatalog.length} of {(profile.entity.catalog||[]).length}</span></div>
+                    <p className="result-meta">{profile.type==='company'?'Products across this company and its listed operating subsidiaries.':profile.type==='division'?'Every active product assigned to this division, including products whose brand may be unfamiliar.':'Every active product assigned to this brand, with its owning division and company.'} Select a product to view its distributor relationships.</p>
+                    <label className="catalog-search">
+                      <Search size={16}/>
+                      <input type="search" value={catalogSearch} onChange={e=>setCatalogSearch(e.target.value)} placeholder="Find a product by name, brand, division or composition…" aria-label="Search this product catalogue"/>
+                      {catalogSearch&&<button type="button" onClick={()=>setCatalogSearch('')} aria-label="Clear product catalogue search"><X size={15}/></button>}
+                    </label>
+                    {visibleCatalog.length>0?<div className="catalog-product-grid">{visibleCatalog.map(product=><CatalogProductCard key={product.id} product={product} onOpenProfile={openProfile}/>)}</div>:<div className="result-state">{catalogSearch?'No products match this catalogue search.':'No active products are currently linked to this page.'}</div>}
                   </div>}
 
             </div>
@@ -1461,7 +1596,7 @@ export default function App(){
       </header>
 
       <main>
-        {policyPage ? <ErrorBoundary><Suspense fallback={<div className="admin-state">Loading policy page…</div>}><PolicyPages page={policyPage} onBack={()=>{setPolicyPage(null);window.location.href=import.meta.env.BASE_URL}} /></Suspense></ErrorBoundary> : admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={backFromBrowse} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={backFromBrowse} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
+        {policyPage ? <ErrorBoundary><Suspense fallback={<div className="admin-state">Loading policy page…</div>}><PolicyPages page={policyPage} onBack={()=>{setPolicyPage(null);window.location.href=import.meta.env.BASE_URL}} /></Suspense></ErrorBoundary> : admin ? (authLoading ? <div className="admin-state"><LoaderCircle className="spin" size={20}/> Checking admin access…</div> : session ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading admin dashboard…</div>}><AdminDashboard /></Suspense></ErrorBoundary> : <div className="admin-state"><ShieldCheck size={22}/> Admin authentication required.</div>) : profile ? renderProfile() : browse==='products' ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading products…</div>}><ProductDirectory productId={browseCategory} onBack={backFromBrowse} onOpenProduct={id=>{pushRoute('browse',{type:'products',category:id});setBrowse('products');setBrowseCategory(id)}} onOpenCompany={id=>{setBrowse(null);setBrowseCategory(null);openProfile('company',id)}} onOpenCatalogEntity={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onOpenDistributor={id=>{setBrowse(null);setBrowseCategory(null);openProfile('distributor',id)}} /></Suspense></ErrorBoundary> : browse ? <ErrorBoundary><Suspense fallback={<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading directory…</div>}><BrowseDirectory type={browse} category={browseCategory} onBack={backFromBrowse} onOpenProfile={(type,id)=>{setBrowse(null);setBrowseCategory(null);openProfile(type,id)}} onReport={openReport} /></Suspense></ErrorBoundary> : renderSearch()}
       </main>
 
       {!policyPage && !admin && <section className="distributor-join-section" aria-labelledby="distributor-join-title">
