@@ -1022,7 +1022,7 @@ export default function App(){
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
-                    <span className="profile-summary">{profile.type==='product' ? `${profile.relationships.length} distributor listing${profile.relationships.length===1?'':'s'} in Kutch` : profile.type==='company' && (profile.entity.subsidiaries?.length||profile.entity.divisions?.length) ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
+                    {profile.type !== 'company' && <span className="profile-summary">{profile.type==='product' ? profile.relationships.length + ' distributor listing' + (profile.relationships.length===1?'':'s') + ' in Kutch' : profile.relationships.length + ' active Kutch ' + (profile.relationships.length===1?'relationship':'relationships')}</span>}
                     {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
                       <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
                         <ShieldCheck size={14}/> Relationship Verified
