@@ -2571,3 +2571,13 @@ html[data-theme="dark"] select:focus-visible{
 @media(prefers-reduced-motion:reduce){
   html[data-theme="dark"] *{scroll-behavior:auto}
 }
+
+
+/* Product directory catalogue entity links */
+.product-directory-card{cursor:default;align-items:flex-start}
+.product-directory-name{display:inline-flex;align-items:center;gap:7px;justify-self:start;padding:0;border:0;background:transparent;color:var(--text,#183d79);text-align:left;font-size:14px;font-weight:800;line-height:1.4;cursor:pointer}
+.product-directory-name:hover,.product-entity-link:hover{text-decoration:underline;text-underline-offset:2px}
+.product-entity-link{padding:0;border:0;background:transparent;color:#3159a8;font:inherit;font-weight:750;text-align:left;cursor:pointer}
+.product-detail-title-row .product-entity-link{font-size:14px}
+html[data-theme="dark"] .product-directory-name{color:#c3d7f7}
+html[data-theme="dark"] .product-entity-link{color:#a9c4f0}
