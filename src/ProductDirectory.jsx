@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Package, Search, LoaderCircle, Building2, Phone, MessageCircle, MapPin } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import { applyFlexibleSearch } from './lib/searchUtils'
+import { applyFlexibleSearch, searchTokens } from './lib/searchUtils'
 
 const PRODUCT_PAGE_SIZE = 60
 const PRODUCT_FIELDS = 'id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size'
@@ -12,7 +12,32 @@ async function fetchProductPage(term, offset = 0) {
     .select(PRODUCT_FIELDS, { count: 'exact' })
     .eq('status', 'active')
 
-  if (term) query = applyFlexibleSearch(query, PRODUCT_SEARCH_FIELDS, term)
+  if (term) {
+    const [companies, brands, divisions] = await Promise.all([
+      applyFlexibleSearch(supabase.from('companies').select('id').eq('status', 'active'), ['company_name', 'legal_name', 'short_name'], term).limit(100),
+      applyFlexibleSearch(supabase.from('brands').select('id').eq('status', 'active'), ['brand_name'], term).limit(100),
+      applyFlexibleSearch(supabase.from('divisions').select('id').eq('status', 'active'), ['division_name', 'division_code'], term).limit(100)
+    ])
+    const lookupError = companies.error || brands.error || divisions.error
+    if (lookupError) return { data: null, error: lookupError }
+
+    const tokens = searchTokens(term)
+    if (!tokens.length) return { data: [], error: null, totalCount: 0, hasMore: false }
+
+    const productGroups = tokens.map(token => {
+      const fragment = token.length >= 5 ? token.slice(0, 4) : token
+      const pattern = '%' + fragment.replace(/[%_]/g, '') + '%'
+      return 'or(' + PRODUCT_SEARCH_FIELDS.map(field => field + '.ilike.' + pattern).join(',') + ')'
+    })
+    const conditions = ['and(' + productGroups.join(',') + ')']
+    const companyIds = (companies.data || []).map(row => row.id)
+    const brandIds = (brands.data || []).map(row => row.id)
+    const divisionIds = (divisions.data || []).map(row => row.id)
+    if (companyIds.length) conditions.push('company_id.in.(' + companyIds.join(',') + ')')
+    if (brandIds.length) conditions.push('brand_id.in.(' + brandIds.join(',') + ')')
+    if (divisionIds.length) conditions.push('division_id.in.(' + divisionIds.join(',') + ')')
+    query = query.or(conditions.join(','))
+  }
 
   const { data: products, error, count } = await query
     .order('product_name')
