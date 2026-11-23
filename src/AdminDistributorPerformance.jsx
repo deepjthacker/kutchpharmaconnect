@@ -45,7 +45,7 @@ export default function AdminDistributorPerformance({onBack}) {
     setLoading(true);setError('');setNotice('')
     const since=new Date(Date.now()-Number(days)*86400000).toISOString()
     const [eventRes,enquiryRes,distributorRes]=await Promise.all([
-      supabase.from('distributor_contact_events').select('id,distributor_id,event_type,company_id,division_id,brand_id,product_id,occurred_at,source_page,utm_source,utm_medium,utm_campaign').gte('occurred_at',since).order('occurred_at',{ascending:false}).limit(10000),
+      supabase.from('distributor_contact_events').select('id,distributor_id,event_type,company_id,division_id,brand_id,product_id,occurred_at,source_page,utm_source,utm_medium,utm_campaign,companies(company_name),products(product_name)').gte('occurred_at',since).order('occurred_at',{ascending:false}).limit(10000),
       supabase.from('distributor_enquiries').select('id,distributor_id,company_id,division_id,brand_id,product_id,customer_name,mobile,email,message,consent,routing_status,status,source_page,created_at,updated_at,admin_notes,contacted_at,follow_up_at,distributors(distributor_name),companies(company_name),divisions(division_name),brands(brand_name),products(product_name)').gte('created_at',since).order('created_at',{ascending:false}).limit(5000),
       supabase.from('distributors').select('id,distributor_name,mobile,whatsapp').eq('status','active').order('distributor_name')
     ])
@@ -86,13 +86,13 @@ export default function AdminDistributorPerformance({onBack}) {
   const eventBreakdown=useMemo(()=>Object.keys(EVENT_LABELS).map(k=>({id:k,label:EVENT_LABELS[k],value:events.filter(e=>e.event_type===k).length})),[events])
   const companyInsights=useMemo(()=>{
     const map=new Map()
-    events.forEach(e=>{if(e.company_id){const x=map.get(e.company_id)||{id:e.company_id,label:'Company ID '+e.company_id.slice(0,8),value:0};x.value++;map.set(e.company_id,x)}})
+    events.forEach(e=>{if(e.company_id){const x=map.get(e.company_id)||{id:e.company_id,label:e.companies?.company_name||'Company',value:0};x.value++;map.set(e.company_id,x)}})
     enquiries.forEach(e=>{if(e.company_id){const x=map.get(e.company_id)||{id:e.company_id,label:e.companies?.company_name||'Company',value:0};x.label=e.companies?.company_name||x.label;x.value++;map.set(e.company_id,x)}})
     return [...map.values()].sort((a,b)=>b.value-a.value).slice(0,5)
   },[events,enquiries])
   const productInsights=useMemo(()=>{
     const map=new Map()
-    events.forEach(e=>{if(e.product_id){const x=map.get(e.product_id)||{id:e.product_id,label:'Product ID '+e.product_id.slice(0,8),value:0};x.value++;map.set(e.product_id,x)}})
+    events.forEach(e=>{if(e.product_id){const x=map.get(e.product_id)||{id:e.product_id,label:e.products?.product_name||'Product',value:0};x.value++;map.set(e.product_id,x)}})
     enquiries.forEach(e=>{if(e.product_id){const x=map.get(e.product_id)||{id:e.product_id,label:e.products?.product_name||'Product',value:0};x.label=e.products?.product_name||x.label;x.value++;map.set(e.product_id,x)}})
     return [...map.values()].sort((a,b)=>b.value-a.value).slice(0,5)
   },[events,enquiries])
