@@ -40,7 +40,7 @@ export default function AdminCompanyHierarchy({ onBack }) {
       loadAll(supabase.from('companies').select('id,company_name,short_name,parent_company_id,status').eq('status', 'active').order('company_name').order('id')),
       loadAll(supabase.from('divisions').select('id,company_id,division_name').eq('status', 'active').order('division_name')),
       loadAll(supabase.from('brands').select('id,company_id,division_id,brand_name').eq('status', 'active').order('brand_name')),
-      loadAll(supabase.from('products').select('id,company_id,division_id,brand_id,product_name').eq('status', 'active').order('product_name')),
+      loadAll(supabase.from('products').select('id,company_id,division_id,brand_id,category_id,product_name').eq('status', 'active').order('product_name')),
       loadAll(supabase.from('distributors').select('id,distributor_name').eq('status', 'active').order('distributor_name')),
       loadAll(supabase.from('product_distributors').select('id,product_id,distributor_id,territory,verification_status').eq('status', 'active').order('product_id'))
     ])
