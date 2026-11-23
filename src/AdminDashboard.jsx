@@ -38,7 +38,8 @@ export default function AdminDashboard() {
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('distributor_submissions').select('id', { count: 'exact', head: true }).in('status', ['open', 'under_review']),
         supabase.from('correction_reports').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing']),
-        supabase.from('website_feedback').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing'])
+        supabase.from('website_feedback').select('id', { count: 'exact', head: true }).in('status', ['open', 'reviewing']),
+        supabase.from('distributor_enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new')
       ])
       const bad = qs.find(x => x.error)
       if (bad) throw new Error(bad.error.message)
@@ -49,7 +50,8 @@ export default function AdminDashboard() {
         products: qs[3].count ?? 0,
         submissions: qs[4].count ?? 0,
         reports: qs[5].count ?? 0,
-        websiteFeedback: qs[6].count ?? 0
+        websiteFeedback: qs[6].count ?? 0,
+        newLeads: qs[7].count ?? 0
       })
     } catch (e) {
       setStats(null)
@@ -81,7 +83,7 @@ export default function AdminDashboard() {
   if (view === 'aliases') return <AdminAliases onBack={back} />
 
   const pending = [
-    ['Distributor Performance & Leads', null, BarChart3, 'Track distributor profile views, contact clicks and customer enquiries', 'performance'],
+    ['Distributor Performance & Leads', stats?.newLeads, BarChart3, 'Track distributor profile views, contact clicks and customer enquiries', 'performance'],
     ['Distributor Submissions', stats?.submissions, Inbox, 'Match submitted companies and publish only after review', 'submissions'],
     ['Corrections', stats?.reports, Flag, 'Review reported directory errors', 'reports'],
     ['Website Feedback', stats?.websiteFeedback, MessageSquareWarning, 'Review site issues and suggestions', 'websiteFeedback'],
