@@ -3,6 +3,7 @@ import { Search, Building2, Truck, Package, ArrowRight, ShieldCheck, LoaderCircl
 import { supabase } from './lib/supabase'
 import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 import { applyFlexibleSearch, rankSearchItems } from './lib/searchUtils'
+import { resolveProductDistributors } from './lib/relationshipResolver'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const ProductDirectory = lazy(() => import('./ProductDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
@@ -43,25 +44,12 @@ const enrichCatalogProducts=(products,companies,divisions,brands,relationships,p
   const divisionMap=new Map((divisions||[]).map(row=>[row.id,row]))
   const brandMap=new Map((brands||[]).map(row=>[row.id,row]))
   const distributorMap=new Map((distributors||[]).map(row=>[row.id,row]))
-  const relationshipsByCompany=new Map()
-  ;(relationships||[]).forEach(rel=>{const rows=relationshipsByCompany.get(rel.company_id)||[];rows.push(rel);relationshipsByCompany.set(rel.company_id,rows)})
-  const linksByProduct=new Map()
-  ;(productLinks||[]).forEach(link=>{const rows=linksByProduct.get(link.product_id)||[];rows.push(link);linksByProduct.set(link.product_id,rows)})
   return (products||[]).map(product=>{
-    const bestByDistributor=new Map()
-    const add=(distributorId,scope,locationId=null,territory=null,verificationStatus=null)=>{
-      const distributor=distributorMap.get(distributorId)
-      if(!distributor)return
-      const priority={company:1,division:2,brand:3,product:4}[scope]||0
-      const previous=bestByDistributor.get(distributorId)
-      if(!previous||priority>previous.priority)bestByDistributor.set(distributorId,{...distributor,scope,priority,locationId,territory,verificationStatus})
-    }
-    ;(linksByProduct.get(product.id)||[]).forEach(link=>add(link.distributor_id,'product',link.location_id,link.territory,link.verification_status))
-    ;(relationshipsByCompany.get(product.company_id)||[]).forEach(rel=>{
-      if(product.brand_id&&rel.brand_id===product.brand_id)add(rel.distributor_id,'brand',rel.location_id,rel.territory,rel.verification_status)
-      else if(product.division_id&&!rel.brand_id&&rel.division_id===product.division_id)add(rel.distributor_id,'division',rel.location_id,rel.territory,rel.verification_status)
-      else if(!rel.division_id&&!rel.brand_id)add(rel.distributor_id,'company',rel.location_id,rel.territory,rel.verification_status)
-    })
+    const resolved=resolveProductDistributors(
+      product,
+      relationships||[],
+      (productLinks||[]).filter(link=>link.product_id===product.id)
+    )
     const company=companyMap.get(product.company_id)
     const brand=brandMap.get(product.brand_id)
     const division=divisionMap.get(product.division_id)
@@ -73,11 +61,10 @@ const enrichCatalogProducts=(products,companies,divisions,brands,relationships,p
       parent_company_name:company?.parent_company_id?companyMap.get(company.parent_company_id)?.company_name||null:null,
       brand_name:brand?.brand_name||null,
       division_name:division?.division_name||null,
-      distributors:[...bestByDistributor.values()].map(({priority,...distributor})=>distributor).sort((a,b)=>a.distributor_name.localeCompare(b.distributor_name))
+      distributors:resolved.map(row=>({...distributorMap.get(row.distributor_id),scope:row.scope,scopes:row.scopes,verificationStatus:row.verification_status,assignments:row.assignments})).filter(row=>row.id).sort((a,b)=>a.distributor_name.localeCompare(b.distributor_name))
     }
   })
 }
-
 
 function CatalogProductCard({product,onOpenProfile}){
   const visibleDistributors=(product.distributors||[]).slice(0,3)
@@ -641,8 +628,8 @@ export default function App(){
       productCompanyIds.length?supabase.from('companies').select('id,company_name,parent_company_id').in('id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       productBrandIds.length?supabase.from('brands').select('id,brand_name').in('id',productBrandIds).eq('status','active'):Promise.resolve({data:[],error:null}),
       productDivisionIds.length?supabase.from('divisions').select('id,division_name,company_id').in('id',productDivisionIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-      productIds.length?supabase.from('product_distributors').select('product_id,distributor_id').in('product_id',productIds).eq('status','active'):Promise.resolve({data:[],error:null}),
-      productCompanyIds.length?supabase.from('distributorships').select('company_id,distributor_id,territory').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
+      productIds.length?supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',productIds).eq('status','active'):Promise.resolve({data:[],error:null}),
+      productCompanyIds.length?supabase.from('distributorships').select('id,company_id,division_id,brand_id,distributor_id,category_id,location_id,territory,verification_status').in('company_id',productCompanyIds).eq('status','active'):Promise.resolve({data:[],error:null})
     ])
     if(productCompaniesRes.error||productBrandsRes.error||productDivisionsRes.error||directLinksRes.error||companyLinksRes.error){setError((productCompaniesRes.error||productBrandsRes.error||productDivisionsRes.error||directLinksRes.error||companyLinksRes.error).message);setResults([]);setLoading(false);return}
     const productDistributorIds=[...new Set([...(directLinksRes.data||[]).map(link=>link.distributor_id),...(companyLinksRes.data||[]).map(link=>link.distributor_id)])]
@@ -658,10 +645,16 @@ export default function App(){
     const productDistributorMap=new Map((productDistributorRes.data||[]).map(distributor=>[distributor.id,distributor]))
     productRows.forEach(product=>{
       const company=productCompanyMap.get(product.company_id)
-      const direct=(directLinksRes.data||[]).filter(link=>link.product_id===product.id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
-      const companyListed=(companyLinksRes.data||[]).filter(link=>link.company_id===product.company_id).map(link=>productDistributorMap.get(link.distributor_id)).filter(Boolean)
-      const distributors=[...new Map((direct.length?direct:companyListed).map(distributor=>[distributor.id,distributor])).values()]
-      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,divisionId:product.division_id||null,brandId:product.brand_id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,divisionName:product.division_id?productDivisionMap.get(product.division_id)?.division_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:direct.length>0})
+      const resolved=resolveProductDistributors(
+        product,
+        (companyLinksRes.data||[]).filter(link=>link.company_id===product.company_id),
+        (directLinksRes.data||[]).filter(link=>link.product_id===product.id)
+      )
+      const distributors=resolved.map(row=>productDistributorMap.get(row.distributor_id)).filter(Boolean).map(distributor=>{
+        const assignment=resolved.find(row=>row.distributor_id===distributor.id)
+        return {...distributor,scope:assignment.scope,scopes:assignment.scopes}
+      })
+      cards.push({type:'product',id:product.id,title:product.product_name,companyId:company?.id||null,divisionId:product.division_id||null,brandId:product.brand_id||null,companyName:company?.company_name||'Company not assigned',parentName:company?.parent_company_id?productCompanyMap.get(company.parent_company_id)?.company_name:null,divisionName:product.division_id?productDivisionMap.get(product.division_id)?.division_name:null,brandName:product.brand_id?productBrandMap.get(product.brand_id)?.brand_name:null,specs:[product.generic_name,product.strength,product.dosage_form,product.pack_size].filter(Boolean).join(' · '),distributors,directDistributorLinks:resolved.some(row=>row.scope==='product')})
     })
 
     if(requestId!==searchRequestRef.current)return
@@ -799,7 +792,7 @@ export default function App(){
           .eq('product_id',id).eq('status','active'),
         product.company_id
           ? fetchAllPages(()=>supabase.from('distributorships')
-              .select('id,company_id,division_id,brand_id,distributor_id,location_id,territory,verification_status,verification_note')
+              .select('id,company_id,division_id,brand_id,distributor_id,category_id,location_id,territory,verification_status,verification_note')
               .eq('company_id',product.company_id).eq('status','active').order('id'))
           : Promise.resolve({data:[],error:null})
       ])
@@ -807,20 +800,10 @@ export default function App(){
       if(failure)throw failure
       if(!companyRes.data)throw new Error('The company linked to this product is unavailable.')
 
-      const scopedCompanyRels=(companyRelRes.data||[]).filter(rel=>{
-        if(product.brand_id&&rel.brand_id===product.brand_id)return true
-        if(product.division_id&&!rel.brand_id&&rel.division_id===product.division_id)return true
-        return !rel.division_id&&!rel.brand_id
-      })
-      const directRels=(directRes.data||[]).map(rel=>({...rel,scope:'product',isProductSpecific:true}))
-      const companyScopedRels=scopedCompanyRels.map(rel=>({
-        ...rel,
-        scope:rel.brand_id?'brand':rel.division_id?'division':'company',
-        isProductSpecific:false
-      }))
-      const allRels=[...directRels,...companyScopedRels]
+      const resolvedRelationships=resolveProductDistributors(product,companyRelRes.data||[],directRes.data||[])
+      const allRels=resolvedRelationships
       const distributorIds=[...new Set(allRels.map(rel=>rel.distributor_id).filter(Boolean))]
-      const locationIds=[...new Set(allRels.map(rel=>rel.location_id).filter(Boolean))]
+      const locationIds=[...new Set(allRels.flatMap(rel=>(rel.assignments||[rel]).map(item=>item.location_id)).filter(Boolean))]
       const [distributorsRes,locationsRes]=await Promise.all([
         fetchByIds(distributorIds,ids=>supabase.from('distributors')
           .select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url')
@@ -835,10 +818,7 @@ export default function App(){
       allRels.forEach(rel=>{
         const distributor=distributorMap.get(rel.distributor_id)
         if(!distributor)return
-        const key=distributor.id
-        const previous=relationshipMap.get(key)
-        const priority=item=>item.isProductSpecific?4:item.brand_id?3:item.division_id?2:1
-        if(!previous||priority(rel)>priority(previous))relationshipMap.set(key,{
+        relationshipMap.set(distributor.id,{
           ...rel,
           company:companyRes.data,
           division:divisionRes.data,
