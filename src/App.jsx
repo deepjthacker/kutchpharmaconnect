@@ -665,7 +665,20 @@ export default function App(){
     })
 
     if(requestId!==searchRequestRef.current)return
-    setResults(rankSearchItems(cards,term,item=>[item.title,item.subtitle,item.specs,item.companyName,...(item.preview||[])].filter(Boolean).join(' ')))
+    setResults(rankSearchItems(cards,term,item=>[
+      item.title,
+      item.subtitle,
+      item.brandName,
+      item.divisionName,
+      item.specs,
+      item.companyName,
+      item.parentName,
+      ...(item.preview||[]),
+      item.address,
+      item.target?.company_name,
+      item.target?.distributor_name,
+      item.rel?.territory
+    ]))
     setLoading(false)
     } catch (searchError) {
       if(requestId!==searchRequestRef.current)return
@@ -1311,7 +1324,8 @@ export default function App(){
                     {id:'product',label:'Products'},
                     {id:'brand',label:'Brands'},
                     {id:'division',label:'Divisions'},
-                    {id:'company',label:'Companies'}
+                    {id:'company',label:'Companies'},
+                     {id:'distributor',label:'Distributors'}
                   ].map(option=><button key={option.id} type="button" className={searchFilter===option.id?'is-active':''} aria-pressed={searchFilter===option.id} onMouseDown={e=>e.preventDefault()} onClick={()=>setSearchFilter(option.id)}>{option.label}</button>)}
                 </div>
                 {!suggestionLoading && suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).length>0 ? (
@@ -1319,7 +1333,7 @@ export default function App(){
                     {suggestions.filter(item=>searchFilter==='all'||item.type===searchFilter).slice(0,5).map(item=>(
                       <button className="suggestion-item" key={item.type+'-'+item.id} onMouseDown={e=>e.preventDefault()} onClick={()=>chooseSuggestion(item)}>
                         <span className={`suggestion-icon ${item.type==='distributor'?'suggestion-distributor':''}`}>
-                          {item.type==='company'?<Building2 size={15}/>:item.type==='distributor'?<Truck size={15}/>:<ArrowRight size={15}/>}
+                          {item.type==='company'||item.type==='division'?<Building2 size={15}/>:item.type==='distributor'?<Truck size={15}/>:item.type==='product'||item.type==='brand'?<Package size={15}/>:<ArrowRight size={15}/>}
                         </span>
                         <span className="suggestion-copy">
                           <strong>{item.label}</strong>
@@ -1347,8 +1361,15 @@ export default function App(){
                   <div className="result-state">{error}</div>
                 )}
 
+                {!loading && !error && results.length === 0 && (
+                  <div className="result-state search-no-results">No matches found. Try a shorter product name, company name, brand, or distributor spelling.</div>
+                )}
+
                 {!loading && !error && results.length > 0 && (
-                  <><div className="search-type-filters" role="group" aria-label="Filter search results">
+                  <><div className="search-results-summary">
+                    <div><strong>{results.filter(item => searchFilter === 'all' || item.type === searchFilter).length} shown</strong><span> of {results.length} matches for “{q.trim()}”</span></div>
+                    <small>Ranked by name relevance</small>
+                  </div><div className="search-type-filters" role="group" aria-label="Filter search results">
                     {[
                       { id: 'all', label: 'All results', count: results.length },
                       { id: 'product', label: 'Products', count: results.filter(item => item.type === 'product').length },
@@ -1356,7 +1377,7 @@ export default function App(){
                       { id: 'division', label: 'Divisions', count: results.filter(item => item.type === 'division').length },
                       { id: 'distributor', label: 'Distributors', count: results.filter(item => item.type === 'distributor').length },
                       { id: 'company', label: 'Companies', count: results.filter(item => item.type === 'company').length },
-                      { id: 'relationship', label: 'Distributor relationships', count: results.filter(item => item.type === 'relationship').length }
+                      { id: 'relationship', label: 'Handled by', count: results.filter(item => item.type === 'relationship').length }
                     ].filter(item => item.id === 'all' || item.count > 0).map(item => (
                       <button
                         key={item.id}

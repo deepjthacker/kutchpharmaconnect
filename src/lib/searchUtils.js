@@ -4,6 +4,8 @@ export function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
     .toLocaleLowerCase('en-IN')
     .replace(/([a-z])([0-9])/g, '$1 $2')
     .replace(/([0-9])([a-z])/g, '$1 $2')
@@ -75,9 +77,33 @@ export function searchMatchScore(label, term) {
   return score / Math.max(queryTokens.length, 1)
 }
 
+const TYPE_TIE_BREAK = {
+  product: 6,
+  brand: 5,
+  division: 4,
+  company: 3,
+  distributor: 2,
+  relationship: 1
+}
+
+// getLabel may return one label or an ordered array of fields. The primary
+// name receives full weight; secondary details help retrieval without allowing
+// a company/specification match to outrank an exact entity-name match.
+export function scoreSearchItem(item, term, getLabel = value => value?.label || value?.title || '') {
+  const raw = getLabel(item)
+  const fields = (Array.isArray(raw) ? raw : [raw]).filter(value => String(value || '').trim())
+  if (!fields.length) return 0
+  const combinedScore = searchMatchScore(fields.join(' '), term) * 0.84
+  const weights = [1, 0.84, 0.76, 0.70, 0.64, 0.58]
+  const fieldScore = Math.max(...fields.map((field, index) => searchMatchScore(field, term) * (weights[index] ?? 0.52)))
+  return Math.max(combinedScore, fieldScore)
+}
+
 export function rankSearchItems(items, term, getLabel = item => item?.label || item?.title || '') {
   return [...(items || [])].sort((a, b) =>
-    searchMatchScore(getLabel(b), term) - searchMatchScore(getLabel(a), term)
-    || String(getLabel(a)).localeCompare(String(getLabel(b)))
+    scoreSearchItem(b, term, getLabel) - scoreSearchItem(a, term, getLabel)
+    || (TYPE_TIE_BREAK[b?.type] || 0) - (TYPE_TIE_BREAK[a?.type] || 0)
+    || String((Array.isArray(getLabel(a)) ? getLabel(a)[0] : getLabel(a)) || '').localeCompare(String((Array.isArray(getLabel(b)) ? getLabel(b)[0] : getLabel(b)) || ''))
+    || String(a?.id || '').localeCompare(String(b?.id || ''))
   )
 }
