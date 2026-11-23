@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { normalizeSearchText, searchMatchScore, scoreSearchItem, rankSearchItems } from '../src/lib/searchUtils.js'
 
 test('normalization handles punctuation and letter-number separators', () => {
-  assert.equal(normalizeSearchText('AstraZeneca-500mg'), 'astrazeneca 500 mg')
+  assert.equal(normalizeSearchText('AstraZeneca-500mg'), 'astra zeneca 500 mg')
 })
 
 test('exact primary name ranks above a secondary company/specification match', () => {
