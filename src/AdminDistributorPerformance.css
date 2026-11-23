@@ -180,3 +180,13 @@ html[data-theme="dark"] .kpc-hbar-track{background:#27364d}
 html[data-theme="dark"] .kpc-performance-panel{border-color:#334155}
 @media(max-width:760px){.kpc-performance-kpis>div{min-height:120px}.kpc-chart-panel{padding:15px}}
 @media(max-width:480px){.kpc-performance-toolbar{padding:10px}.kpc-performance-kpis>div{min-height:112px;padding:12px}.kpc-performance-kpis strong{font-size:27px}.kpc-chart-heading h2{font-size:16px}.kpc-donut-layout{justify-content:space-around}.kpc-donut{width:126px;height:126px}.kpc-donut>div{width:84px;height:84px}}
+
+
+/* Interactive activity chart legend */
+.kpc-chart-legend button{display:inline-flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid transparent;border-radius:8px;background:transparent;color:#5f6f86;font:inherit;font-size:10px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease,opacity .15s ease}
+.kpc-chart-legend button:hover{background:#f1f5fb;border-color:#e2e9f3}
+.kpc-chart-legend button:focus-visible{outline:2px solid #4778d0;outline-offset:2px}
+.kpc-chart-legend button.is-muted{opacity:.42;text-decoration:line-through}
+.kpc-chart-legend button i{flex:none}
+html[data-theme="dark"] .kpc-chart-legend button{color:#bdc9da}
+html[data-theme="dark"] .kpc-chart-legend button:hover{background:#233552;border-color:#3b4d69}
