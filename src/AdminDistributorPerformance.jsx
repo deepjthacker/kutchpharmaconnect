@@ -15,8 +15,8 @@ function downloadCsv(filename, headers, rows) {
 }
 function dateKey(value) { const d=new Date(value); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') }
 function dateLabel(value) { return new Date(value+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}) }
-function TrendChart({data}) {
-  const w=680,h=220,l=34,r=14,t=16,b=34,max=Math.max(1,...data.flatMap(x=>[x.views,x.contacts,x.enquiries]))
+function TrendChart({data,visibleSeries}) {
+  const w=680,h=220,l=34,r=14,t=16,b=34,keys=['views','contacts','enquiries'].filter(k=>visibleSeries[k]),max=Math.max(1,...data.flatMap(x=>keys.map(k=>x[k])))
   const x=i=>l+(data.length<=1?0:i*(w-l-r)/(data.length-1)), y=v=>t+(h-t-b)*(1-v/max)
   const path=key=>data.map((d,i)=>(i?'L':'M')+' '+x(i)+' '+y(d[key])).join(' ')
   const labels=data.filter((d,i)=>i===0||i===data.length-1||i%Math.max(1,Math.ceil(data.length/6))===0)
@@ -27,9 +27,9 @@ function TrendChart({data}) {
       <linearGradient id="kpc-contact-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#16a085" stopOpacity=".16"/><stop offset="100%" stopColor="#16a085" stopOpacity="0"/></linearGradient>
     </defs>
     {[0,.25,.5,.75,1].map((p,i)=><g key={i}><line x1={l} x2={w-r} y1={t+(h-t-b)*p} y2={t+(h-t-b)*p} className="kpc-chart-gridline"/><text x={l-9} y={t+(h-t-b)*p+4} textAnchor="end" className="kpc-chart-axis">{Math.round(max*(1-p))}</text></g>)}
-    <path d={area('views')} fill="url(#kpc-view-fill)"/><path d={area('contacts')} fill="url(#kpc-contact-fill)"/>
-    <path d={path('views')} className="kpc-chart-line kpc-chart-line-views"/><path d={path('contacts')} className="kpc-chart-line kpc-chart-line-contacts"/><path d={path('enquiries')} className="kpc-chart-line kpc-chart-line-enquiries"/>
-    {data.map((d,i)=><g key={d.date}><circle cx={x(i)} cy={y(d.views)} r="2.5" className="kpc-chart-dot kpc-chart-dot-views"><title>{d.date}: {d.views} views</title></circle><circle cx={x(i)} cy={y(d.contacts)} r="2.5" className="kpc-chart-dot kpc-chart-dot-contacts"><title>{d.date}: {d.contacts} contact clicks</title></circle><circle cx={x(i)} cy={y(d.enquiries)} r="2.5" className="kpc-chart-dot kpc-chart-dot-enquiries"><title>{d.date}: {d.enquiries} enquiries</title></circle></g>)}
+    {visibleSeries.views&&<path d={area('views')} fill="url(#kpc-view-fill)"/>}{visibleSeries.contacts&&<path d={area('contacts')} fill="url(#kpc-contact-fill)"/>}
+    {visibleSeries.views&&<path d={path('views')} className="kpc-chart-line kpc-chart-line-views"/>}{visibleSeries.contacts&&<path d={path('contacts')} className="kpc-chart-line kpc-chart-line-contacts"/>}{visibleSeries.enquiries&&<path d={path('enquiries')} className="kpc-chart-line kpc-chart-line-enquiries"/>}
+    {data.map((d,i)=><g key={d.date}>{visibleSeries.views&&<circle cx={x(i)} cy={y(d.views)} r="2.5" className="kpc-chart-dot kpc-chart-dot-views"><title>{d.date}: {d.views} profile views</title></circle>}{visibleSeries.contacts&&<circle cx={x(i)} cy={y(d.contacts)} r="2.5" className="kpc-chart-dot kpc-chart-dot-contacts"><title>{d.date}: {d.contacts} contact clicks</title></circle>}{visibleSeries.enquiries&&<circle cx={x(i)} cy={y(d.enquiries)} r="2.5" className="kpc-chart-dot kpc-chart-dot-enquiries"><title>{d.date}: {d.enquiries} enquiries</title></circle>}</g>)}
     {labels.map(d=><text key={d.date} x={x(data.indexOf(d))} y={h-10} textAnchor="middle" className="kpc-chart-axis">{dateLabel(d.date)}</text>)}
   </svg></div>
 }
@@ -44,7 +44,7 @@ function DonutChart({items}) {
 }
 
 export default function AdminDistributorPerformance({onBack}) {
-  const [days,setDays]=useState('30'),[search,setSearch]=useState(''),[statusFilter,setStatusFilter]=useState('all')
+  const [days,setDays]=useState('30'),[search,setSearch]=useState(''),[statusFilter,setStatusFilter]=useState('all'),[visibleTrend,setVisibleTrend]=useState({views:true,contacts:true,enquiries:true})
   const [events,setEvents]=useState([]),[enquiries,setEnquiries]=useState([]),[distributors,setDistributors]=useState([])
   const [loading,setLoading]=useState(true),[error,setError]=useState(''),[savingId,setSavingId]=useState(''),[notice,setNotice]=useState('')
   async function load() {
@@ -127,7 +127,7 @@ export default function AdminDistributorPerformance({onBack}) {
         <div><span><CalendarClock size={16}/> Follow-ups due</span><strong>{totals.due.toLocaleString('en-IN')}</strong><small>{totals.review} enquiries need routing review</small></div>
       </section>
       <section className="kpc-chart-grid">
-        <article className="admin-panel kpc-chart-panel kpc-chart-wide"><div className="kpc-chart-heading"><div><p className="section-kicker">ACTIVITY TREND</p><h2>Engagement over time</h2><p>Daily profile views, contact clicks and submitted enquiries.</p></div><TrendingUp size={19}/></div><div className="kpc-chart-legend"><span><i className="views"/>Profile views</span><span><i className="contacts"/>Contact clicks</span><span><i className="enquiries"/>Enquiries</span></div><TrendChart data={trend}/></article>
+        <article className="admin-panel kpc-chart-panel kpc-chart-wide"><div className="kpc-chart-heading"><div><p className="section-kicker">ACTIVITY TREND</p><h2>Engagement over time</h2><p>Daily profile views, contact clicks and submitted enquiries.</p></div><TrendingUp size={19}/></div><div className="kpc-chart-legend" aria-label="Toggle chart series">{[{key:'views',label:'Profile views'},{key:'contacts',label:'Contact clicks'},{key:'enquiries',label:'Enquiries'}].map(item=><button type="button" key={item.key} className={!visibleTrend[item.key]?'is-muted':''} aria-pressed={visibleTrend[item.key]} onClick={()=>setVisibleTrend(old=>({...old,[item.key]:!old[item.key]}))}><i className={item.key}/>{item.label}</button>)}</div><TrendChart data={trend} visibleSeries={visibleTrend}/></article>
         <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">ENQUIRY PIPELINE</p><h2>Enquiry status</h2><p>Submissions by current status.</p></div><ClipboardList size={19}/></div><DonutChart items={statusItems}/></article>
         <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">CONTACT CHANNELS</p><h2>How visitors connect</h2><p>Recorded clicks, not completed conversations.</p></div><MousePointerClick size={19}/></div><div className="kpc-channel-list">{eventBreakdown.filter(x=>x.id!=='profile_view').map(item=><div key={item.id}><span className="kpc-channel-icon">{item.id==='call_click'?<Phone size={16}/>:item.id==='whatsapp_click'?<MessageCircle size={16}/>:item.id==='maps_click'?<MapPin size={16}/>:<Mail size={16}/>}</span><label>{item.label}</label><strong>{item.value.toLocaleString('en-IN')}</strong></div>)}</div></article>
         <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">DISTRIBUTOR LEADERBOARD</p><h2>Most engaged distributors</h2><p>Weighted activity indicator; enquiries receive higher weight.</p></div><Users size={19}/></div><HorizontalBars items={topDistributors} color="#4778d0"/></article>
