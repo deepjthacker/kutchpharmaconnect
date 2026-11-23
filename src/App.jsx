@@ -1251,7 +1251,7 @@ export default function App(){
                     {profile.entity.company && <div className="product-hierarchy-row"><small>Company</small><button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.company.id)}>{profile.entity.company.company_name}<ArrowRight size={13}/></button></div>}
                   </div>}
 
-                  {['company','division','brand'].includes(profile.type) && <div className="profile-list profile-product-catalogue">
+                  {['company','division','brand'].includes(profile.type) && !(profile.type==='company' && profile.entity.subsidiaries?.length>0) && <div className="profile-list profile-product-catalogue">
                     <div className="profile-list-title">{profile.type==='company'?'Company product catalogue':profile.type==='division'?'Division product catalogue':'Brand product catalogue'} <span className="profile-catalog-count">{visibleCatalog.length} of {(profile.entity.catalog||[]).length}</span></div>
                     <p className="result-meta">{profile.type==='company'?'Products assigned directly to this legal entity only. Subsidiary catalogues remain on their own company profiles.':profile.type==='division'?'Every active product assigned to this division, including products whose brand may be unfamiliar.':'Every active product assigned to this brand, with its owning division and company.'} Select a product to view its distributor relationships.</p>
                     <label className="catalog-search">
