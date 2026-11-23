@@ -608,14 +608,14 @@ export default function App(){
 
     // Product matches are searchable independently from distributorship records.
     const productSearchQuery=applyFlexibleSearch(
-      supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active'),
+      supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size').eq('status','active'),
       ['product_name','normalized_product_name','generic_name','strength','dosage_form','pack_size'],
       term
     )
     const [productRes,brandProductRes]=await Promise.all([
       productSearchQuery.limit(60),
       searchedBrandIds.size
-        ? supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('status','active').in('brand_id',[...searchedBrandIds]).limit(60)
+        ? supabase.from('products').select('id,product_name,normalized_product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size').eq('status','active').in('brand_id',[...searchedBrandIds]).limit(60)
         : Promise.resolve({data:[],error:null})
     ])
     if(productRes.error||brandProductRes.error){setError((productRes.error||brandProductRes.error).message);setResults([]);setLoading(false);return}
@@ -698,8 +698,8 @@ export default function App(){
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',entity.company_id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').eq('company_id',entity.company_id).eq('status','active').order('id')),
         isDivision
-          ? fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('division_id',id).eq('status','active').order('product_name'))
-          : fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('brand_id',id).eq('status','active').order('product_name')),
+          ? fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size').eq('division_id',id).eq('status','active').order('product_name'))
+          : fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size').eq('brand_id',id).eq('status','active').order('product_name')),
         isDivision ? Promise.resolve({data:null,error:null}) : (entity.division_id ? supabase.from('divisions').select('id,division_name,company_id').eq('id',entity.division_id).eq('status','active').maybeSingle() : Promise.resolve({data:null,error:null})),
         isDivision ? supabase.from('brands').select('id,brand_name,company_id,division_id').eq('division_id',id).eq('status','active').order('brand_name') : Promise.resolve({data:[],error:null})
       ])
@@ -773,7 +773,7 @@ export default function App(){
     setProfileLoading(true);setError('')
     try{
       const productRes=await supabase.from('products')
-        .select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size')
+        .select('id,product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size')
         .eq('id',id).eq('status','active').maybeSingle()
       if(productRes.error||!productRes.data)throw productRes.error||new Error('This product could not be found.')
       const product=productRes.data
@@ -881,7 +881,7 @@ export default function App(){
       }
       const profileCompanyIds=[id]
       const [catalogRes,companyDivisionsRes]=await Promise.all([
-        profileCompanyIds.length?fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null},
+        profileCompanyIds.length?fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null},
         supabase.from('divisions').select('id,division_name,company_id').in('company_id',profileCompanyIds).eq('status','active').order('division_name')
       ])
       const catalogProducts=catalogRes.data||[]

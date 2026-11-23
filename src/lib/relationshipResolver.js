@@ -10,7 +10,16 @@ export function resolveProductDistributors(product, distributorships = [], produ
   }
 
   ;(productLinks || []).filter(row => matchesProduct(row, 'product')).forEach(row => {
-    candidates.push({ ...row, scope: 'product', priority: 4 })
+    candidates.push({
+      ...row,
+      // Product-specific links inherit the product's catalogue category. If the
+      // product is unclassified, keep that context unknown rather than treating
+      // it as a wildcard that overrides every category.
+      category_id: product.category_id ?? null,
+      category_context_missing: !product.category_id,
+      scope: 'product',
+      priority: 4
+    })
   })
   ;(distributorships || []).forEach(row => {
     if (row.company_id !== product.company_id) return
@@ -36,9 +45,9 @@ export function resolveProductDistributors(product, distributorships = [], produ
   productRows.forEach(row => {
     const compatible = [...contexts.entries()].filter(([, rows]) => {
       const sample = rows[0]
-      return (row.location_id == null || row.location_id === sample.location_id)
+      return row.category_id === sample.category_id
+        && (row.location_id == null || row.location_id === sample.location_id)
         && (!String(row.territory || '').trim() || String(row.territory).trim().toLowerCase() === String(sample.territory || '').trim().toLowerCase())
-        && (row.category_id == null || row.category_id === sample.category_id)
     })
     if (compatible.length) {
       compatible.forEach(([key]) => contexts.get(key).push(row))
@@ -49,8 +58,14 @@ export function resolveProductDistributors(product, distributorships = [], produ
     }
   })
 
+  // A classified product belongs to one category context. Do not return
+  // distributors assigned to other categories for that product.
+  const applicableContexts = product.category_id
+    ? [...contexts.entries()].filter(([key]) => key.startsWith(String(product.category_id) + '|'))
+    : [...contexts.entries()]
+
   const winners = []
-  contexts.forEach(rows => {
+  applicableContexts.forEach(([, rows]) => {
     const highest = Math.max(...rows.map(row => row.priority))
     winners.push(...rows.filter(row => row.priority === highest))
   })
