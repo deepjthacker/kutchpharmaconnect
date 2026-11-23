@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, BarChart3, Download, LoaderCircle, RefreshCw, Search, Users, MousePointerClick, ClipboardList, TrendingUp } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import './AdminDistributorPerformance.css'
 
 const EVENT_LABELS = {
   profile_view: 'Profile views',
