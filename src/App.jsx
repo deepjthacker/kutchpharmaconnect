@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 import { applyFlexibleSearch, rankSearchItems } from './lib/searchUtils'
 import { resolveProductDistributors } from './lib/relationshipResolver'
+import { groupDistributorAssignments } from './lib/profileUtils'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const ProductDirectory = lazy(() => import('./ProductDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
@@ -1014,14 +1015,7 @@ export default function App(){
       return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name, rel.category?.display_name, rel.location?.city, rel.location?.district, rel.territory]
         .some(value => String(value || '').toLowerCase().includes(relationshipQuery))
     })
-    const distributorCompanyGroups = profile?.type === 'distributor'
-      ? [...visibleRelationships.reduce((groups, rel) => {
-          const key = rel.company_id
-          if (!groups.has(key)) groups.set(key, { company: rel.company, relationships: [] })
-          groups.get(key).relationships.push(rel)
-          return groups
-        }, new Map()).values()]
-      : []
+    const distributorCompanyGroups = profile?.type === 'distributor' ? groupDistributorAssignments(visibleRelationships) : []
     return (
       <section className="profile-section">
         <div className="container profile-container">
