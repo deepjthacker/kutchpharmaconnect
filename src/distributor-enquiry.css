@@ -1,0 +1,25 @@
+.kpc-enquiry-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:16px;background:rgba(15,23,42,.58)}
+.kpc-enquiry-modal{position:relative;width:min(540px,100%);max-height:92vh;overflow:auto;padding:25px;border:1px solid #e0e6ef;border-radius:16px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.24);color:#172033}
+.kpc-enquiry-close{position:absolute;top:14px;right:14px;display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:8px;background:#f1f4f8;color:#53627a}
+.kpc-enquiry-modal h2{padding-right:34px;font-size:23px;line-height:1.2}
+.kpc-enquiry-intro{margin:8px 0 16px;color:#68758a;font-size:12px;line-height:1.5}
+.kpc-enquiry-form{display:grid;gap:12px}
+.kpc-enquiry-form>label{display:flex;flex-direction:column;gap:6px;color:#43516a;font-size:11px;font-weight:800}
+.kpc-enquiry-form>label span{font-weight:500;color:#8490a2}
+.kpc-enquiry-form input:not([type=checkbox]),.kpc-enquiry-form textarea{width:100%;min-width:0;border:1px solid #d5dce7;border-radius:9px;padding:10px 11px;background:#fff;color:#172033;font:inherit;font-size:13px;outline:none}
+.kpc-enquiry-form input:focus,.kpc-enquiry-form textarea:focus{border-color:#7895d0;box-shadow:0 0 0 3px rgba(49,89,168,.1)}
+.kpc-enquiry-form textarea{resize:vertical;line-height:1.5}
+.kpc-enquiry-form .kpc-enquiry-consent{display:flex;flex-direction:row;align-items:flex-start;gap:9px;color:#5e6b80;font-size:11px;font-weight:550;line-height:1.5}
+.kpc-enquiry-consent input{margin:2px 0 0;flex:none}
+.kpc-enquiry-submit{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border:0;border-radius:9px;padding:10px 16px;background:#173a8f;color:#fff;font-size:13px;font-weight:800}
+.kpc-enquiry-submit:disabled{opacity:.55;cursor:not-allowed}
+.kpc-enquiry-error{margin:0;color:#b42318;font-size:12px}
+.kpc-enquiry-privacy{margin:12px 0 0;color:#8490a2;font-size:10px;line-height:1.5}
+.kpc-enquiry-success{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 8px;text-align:center}
+.kpc-enquiry-success>svg{color:#16834a}
+.kpc-enquiry-success h2{padding:0}
+.kpc-enquiry-success p{max-width:380px;margin:0 0 8px;color:#68758a;font-size:13px;line-height:1.55}
+html[data-theme="dark"] .kpc-enquiry-modal{background:#111c2e;border-color:#334155;color:#e2e8f0}
+html[data-theme="dark"] .kpc-enquiry-form>label{color:#cbd5e1}
+html[data-theme="dark"] .kpc-enquiry-form input:not([type=checkbox]),html[data-theme="dark"] .kpc-enquiry-form textarea{background:#0f172a;border-color:#334155;color:#e2e8f0}
+html[data-theme="dark"] .kpc-enquiry-close{background:#263449;color:#e2e8f0}
