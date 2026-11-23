@@ -9,6 +9,8 @@ const AdminDashboard = lazy(() => import('./AdminDashboard'))
 import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
+import DistributorEnquiryForm from './DistributorEnquiryForm'
+import { trackDistributorActivity } from './lib/distributorTracking'
 import SiteFeedback from './SiteFeedback'
 const PolicyPages = lazy(() => import('./PolicyPages'))
 
@@ -112,7 +114,7 @@ export default function App(){
   const suggestionRequestRef=useRef(0)
   const lastSearchTermRef=useRef('')
   const [recentSearches,setRecentSearches]=useState(()=>{try{return JSON.parse(localStorage.getItem('kpc-recent-searches')||'[]').filter(x=>x&&['company','distributor'].includes(x.type)&&x.id&&x.name).slice(0,5)}catch{return []}})
-  const [reportTarget,setReportTarget]=useState(null),[policyPage,setPolicyPage]=useState(null)
+  const [reportTarget,setReportTarget]=useState(null),[policyPage,setPolicyPage]=useState(null),[enquiryTarget,setEnquiryTarget]=useState(null)
   const navigationHistoryRef=useRef(false)
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false)
   const [admin,setAdmin]=useState(false),[session,setSession]=useState(null),[theme,setTheme]=useState(()=>{try{return localStorage.getItem('kpc-theme')||'light'}catch{return 'light'}}),[authLoading,setAuthLoading]=useState(true),[authOpen,setAuthOpen]=useState(false),[authEmail,setAuthEmail]=useState(''),[authPassword,setAuthPassword]=useState(''),[authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(false),[resetOpen,setResetOpen]=useState(false),[resetEmail,setResetEmail]=useState(''),[resetSent,setResetSent]=useState(false),[resetError,setResetError]=useState(''),[newPassword,setNewPassword]=useState(''),[newPasswordConfirm,setNewPasswordConfirm]=useState(''),[passwordResetOpen,setPasswordResetOpen]=useState(false),[q,setQ]=useState(''),[results,setResults]=useState([]),[searchFilter,setSearchFilter]=useState('all'),[expandedProductDistributors,setExpandedProductDistributors]=useState({}),[loading,setLoading]=useState(false),[searched,setSearched]=useState(false),[error,setError]=useState(''),[profile,setProfile]=useState(null),[profileLoading,setProfileLoading]=useState(false),[browse,setBrowse]=useState(null),[browseCategory,setBrowseCategory]=useState(null),[suggestions,setSuggestions]=useState([]),[suggestionLoading,setSuggestionLoading]=useState(false),[showSuggestions,setShowSuggestions]=useState(false),[reportOpen,setReportOpen]=useState(false),[relationshipSearch,setRelationshipSearch]=useState(''),[catalogSearch,setCatalogSearch]=useState(''),[reportSubmitting,setReportSubmitting]=useState(false),[reportSent,setReportSent]=useState(false),[reportError,setReportError]=useState(''),[report,setReport]=useState({type:'incorrect_relationship',message:'',reporter_name:'',reporter_mobile:'',reporter_email:''})
@@ -968,6 +970,7 @@ export default function App(){
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
+        trackDistributorActivity({event_type:'profile_view',distributor_id:id})
     }
     setProfileLoading(false)
   }
@@ -1057,13 +1060,13 @@ export default function App(){
                   {profile.entity.mobile && (
                     <div>
                       <Phone size={15}/>
-                      <a href={phoneLink(profile.entity.mobile)}>{profile.entity.mobile}</a>
+                      <a href={phoneLink(profile.entity.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:profile.entity.id})}>{profile.entity.mobile}</a>
                     </div>
                   )}
                   {profile.entity.whatsapp && (
                     <div>
                       <MessageCircle size={15}/>
-                      <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer">
+                      <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id})}>
                         {profile.entity.whatsapp}
                       </a>
                     </div>
@@ -1071,7 +1074,7 @@ export default function App(){
                   {profile.entity.email && (
                     <div>
                       <span className="contact-symbol">@</span>
-                      <a href={`mailto:${profile.entity.email}`}>{profile.entity.email}</a>
+                      <a href={`mailto:${profile.entity.email}`} onClick={()=>trackDistributorActivity({event_type:'email_click',distributor_id:profile.entity.id})}>{profile.entity.email}</a>
                     </div>
                   )}
                   {profile.entity.address && (
@@ -1080,18 +1083,19 @@ export default function App(){
 
                   <div className="profile-actions">
                     {profile.entity.mobile && (
-                      <a href={phoneLink(profile.entity.mobile)}><Phone size={15}/> Call</a>
+                      <a href={phoneLink(profile.entity.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:profile.entity.id})}><Phone size={15}/> Call</a>
                     )}
                     {profile.entity.whatsapp && (
-                      <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer">
+                      <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id})}>
                         <MessageCircle size={15}/> WhatsApp
                       </a>
                     )}
                     {mapsLink(profile.entity) && (
-                      <a href={mapsLink(profile.entity)} target="_blank" rel="noreferrer">
+                      <a href={mapsLink(profile.entity)} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'maps_click',distributor_id:profile.entity.id})}>
                         <MapPin size={15}/> {mapsLabel(profile.entity)}
                       </a>
                     )}
+                    <button type="button" className="kpc-enquiry-open" onClick={()=>setEnquiryTarget({distributor:profile.entity,context:{}})}>Send Enquiry</button>
                   </div>
                 </div>
               )}
@@ -1221,14 +1225,14 @@ export default function App(){
                         )}
                         {profile.type !== 'distributor' && (
                           <div className="profile-rel-actions">
-                            {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)}><Phone size={13}/> Call</a>}
-                            {(rel.distributor?.whatsapp || rel.distributor?.mobile) && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company?.company_name||profile.entity.company_name||profile.entity.product_name))} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Check Stock</a>}
-                            {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer"><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
+                            {rel.distributor?.mobile && <a className="profile-rel-action" href={phoneLink(rel.distributor.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:rel.distributor.id,company_id:rel.company_id||profile.entity.company_id||profile.entity.id,division_id:rel.division_id||null,brand_id:rel.brand_id||null,product_id:profile.type==='product'?profile.entity.id:null,distributorship_id:rel.isProductSpecific?null:rel.id,product_distributor_id:rel.isProductSpecific?rel.id:null})}><Phone size={13}/> Call</a>}
+                            {(rel.distributor?.whatsapp || rel.distributor?.mobile) && <a className="profile-rel-action" href={waLink(rel.distributor.whatsapp || rel.distributor.mobile,stockWhatsAppMessage(rel.distributor.distributor_name,profile.entity.company?.company_name||profile.entity.company_name||profile.entity.product_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:rel.distributor.id,company_id:rel.company_id||profile.entity.company_id||profile.entity.id,division_id:rel.division_id||null,brand_id:rel.brand_id||null,product_id:profile.type==='product'?profile.entity.id:null,distributorship_id:rel.isProductSpecific?null:rel.id,product_distributor_id:rel.isProductSpecific?rel.id:null})}><MessageCircle size={13}/> Check Stock</a>}
+                            {mapsLink(rel.distributor) && <a className="profile-rel-action" href={mapsLink(rel.distributor)} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'maps_click',distributor_id:rel.distributor.id,company_id:rel.company_id||profile.entity.company_id||profile.entity.id,division_id:rel.division_id||null,brand_id:rel.brand_id||null,product_id:profile.type==='product'?profile.entity.id:null,distributorship_id:rel.isProductSpecific?null:rel.id,product_distributor_id:rel.isProductSpecific?rel.id:null})}><MapPin size={13}/> {mapsLabel(rel.distributor)}</a>}
                           </div>
                         )}
                         {profile.type === 'distributor' && (profile.entity?.whatsapp || profile.entity?.mobile) && (
                           <div className="profile-rel-actions">
-                            <a className="profile-rel-action" href={waLink(profile.entity.whatsapp || profile.entity.mobile,stockWhatsAppMessage(profile.entity.distributor_name,rel.company?.company_name||'the product'))} target="_blank" rel="noreferrer">
+                            <a className="profile-rel-action" href={waLink(profile.entity.whatsapp || profile.entity.mobile,stockWhatsAppMessage(profile.entity.distributor_name,rel.company?.company_name||'the product'))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id,company_id:rel.company_id,division_id:rel.division_id||null,brand_id:rel.brand_id||null,distributorship_id:rel.id})}>
                               <MessageCircle size={13}/> Check Stock
                             </a>
                           </div>
@@ -1754,6 +1758,7 @@ export default function App(){
         </form>
       </div></div>}
 
+      {enquiryTarget && <DistributorEnquiryForm distributor={enquiryTarget.distributor} context={enquiryTarget.context} onClose={()=>setEnquiryTarget(null)} />}
       {admin && session && <button className="admin-signout" onClick={signOutAdmin}>Sign out</button>}
 
     </div>
