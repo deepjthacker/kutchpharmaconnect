@@ -54,6 +54,39 @@ function cleanReferrer(value: unknown): string | null {
   }
 }
 
+async function makeRateKey(req: Request, action: string): Promise<string> {
+  const ip = req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") || "unknown";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(SERVICE_ROLE_KEY),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(action + "|" + ip)
+  );
+  return Array.from(new Uint8Array(signature))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function allowRate(req: Request, action: string, maxHits: number, windowMs: number): Promise<boolean> {
+  const rate_key = await makeRateKey(req, action);
+  const bucket = Math.floor(Date.now() / windowMs) * windowMs;
+  const { data, error } = await supabase.rpc("consume_distributor_activity_rate_limit", {
+    p_rate_key: rate_key,
+    p_window_start: new Date(bucket).toISOString(),
+    p_max_hits: maxHits
+  });
+  if (error) throw error;
+  return data === true;
+}
+
 async function activeDistributor(id: string) {
   const { data, error } = await supabase
     .from("distributors")
@@ -92,6 +125,9 @@ Deno.serve(async (req: Request) => {
     const utm_campaign = cleanText(body?.utm_campaign, 200);
 
     if (action === "event") {
+      if (!(await allowRate(req, "event", 120, 60_000))) {
+        return json({ error: "Activity rate limit reached. Please try again shortly." }, 429, origin);
+      }
       const distributor_id = cleanUuid(body?.distributor_id);
       const event_type = cleanText(body?.event_type, 40);
       const session_id = cleanUuid(body?.session_id);
@@ -132,6 +168,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "enquiry") {
+      if (!(await allowRate(req, "enquiry", 6, 60 * 60_000))) {
+        return json({ error: "Too many enquiries from this connection. Please try again later." }, 429, origin);
+      }
       const customer_name = cleanText(body?.customer_name, 100);
       const mobileRaw = cleanText(body?.mobile, 20) || "";
       const mobile = mobileRaw.replace(/[^0-9+]/g, "");
