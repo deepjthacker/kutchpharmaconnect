@@ -57,6 +57,9 @@ jobs:
           name: github-pages
           path: ./dist
 
+      - name: Wait for Pages artifact registration
+        run: sleep 15
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
