@@ -4,6 +4,7 @@ export function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .toLocaleLowerCase('en-IN')
     .replace(/([a-z])([0-9])/g, '$1 $2')
