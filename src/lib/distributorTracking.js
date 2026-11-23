@@ -20,7 +20,7 @@ function requestContext() {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
   return {
-    source_page: window.location.pathname + window.location.search,
+    source_page: window.location.pathname,
     referrer: document.referrer || null,
     utm_source: params.get('utm_source'),
     utm_medium: params.get('utm_medium'),
