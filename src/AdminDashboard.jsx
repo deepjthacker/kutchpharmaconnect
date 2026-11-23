@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Building2, Truck, Package, Link2, Inbox, Flag, ShieldAlert, Database, Settings, Search, RefreshCw, ArrowRight, LoaderCircle, Tags, MapPin, GitBranch, MessageSquare, MessageSquareWarning, Plus } from 'lucide-react'
+import { Building2, Truck, Package, Link2, Inbox, Flag, ShieldAlert, Database, Settings, Search, RefreshCw, ArrowRight, LoaderCircle, Tags, MapPin, GitBranch, MessageSquare, MessageSquareWarning, Plus, BarChart3 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import AdminReports from './AdminReports'
 import AdminDistributorSubmissions from './AdminDistributorSubmissions'
@@ -17,6 +17,7 @@ import AdminCategories from './AdminCategories'
 import AdminAliases from './AdminAliases'
 import AdminReviews from './AdminReviews'
 import AdminWebsiteFeedback from './AdminWebsiteFeedback'
+import AdminDistributorPerformance from './AdminDistributorPerformance'
 
 export default function AdminDashboard() {
   const [view, setView] = useState('dashboard')
@@ -61,6 +62,7 @@ export default function AdminDashboard() {
   useEffect(() => { load() }, [])
   const back = () => setView('dashboard')
 
+  if (view === 'performance') return <AdminDistributorPerformance onBack={back} />
   if (view === 'submissions') return <AdminDistributorSubmissions onBack={back} />
   if (view === 'reports') return <AdminReports onBack={back} />
   if (view === 'reviews') return <AdminReviews onBack={back} />
@@ -79,6 +81,7 @@ export default function AdminDashboard() {
   if (view === 'aliases') return <AdminAliases onBack={back} />
 
   const pending = [
+    ['Distributor Performance & Leads', null, BarChart3, 'Track distributor profile views, contact clicks and customer enquiries', 'performance'],
     ['Distributor Submissions', stats?.submissions, Inbox, 'Match submitted companies and publish only after review', 'submissions'],
     ['Corrections', stats?.reports, Flag, 'Review reported directory errors', 'reports'],
     ['Website Feedback', stats?.websiteFeedback, MessageSquareWarning, 'Review site issues and suggestions', 'websiteFeedback'],
