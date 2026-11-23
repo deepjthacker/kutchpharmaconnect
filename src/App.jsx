@@ -934,7 +934,7 @@ export default function App(){
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids).eq('status','active')),
         fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name').in('id',ids).eq('status','active')),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active')),
-        fetchByIds(categoryIds,ids=>supabase.from('categories').select('id,name,category_name').in('id',ids))
+        fetchByIds(categoryIds,ids=>supabase.from('categories').select('*').in('id',ids))
       ])
       if(dRes.error||vRes.error||bRes.error||lRes.error||catRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error||catRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
@@ -968,7 +968,7 @@ export default function App(){
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids)),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids)),
         fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
-        fetchByIds(categoryIds,ids=>supabase.from('categories').select('id,name,category_name').in('id',ids))
+        fetchByIds(categoryIds,ids=>supabase.from('categories').select('*').in('id',ids))
       ])
       if(cRes.error||vRes.error||lRes.error||bRes.error||catRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error||catRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
