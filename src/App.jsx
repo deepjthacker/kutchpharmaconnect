@@ -1099,7 +1099,15 @@ export default function App(){
               {profile.type !== 'distributor' && (
                 <>
                   {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list company-group-list">
-                    <div className="profile-list-title">Company group</div>
+                    <div className="profile-list-title">Corporate ownership structure</div>
+                    {profile.entity.parentCompany && <div className="profile-rel company-subsidiary-row">
+                      <div className="company-subsidiary-copy">
+                        <small>{profile.entity.ownership_relationship==='joint_venture'?'Joint venture partner relationship':profile.entity.ownership_relationship==='step_down_subsidiary'?'Step-down subsidiary of':profile.entity.ownership_relationship==='majority_owned'?'Majority-owned by':'Owned by'}</small>
+                        <button className="profile-link-button" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>{profile.entity.parentCompany.company_name}</button>
+                        <span className="company-subsidiary-count">{profile.entity.ownership_percentage!=null?`${Number(profile.entity.ownership_percentage)}% ownership`:''}{profile.entity.ownership_note?` · ${profile.entity.ownership_note}`:''}</span>
+                      </div>
+                      <button className="company-subsidiary-open" onClick={()=>openProfile('company',profile.entity.parentCompany.id)}>View parent <ArrowRight size={15}/></button>
+                    </div>}
                     {(profile.entity.subsidiaries||[]).map(company=><div className="profile-rel company-subsidiary-row" key={company.id}>
                       <div className="company-subsidiary-copy">
                         <small>{company.ownership_relationship==='majority_owned'?'Majority-owned subsidiary':company.ownership_relationship==='step_down_subsidiary'?'Step-down subsidiary':company.ownership_relationship==='joint_venture'?'Joint venture':company.ownership_relationship==='direct_subsidiary'?'Direct subsidiary':'Operating company'}</small>
