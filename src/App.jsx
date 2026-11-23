@@ -696,7 +696,7 @@ export default function App(){
       const entity=entityRes.data
       const [companyRes,allRelationsRes,productRes,divisionRes,divisionBrandsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',entity.company_id).eq('status','active').maybeSingle(),
-        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',entity.company_id).eq('status','active').order('id')),
+        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').eq('company_id',entity.company_id).eq('status','active').order('id')),
         isDivision
           ? fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('division_id',id).eq('status','active').order('product_name'))
           : fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').eq('brand_id',id).eq('status','active').order('product_name')),
@@ -890,7 +890,7 @@ export default function App(){
       const [profileBrandsRes,companyBrandsRes,catalogRelationsRes,catalogProductLinksRes,profileProductDivisionsRes]=await Promise.all([
         fetchByIds(profileProductBrandIds,ids=>supabase.from('brands').select('id,brand_name,division_id,company_id').in('id',ids).eq('status','active')),
         supabase.from('brands').select('id,brand_name,division_id,company_id').in('company_id',profileCompanyIds).eq('status','active').order('brand_name'),
-        profileCompanyIds.length?fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').in('company_id',profileCompanyIds).eq('status','active').order('id')):{data:[],error:null},
+        profileCompanyIds.length?fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').in('company_id',profileCompanyIds).eq('status','active').order('id')):{data:[],error:null},
         fetchByIds(catalogProducts.map(product=>product.id),ids=>supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').in('product_id',ids).eq('status','active')),
         fetchByIds(profileProductDivisionIds,ids=>supabase.from('divisions').select('id,division_name,company_id').in('id',ids).eq('status','active'))
       ])
