@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { fetchAllPages, fetchByIds } from './lib/queryHelpers'
 import { applyFlexibleSearch, rankSearchItems } from './lib/searchUtils'
 import { resolveProductDistributors } from './lib/relationshipResolver'
+import { groupDistributorAssignments } from './lib/profileUtils'
 const BrowseDirectory = lazy(() => import('./BrowseDirectory'))
 const ProductDirectory = lazy(() => import('./ProductDirectory'))
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
@@ -876,7 +877,7 @@ export default function App(){
     if(type==='company'){
       const [companyRes, relRes, divisionsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url,ownership_percentage,ownership_relationship,ownership_note,company_group_id').eq('id',id).eq('status','active').maybeSingle(),
-        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id')),
+        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id')),
         supabase.from('divisions').select('id,division_name,company_id').eq('company_id',id).eq('status','active').order('division_name')
       ])
       if(companyRes.error||relRes.error||divisionsRes.error){setError((companyRes.error||relRes.error||divisionsRes.error).message);setProfileLoading(false);return}
@@ -927,27 +928,30 @@ export default function App(){
       const divisionIds=[...new Set([...rels.map(x=>x.division_id),...catalogRelations.map(x=>x.division_id),...(profileProductDivisionsRes.data||[]).map(x=>x.id)].filter(Boolean))]
       const brandIds=[...new Set([...rels.map(x=>x.brand_id),...catalogRelations.map(x=>x.brand_id),...(profileBrandsRes.data||[]).map(x=>x.id),...(companyBrandsRes.data||[]).map(x=>x.id)].filter(Boolean))]
       const locationIds=[...new Set([...rels.map(x=>x.location_id),...catalogRelations.map(x=>x.location_id),...catalogProductLinks.map(x=>x.location_id)].filter(Boolean))]
-      const [dRes,vRes,bRes,lRes]=await Promise.all([
+      const categoryIds=[...new Set([...rels.map(x=>x.category_id),...catalogRelations.map(x=>x.category_id)].filter(Boolean))]
+      const [dRes,vRes,bRes,lRes,catRes]=await Promise.all([
         fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url').in('id',ids).eq('status','active')),
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids).eq('status','active')),
         fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name').in('id',ids).eq('status','active')),
-        fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
+        fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active')),
+        fetchByIds(categoryIds,ids=>supabase.from('categories').select('*').in('id',ids))
       ])
-      if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
+      if(dRes.error||vRes.error||bRes.error||lRes.error||catRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error||catRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map([...(bRes.data||[]),...(companyBrandsRes.data||[]),...(profileBrandsRes.data||[])].map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
+      const categoryMap=new Map((catRes.data||[]).map(x=>[x.id,{...x,display_name:x.category_name||x.name||'Category'}]))
       const catalogCompanies=[...familyRows,companyRes.data].filter(Boolean)
       const catalogDivisions=[...(companyDivisionsRes.data||divisionsRes.data||[]),...(profileProductDivisionsRes.data||[]),...(vRes.data||[])]
       const catalogBrands=[...(companyBrandsRes.data||[]),...(profileBrandsRes.data||[]),...(bRes.data||[])]
       const catalogDistributors=[...(dRes.data||[]),...(subsidiaryDistributorsRes.data||[])]
       const enrichedCompanyCatalog=enrichCatalogProducts(catalogProducts,catalogCompanies,catalogDivisions,catalogBrands,catalogRelations,catalogProductLinks,catalogDistributors)
-      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:enrichedCompanyCatalog},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:enrichedCompanyCatalog},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,category:x.category_id?categoryMap.get(x.category_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
-        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,division_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active').order('id'))
+        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active').order('id'))
       ])
       if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
@@ -958,18 +962,21 @@ export default function App(){
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
       const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
-      const [cRes,vRes,lRes,bRes]=await Promise.all([
+      const categoryIds=[...new Set(rels.map(x=>x.category_id).filter(Boolean))]
+      const [cRes,vRes,lRes,bRes,catRes]=await Promise.all([
         fetchByIds(companyIds,ids=>supabase.from('companies').select('id,company_name,short_name').in('id',ids).eq('status','active')),
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids)),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids)),
-        fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active'))
+        fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
+        fetchByIds(categoryIds,ids=>supabase.from('categories').select('*').in('id',ids))
       ])
-      if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
+      if(cRes.error||vRes.error||lRes.error||bRes.error||catRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error||catRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
+      const categoryMap=new Map((catRes.data||[]).map(x=>[x.id,{...x,display_name:x.category_name||x.name||'Category'}]))
+      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,category:x.category_id?categoryMap.get(x.category_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
         trackDistributorActivity({event_type:'profile_view',distributor_id:id})
     }
     setProfileLoading(false)
@@ -1005,9 +1012,10 @@ export default function App(){
     )
     const visibleRelationships = (profile?.relationships || []).filter(rel => {
       if (profile?.type !== 'distributor' || !relationshipQuery) return true
-      return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name]
+      return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name, rel.category?.display_name, rel.location?.city, rel.location?.district, rel.territory]
         .some(value => String(value || '').toLowerCase().includes(relationshipQuery))
     })
+    const distributorCompanyGroups = profile?.type === 'distributor' ? groupDistributorAssignments(visibleRelationships) : []
     return (
       <section className="profile-section">
         <div className="container profile-container">
@@ -1042,7 +1050,7 @@ export default function App(){
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
-                    <span className="profile-summary">{profile.type==='product' ? `${profile.relationships.length} distributor listing${profile.relationships.length===1?'':'s'} in Kutch` : profile.type==='company' && (profile.entity.subsidiaries?.length||profile.entity.divisions?.length) ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
+                    <span className="profile-summary">{profile.type==='product' ? profile.relationships.length + ' distributor listing' + (profile.relationships.length===1?'':'s') + ' in Kutch' : profile.type==='distributor' ? new Set(profile.relationships.map(rel=>rel.company_id)).size + ' compan' + (new Set(profile.relationships.map(rel=>rel.company_id)).size===1?'y':'ies') + ' · ' + profile.relationships.length + ' active assignments' : profile.type==='company' ? profile.relationships.length + ' active distributor assignments' : profile.relationships.length + ' active Kutch ' + (profile.relationships.length===1?'relationship':'relationships')}</span>
                     {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
                       <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
                         <ShieldCheck size={14}/> Relationship Verified
@@ -1063,11 +1071,11 @@ export default function App(){
                       <a href={phoneLink(profile.entity.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:profile.entity.id})}>{profile.entity.mobile}</a>
                     </div>
                   )}
-                  {profile.entity.whatsapp && (
+                  {(profile.entity.whatsapp || profile.entity.mobile) && (
                     <div>
                       <MessageCircle size={15}/>
                       <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id})}>
-                        {profile.entity.whatsapp}
+                        {profile.entity.whatsapp || profile.entity.mobile}
                       </a>
                     </div>
                   )}
@@ -1085,7 +1093,7 @@ export default function App(){
                     {profile.entity.mobile && (
                       <a href={phoneLink(profile.entity.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:profile.entity.id})}><Phone size={15}/> Call</a>
                     )}
-                    {profile.entity.whatsapp && (
+                    {(profile.entity.whatsapp || profile.entity.mobile) && (
                       <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id})}>
                         <MessageCircle size={15}/> WhatsApp
                       </a>
@@ -1129,27 +1137,36 @@ export default function App(){
 
               {profile.type === 'company' && (profile.entity.divisions?.length>0 || profile.entity.brands?.length>0) && (
                 <div className="profile-list company-catalog-structure">
-                  <div className="profile-list-title">Divisions &amp; brands</div>
+                  <div className="profile-list-title">Company structure</div>
                   {profile.entity.divisions?.length>0 && (
-                    <div className="profile-structure-group">
-                      <small className="profile-structure-label">Divisions</small>
-                      <div className="profile-structure-chips">
-                        {profile.entity.divisions.map(division=>(
-                          <button className="profile-structure-chip" key={division.id} onClick={()=>openProfile('division',division.id)}>
-                            {division.division_name}<ArrowRight size={13}/>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="company-division-tree">
+                      {profile.entity.divisions.map(division=>{
+                        const divisionBrands=(profile.entity.brands||[]).filter(brand=>brand.division_id===division.id)
+                        return (
+                          <section className="company-division-node" key={division.id}>
+                            <div className="company-division-heading">
+                              <small>Division</small>
+                              <button className="profile-link-button" onClick={()=>openProfile('division',division.id)}>{division.division_name}<ArrowRight size={13}/></button>
+                            </div>
+                            {divisionBrands.length>0 && (
+                              <div className="company-division-brands">
+                                <small>Brands in this division</small>
+                                <div className="profile-structure-chips">
+                                  {divisionBrands.map(brand=><button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>{brand.brand_name}<ArrowRight size={13}/></button>)}
+                                </div>
+                              </div>
+                            )}
+                          </section>
+                        )
+                      })}
                     </div>
                   )}
-                  {profile.entity.brands?.length>0 && (
+                  {(profile.entity.brands||[]).filter(brand=>!brand.division_id || !(profile.entity.divisions||[]).some(division=>division.id===brand.division_id)).length>0 && (
                     <div className="profile-structure-group">
-                      <small className="profile-structure-label">Brands</small>
+                      <small className="profile-structure-label">{profile.entity.divisions?.length ? 'Brands not linked to a division' : 'Brands'}</small>
                       <div className="profile-structure-chips">
-                        {profile.entity.brands.map(brand=>(
-                          <button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>
-                            {brand.brand_name}<ArrowRight size={13}/>
-                          </button>
+                        {(profile.entity.brands||[]).filter(brand=>!brand.division_id || !(profile.entity.divisions||[]).some(division=>division.id===brand.division_id)).map(brand=>(
+                          <button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>{brand.brand_name}<ArrowRight size={13}/></button>
                         ))}
                       </div>
                     </div>
@@ -1177,12 +1194,64 @@ export default function App(){
                 {profile.type === 'distributor' && profile.relationships.length > 0 && (
                   <label className="profile-relationship-search">
                     <Search size={16} aria-hidden="true" />
-                    <input type="search" value={relationshipSearch} onChange={e => setRelationshipSearch(e.target.value)} placeholder="Search companies, divisions or brands…" aria-label="Search this distributor's companies, divisions or brands" />
+                    <input type="search" value={relationshipSearch} onChange={e => setRelationshipSearch(e.target.value)} placeholder="Search companies, divisions, brands, categories or locations…" aria-label="Search this distributor's company assignments and scope" />
                     {relationshipSearch && <button type="button" onClick={() => setRelationshipSearch('')} aria-label="Clear distributorship search"><X size={15}/></button>}
                   </label>
                 )}
 
                 {visibleRelationships.length > 0 ? (
+                  profile.type === 'distributor' ? (
+                    <div className="distributor-company-groups">
+                      {distributorCompanyGroups.map(group => (
+                        <section className="distributor-company-group" key={group.company.id}>
+                          <div className="distributor-company-heading">
+                            <div>
+                              <button className="profile-link-button" onClick={() => openProfile('company', group.company.id)}>{group.company.company_name}</button>
+                              <span>{group.relationships.length} active assignment{group.relationships.length === 1 ? '' : 's'}</span>
+                            </div>
+                            <button className="company-subsidiary-open" onClick={() => openProfile('company', group.company.id)}>Company profile <ArrowRight size={14}/></button>
+                          </div>
+                          <div className="distributor-scope-list">
+                            {group.relationships.map(rel => (
+                              <div className="distributor-scope-row" key={rel.id}>
+                                <div className="distributor-scope-copy">
+                                  <div className="distributor-scope-title">
+                                    {rel.brand ? (
+                                      <><small>Brand</small><button className="profile-link-button" onClick={() => openProfile('brand', rel.brand.id)}>{rel.brand.brand_name}</button></>
+                                    ) : rel.division ? (
+                                      <><small>Division</small><button className="profile-link-button" onClick={() => openProfile('division', rel.division.id)}>{rel.division.division_name}</button></>
+                                    ) : (
+                                      <><small>Scope</small><strong>Company-level assignment</strong></>
+                                    )}
+                                  </div>
+                                  <div className="distributor-scope-meta">
+                                    {rel.category ? <span>Category: {rel.category.display_name}</span> : <span>Category not specified</span>}
+                                    {rel.location && <span>Location: {[rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ')}</span>}
+                                    {rel.territory && <span>Territory: {rel.territory}</span>}
+                                    {!rel.location && !rel.territory && <span>Territory not specified</span>}
+                                  </div>
+                                </div>
+                                <div className="distributor-scope-actions">
+                                  {rel.verification_status === 'verified' ? (
+                                    <span className="verified-badge verified-badge-small"><ShieldCheck size={12}/> Verified</span>
+                                  ) : rel.verification_status === 'needs_review' ? (
+                                    <span className="status-badge status-review">Under Review</span>
+                                  ) : (
+                                    <span className="status-badge status-unverified"><span className="status-symbol">!</span> Not Verified</span>
+                                  )}
+                                  {(profile.entity?.whatsapp || profile.entity?.mobile) && (
+                                    <a className="profile-rel-action" href={waLink(profile.entity.whatsapp || profile.entity.mobile,stockWhatsAppMessage(profile.entity.distributor_name,group.company.company_name))} target="_blank" rel="noreferrer" onClick={() => trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id,company_id:rel.company_id,division_id:rel.division_id||null,brand_id:rel.brand_id||null,distributorship_id:rel.id})}>
+                                      <MessageCircle size={13}/> Check Stock
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
                   visibleRelationships.map(rel => (
                     <div className="profile-rel" key={rel.id}>
                       <div>
@@ -1197,6 +1266,7 @@ export default function App(){
                         )}
                         {profile.type !== 'product' && rel.division && <span>{rel.division.division_name}</span>}
                         {profile.type !== 'product' && rel.brand && <span>Brand: {rel.brand.brand_name}</span>}
+                        {profile.type !== 'product' && rel.category && <span>Category: {rel.category.display_name}</span>}
                         {profile.type==='product' && !rel.isProductSpecific && <small>Product information not available</small>}
                         
                         {profile.type !== 'distributor' && rel.distributor?.mobile && (
@@ -1241,6 +1311,7 @@ export default function App(){
                       </div>
                     </div>
                   ))
+                  )
                 ) : (
                   <div className="result-state">{profile.relationships.length === 0 ? 'No active distributorships found.' : 'No companies, divisions or brands match your search.'}</div>
                 )}
