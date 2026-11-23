@@ -84,7 +84,7 @@ function CatalogProductCard({product,onOpenProfile}){
       <div className="catalog-product-distributor-heading"><small>Distributors in Kutch</small><strong>{(product.distributors||[]).length}</strong></div>
       {visibleDistributors.length>0?<div className="catalog-product-distributor-list">{visibleDistributors.map(distributor=><div key={distributor.id} className="catalog-product-distributor">
         <button type="button" onClick={()=>onOpenProfile('distributor',distributor.id)}>{distributor.distributor_name}</button>
-        <span>{distributor.scope==='product'?'Product':distributor.scope==='brand'?'Brand':distributor.scope==='division'?'Division':'Company'} listing</span>
+        <span>{(distributor.scopes||[distributor.scope]).map(scope=>scope==='product'?'Product':scope==='brand'?'Brand':scope==='division'?'Division':'Company').join(' + ')} listing</span>
       </div>)}{(product.distributors||[]).length>3&&<small className="catalog-product-more">+{product.distributors.length-3} more distributors</small>}</div>:<span className="catalog-product-no-distributor">No active distributor relationship listed</span>}
     </div>
   </article>
