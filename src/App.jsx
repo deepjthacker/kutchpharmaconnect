@@ -1050,7 +1050,7 @@ export default function App(){
                     {profile.entity?.short_name && (
                       <span className="profile-short">{profile.entity.short_name}</span>
                     )}
-                    <span className="profile-summary">{profile.type==='product' ? `${profile.relationships.length} distributor listing${profile.relationships.length===1?'':'s'} in Kutch` : profile.type==='company' && (profile.entity.subsidiaries?.length||profile.entity.divisions?.length) ? `${profile.entity.subsidiaries.length} operating compan${profile.entity.subsidiaries.length===1?'y':'ies'}` : `${profile.relationships.length} active Kutch ${profile.relationships.length===1?'relationship':'relationships'}`}</span>
+                    <span className="profile-summary">{profile.type==='product' ? profile.relationships.length + ' distributor listing' + (profile.relationships.length===1?'':'s') + ' in Kutch' : profile.type==='distributor' ? new Set(profile.relationships.map(rel=>rel.company_id)).size + ' compan' + (new Set(profile.relationships.map(rel=>rel.company_id)).size===1?'y':'ies') + ' · ' + profile.relationships.length + ' active assignments' : profile.type==='company' ? profile.relationships.length + ' active distributor assignments' : profile.relationships.length + ' active Kutch ' + (profile.relationships.length===1?'relationship':'relationships')}</span>
                     {profile.type === 'company' && profile.relationships.some(rel=>rel.verification_status==='verified') && (
                       <span className="verified-badge" title="At least one company–distributor relationship has been verified; this does not verify the distributor itself.">
                         <ShieldCheck size={14}/> Relationship Verified
@@ -1194,7 +1194,7 @@ export default function App(){
                 {profile.type === 'distributor' && profile.relationships.length > 0 && (
                   <label className="profile-relationship-search">
                     <Search size={16} aria-hidden="true" />
-                    <input type="search" value={relationshipSearch} onChange={e => setRelationshipSearch(e.target.value)} placeholder="Search companies, divisions or brands…" aria-label="Search this distributor's companies, divisions or brands" />
+                    <input type="search" value={relationshipSearch} onChange={e => setRelationshipSearch(e.target.value)} placeholder="Search companies, divisions, brands, categories or locations…" aria-label="Search this distributor's company assignments and scope" />
                     {relationshipSearch && <button type="button" onClick={() => setRelationshipSearch('')} aria-label="Clear distributorship search"><X size={15}/></button>}
                   </label>
                 )}
@@ -1225,7 +1225,7 @@ export default function App(){
                                     )}
                                   </div>
                                   <div className="distributor-scope-meta">
-                                    {rel.category && <span>Category: {rel.category.display_name}</span>}
+                                    {rel.category ? <span>Category: {rel.category.display_name}</span> : <span>Category not specified</span>}
                                     {rel.location && <span>Location: {[rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ')}</span>}
                                     {rel.territory && <span>Territory: {rel.territory}</span>}
                                     {!rel.location && !rel.territory && <span>Territory not specified</span>}
