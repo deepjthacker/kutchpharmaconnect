@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import DistributorEnquiryForm from './DistributorEnquiryForm'
 import { trackDistributorActivity } from './lib/distributorTracking'
 import { applyFlexibleSearch, searchTokens } from './lib/searchUtils'
+import { resolveProductDistributors } from './lib/relationshipResolver'
 
 const PRODUCT_PAGE_SIZE = 60
 const PRODUCT_FIELDS = 'id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size'
@@ -194,7 +195,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
           : Promise.resolve({ data: null, error: null }),
         supabase.from('product_distributors').select('id,product_id,distributor_id,location_id,territory,verification_status').eq('product_id', p.id).eq('status', 'active'),
         p.company_id
-          ? supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status').eq('company_id', p.company_id).eq('status', 'active')
+          ? supabase.from('distributorships').select('id,company_id,distributor_id,division_id,brand_id,category_id,location_id,territory,verification_status').eq('company_id', p.company_id).eq('status', 'active')
           : Promise.resolve({ data: [], error: null }),
         p.division_id
           ? supabase.from('divisions').select('id,division_name,company_id').eq('id', p.division_id).eq('status', 'active').maybeSingle()
@@ -208,22 +209,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
         return
       }
 
-      const directRows = (direct.data || []).map(row => ({ ...row, scope: 'product', priority: 4 }))
-      const scopedRows = (companyRels.data || []).filter(row =>
-        (p.brand_id && row.brand_id === p.brand_id) ||
-        (p.division_id && !row.brand_id && row.division_id === p.division_id) ||
-        (!row.brand_id && !row.division_id)
-      ).map(row => ({
-        ...row,
-        scope: row.brand_id ? 'brand' : row.division_id ? 'division' : 'company',
-        priority: row.brand_id ? 3 : row.division_id ? 2 : 1
-      }))
-      const relationshipMap = new Map()
-      ;[...directRows, ...scopedRows].forEach(row => {
-        const previous = relationshipMap.get(row.distributor_id)
-        if (!previous || row.priority > previous.priority) relationshipMap.set(row.distributor_id, row)
-      })
-      const distributorLinks = [...relationshipMap.values()]
+      const distributorLinks = resolveProductDistributors(p, companyRels.data || [], direct.data || [])
       const ids = distributorLinks.map(row => row.distributor_id).filter(Boolean)
       const dRes = ids.length
         ? await supabase.from('distributors').select('id,distributor_name,mobile,whatsapp,address,maps_url').in('id', ids).eq('status', 'active').order('distributor_name')
@@ -239,6 +225,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
       const distributorRows = (dRes.data || []).map(distributor => ({
         ...distributor,
         scope: linkMap.get(distributor.id)?.scope || 'company',
+        scopes: linkMap.get(distributor.id)?.scopes || [],
         verification_status: linkMap.get(distributor.id)?.verification_status || null,
         distributorship_id: linkMap.get(distributor.id)?.scope === 'product' ? null : linkMap.get(distributor.id)?.id || null,
         product_distributor_id: linkMap.get(distributor.id)?.scope === 'product' ? linkMap.get(distributor.id)?.id || null : null
