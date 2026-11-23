@@ -1071,11 +1071,11 @@ export default function App(){
                       <a href={phoneLink(profile.entity.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:profile.entity.id})}>{profile.entity.mobile}</a>
                     </div>
                   )}
-                  {profile.entity.whatsapp && (
+                  {(profile.entity.whatsapp || profile.entity.mobile) && (
                     <div>
                       <MessageCircle size={15}/>
                       <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id})}>
-                        {profile.entity.whatsapp}
+                        {profile.entity.whatsapp || profile.entity.mobile}
                       </a>
                     </div>
                   )}
@@ -1093,7 +1093,7 @@ export default function App(){
                     {profile.entity.mobile && (
                       <a href={phoneLink(profile.entity.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:profile.entity.id})}><Phone size={15}/> Call</a>
                     )}
-                    {profile.entity.whatsapp && (
+                    {(profile.entity.whatsapp || profile.entity.mobile) && (
                       <a href={waLink(profile.entity.whatsapp || profile.entity.mobile,distributorWhatsAppMessage(profile.entity.distributor_name))} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id})}>
                         <MessageCircle size={15}/> WhatsApp
                       </a>
