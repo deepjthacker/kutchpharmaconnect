@@ -1098,8 +1098,9 @@ export default function App(){
 
               {profile.type !== 'distributor' && (
                 <>
-                  {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0) && <div className="profile-list company-group-list">
+                  {(profile.entity.parentCompany || profile.entity.subsidiaries?.length > 0 || profile.entity.ownership_relationship==='joint_venture') && <div className="profile-list company-group-list">
                     <div className="profile-list-title">Corporate ownership structure</div>
+                    {profile.entity.ownership_relationship==='joint_venture' && <div className="profile-rel company-subsidiary-row"><div className="company-subsidiary-copy"><small>Joint venture</small><span className="company-subsidiary-count">{profile.entity.ownership_note||'Joint venture relationship recorded.'}</span></div></div>}
                     {profile.entity.parentCompany && <div className="profile-rel company-subsidiary-row">
                       <div className="company-subsidiary-copy">
                         <small>{profile.entity.ownership_relationship==='joint_venture'?'Joint venture partner relationship':profile.entity.ownership_relationship==='step_down_subsidiary'?'Step-down subsidiary of':profile.entity.ownership_relationship==='majority_owned'?'Majority-owned by':'Owned by'}</small>
