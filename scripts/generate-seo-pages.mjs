@@ -100,13 +100,23 @@ const ownershipLabel = relationship => ({
 const ownershipSection = company => {
   const parent = company.parent_company_id ? companyById.get(company.parent_company_id) : null
   const children = subsidiariesByParent.get(company.id) || []
-  if (!parent && !children.length) return ''
-  const parentCard = parent ? `<article class="card"><span class="pill">${esc(ownershipLabel(company.ownership_relationship))}</span><p><strong>Parent / holding entity:</strong> <a href="${companyProfileUrl(parent)}">${esc(parent.company_name)}</a></p><p class="muted">${company.ownership_percentage != null ? `${esc(company.ownership_percentage)}% ownership` : ''}${company.ownership_note ? ` · ${esc(company.ownership_note)}` : ''}</p></article>` : ''
-  const childCards = children.map(child => `<article class="card"><span class="pill">${esc(ownershipLabel(child.ownership_relationship))}</span><p><strong><a href="${companyProfileUrl(child)}">${esc(child.company_name)}</a></strong></p><p class="muted">${child.ownership_percentage != null ? `${esc(child.ownership_percentage)}% ownership` : ''}${child.ownership_note ? ` · ${esc(child.ownership_note)}` : ''}</p></article>`).join('')
-  return `<h2>Corporate ownership structure</h2>${parentCard}${children.length ? `<p class="muted">Entities directly linked under this company. Each entity has its own distributor records and product catalogue.</p>${childCards}` : ''}`
+  if (!parent && !children.length && company.ownership_relationship !== 'joint_venture') return ''
+  const parentCard = parent ? \`<article class="card"><span class="pill">\${esc(ownershipLabel(company.ownership_relationship))}</span><p><strong>Parent / holding entity:</strong> <a href="\${companyProfileUrl(parent)}">\${esc(parent.company_name)}</a></p><p class="muted">\${company.ownership_percentage != null ? \`\${esc(company.ownership_percentage)}% ownership\` : ''}\${company.ownership_note ? \` · \${esc(company.ownership_note)}\` : ''}</p></article>\` : ''
+  const jvCard = company.ownership_relationship === 'joint_venture' ? \`<article class="card"><span class="pill">Joint venture</span><p>\${esc(company.ownership_note || 'Joint venture relationship recorded.')}</p></article>\` : ''
+  const childCards = children.map(child => \`<article class="card"><span class="pill">\${esc(ownershipLabel(child.ownership_relationship))}</span><p><strong><a href="\${companyProfileUrl(child)}">\${esc(child.company_name)}</a></strong></p><p class="muted">\${child.ownership_percentage != null ? \`\${esc(child.ownership_percentage)}% ownership\` : ''}\${child.ownership_note ? \` · \${esc(child.ownership_note)}\` : ''}</p></article>\`).join('')
+  return \`<h2>Corporate ownership structure</h2>\${parentCard}\${jvCard}\${children.length ? \`<p class="muted">Entities directly linked under this company. Each entity has its own distributor records and product catalogue.</p>\${childCards}\` : ''}\`
 }
 const distributorById = new Map(distributors.map(row => [row.id, row]))
 const divisionById = new Map(divisions.map(row => [row.id, row]))
+const divisionsByCompany = new Map()
+for (const division of divisions) {
+  if (!divisionsByCompany.has(division.company_id)) divisionsByCompany.set(division.company_id, [])
+  divisionsByCompany.get(division.company_id).push(division)
+}
+const divisionSection = company => {
+  const rows = divisionsByCompany.get(company.id) || []
+  return rows.length ? \`<h2>Divisions</h2>\${rows.map(row => \`<article class="card"><strong>\${esc(row.division_name)}</strong></article>\`).join('')}\` : ''
+}
 const locationById = new Map(locations.map(row => [row.id, row]))
 const relsByCompany = new Map()
 const relsByDistributor = new Map()
@@ -144,12 +154,12 @@ function relationshipCard(rel, side) {
 
 for (const company of companies) {
   const rels = relsByCompany.get(company.id) || []
-  if (!rels.length && !company.description) continue
+  if (!rels.length && !company.description && !(subsidiariesByParent.get(company.id) || []).length && !(divisionsByCompany.get(company.id) || []).length && company.ownership_relationship !== 'joint_venture') continue
   const url = `${siteUrl}/companies/${slug(company.company_name)}-${company.id.slice(0, 8)}/`
   const title = `${company.company_name} | Pharma Company Directory | KutchPharmaConnect`
   const description = `Explore company information and listed distributor relationships for ${company.company_name} in the Kutch pharmaceutical directory. Confirm current relationships directly with the businesses.`
   const uniqueRels = [...new Map(rels.map(rel => [rel.distributor_id + ':' + (rel.division_id || ''), rel])).values()]
-  const body = `<div class="eyebrow">Pharmaceutical company profile</div><h1>${esc(company.company_name)}</h1>${company.legal_name && company.legal_name !== company.company_name ? `<p class="muted">Legal name: ${esc(company.legal_name)}</p>` : ''}${company.short_name ? `<p class="muted">Also known as: ${esc(company.short_name)}</p>` : ''}${company.description ? `<p>${esc(company.description)}</p>` : ''}${ownershipSection(company)}<p class="notice">This page lists directory relationship records. A listing does not itself prove that a distributorship is current or exclusive. Confirm directly before placing orders.</p><h2>Listed distributors and divisions</h2>${uniqueRels.length ? uniqueRels.map(rel => relationshipCard(rel, 'company')).join('') : '<p>No distributor relationships are currently listed.</p>'}<p class="muted">Page generated ${now}.</p>`
+  const body = `<div class="eyebrow">Pharmaceutical company profile</div><h1>${esc(company.company_name)}</h1>${company.legal_name && company.legal_name !== company.company_name ? `<p class="muted">Legal name: ${esc(company.legal_name)}</p>` : ''}${company.short_name ? `<p class="muted">Also known as: ${esc(company.short_name)}</p>` : ''}${company.description ? `<p>${esc(company.description)}</p>` : ''}${ownershipSection(company)}${divisionSection(company)}<p class="notice">This page lists directory relationship records. A listing does not itself prove that a distributorship is current or exclusive. Confirm directly before placing orders.</p><h2>Listed distributors and divisions</h2>${uniqueRels.length ? uniqueRels.map(rel => relationshipCard(rel, 'company')).join('') : '<p>No distributor relationships are currently listed.</p>'}<p class="muted">Page generated ${now}.</p>`
   await fs.mkdir(path.join(publicDir, 'companies', `${slug(company.company_name)}-${company.id.slice(0, 8)}`), { recursive: true })
   await fs.writeFile(path.join(publicDir, 'companies', `${slug(company.company_name)}-${company.id.slice(0, 8)}`, 'index.html'), pageHtml({
     title, description, canonical: url, body,
