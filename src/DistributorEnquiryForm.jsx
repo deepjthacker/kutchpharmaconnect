@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { CheckCircle2, LoaderCircle, X } from 'lucide-react'
 import { submitDistributorEnquiry } from './lib/distributorTracking'
+import './distributor-enquiry.css'
 
 export default function DistributorEnquiryForm({ distributor, context = {}, onClose }) {
   const [customerName, setCustomerName] = useState('')
