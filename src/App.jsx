@@ -876,7 +876,7 @@ export default function App(){
     if(type==='company'){
       const [companyRes, relRes, divisionsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url,ownership_percentage,ownership_relationship,ownership_note,company_group_id').eq('id',id).eq('status','active').maybeSingle(),
-        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id')),
+        fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id')),
         supabase.from('divisions').select('id,division_name,company_id').eq('company_id',id).eq('status','active').order('division_name')
       ])
       if(companyRes.error||relRes.error||divisionsRes.error){setError((companyRes.error||relRes.error||divisionsRes.error).message);setProfileLoading(false);return}
@@ -927,23 +927,26 @@ export default function App(){
       const divisionIds=[...new Set([...rels.map(x=>x.division_id),...catalogRelations.map(x=>x.division_id),...(profileProductDivisionsRes.data||[]).map(x=>x.id)].filter(Boolean))]
       const brandIds=[...new Set([...rels.map(x=>x.brand_id),...catalogRelations.map(x=>x.brand_id),...(profileBrandsRes.data||[]).map(x=>x.id),...(companyBrandsRes.data||[]).map(x=>x.id)].filter(Boolean))]
       const locationIds=[...new Set([...rels.map(x=>x.location_id),...catalogRelations.map(x=>x.location_id),...catalogProductLinks.map(x=>x.location_id)].filter(Boolean))]
-      const [dRes,vRes,bRes,lRes]=await Promise.all([
+      const categoryIds=[...new Set([...rels.map(x=>x.category_id),...catalogRelations.map(x=>x.category_id)].filter(Boolean))]
+      const [dRes,vRes,bRes,lRes,catRes]=await Promise.all([
         fetchByIds(distributorIds,ids=>supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,image_url').in('id',ids).eq('status','active')),
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids).eq('status','active')),
         fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name').in('id',ids).eq('status','active')),
-        fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active'))
+        fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids).eq('status','active')),
+        fetchByIds(categoryIds,ids=>supabase.from('categories').select('id,name,category_name').in('id',ids))
       ])
-      if(dRes.error||vRes.error||bRes.error||lRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
+      if(dRes.error||vRes.error||bRes.error||lRes.error||catRes.error){setError((dRes.error||vRes.error||bRes.error||lRes.error||catRes.error).message||'Unable to load company profile data.');setProfileLoading(false);return}
       const dm=new Map((dRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map([...(bRes.data||[]),...(companyBrandsRes.data||[]),...(profileBrandsRes.data||[])].map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
+      const categoryMap=new Map((catRes.data||[]).map(x=>[x.id,{...x,display_name:x.category_name||x.name||'Category'}]))
       const catalogCompanies=[...familyRows,companyRes.data].filter(Boolean)
       const catalogDivisions=[...(companyDivisionsRes.data||divisionsRes.data||[]),...(profileProductDivisionsRes.data||[]),...(vRes.data||[])]
       const catalogBrands=[...(companyBrandsRes.data||[]),...(profileBrandsRes.data||[]),...(bRes.data||[])]
       const catalogDistributors=[...(dRes.data||[]),...(subsidiaryDistributorsRes.data||[])]
       const enrichedCompanyCatalog=enrichCatalogProducts(catalogProducts,catalogCompanies,catalogDivisions,catalogBrands,catalogRelations,catalogProductLinks,catalogDistributors)
-      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:enrichedCompanyCatalog},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:enrichedCompanyCatalog},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,category:x.category_id?categoryMap.get(x.category_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
@@ -1260,6 +1263,7 @@ export default function App(){
                         )}
                         {profile.type !== 'product' && rel.division && <span>{rel.division.division_name}</span>}
                         {profile.type !== 'product' && rel.brand && <span>Brand: {rel.brand.brand_name}</span>}
+                        {profile.type !== 'product' && rel.category && <span>Category: {rel.category.display_name}</span>}
                         {profile.type==='product' && !rel.isProductSpecific && <small>Product information not available</small>}
                         
                         {profile.type !== 'distributor' && rel.distributor?.mobile && (
