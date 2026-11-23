@@ -1194,6 +1194,58 @@ export default function App(){
                 )}
 
                 {visibleRelationships.length > 0 ? (
+                  profile.type === 'distributor' ? (
+                    <div className="distributor-company-groups">
+                      {distributorCompanyGroups.map(group => (
+                        <section className="distributor-company-group" key={group.company.id}>
+                          <div className="distributor-company-heading">
+                            <div>
+                              <button className="profile-link-button" onClick={() => openProfile('company', group.company.id)}>{group.company.company_name}</button>
+                              <span>{group.relationships.length} active assignment{group.relationships.length === 1 ? '' : 's'}</span>
+                            </div>
+                            <button className="company-subsidiary-open" onClick={() => openProfile('company', group.company.id)}>Company profile <ArrowRight size={14}/></button>
+                          </div>
+                          <div className="distributor-scope-list">
+                            {group.relationships.map(rel => (
+                              <div className="distributor-scope-row" key={rel.id}>
+                                <div className="distributor-scope-copy">
+                                  <div className="distributor-scope-title">
+                                    {rel.brand ? (
+                                      <><small>Brand</small><button className="profile-link-button" onClick={() => openProfile('brand', rel.brand.id)}>{rel.brand.brand_name}</button></>
+                                    ) : rel.division ? (
+                                      <><small>Division</small><button className="profile-link-button" onClick={() => openProfile('division', rel.division.id)}>{rel.division.division_name}</button></>
+                                    ) : (
+                                      <><small>Scope</small><strong>Company-level assignment</strong></>
+                                    )}
+                                  </div>
+                                  <div className="distributor-scope-meta">
+                                    {rel.category && <span>Category: {rel.category.display_name}</span>}
+                                    {rel.location && <span>Location: {[rel.location.city,rel.location.district,rel.location.state].filter(Boolean).join(', ')}</span>}
+                                    {rel.territory && <span>Territory: {rel.territory}</span>}
+                                    {!rel.location && !rel.territory && <span>Territory not specified</span>}
+                                  </div>
+                                </div>
+                                <div className="distributor-scope-actions">
+                                  {rel.verification_status === 'verified' ? (
+                                    <span className="verified-badge verified-badge-small"><ShieldCheck size={12}/> Verified</span>
+                                  ) : rel.verification_status === 'needs_review' ? (
+                                    <span className="status-badge status-review">Under Review</span>
+                                  ) : (
+                                    <span className="status-badge status-unverified"><span className="status-symbol">!</span> Not Verified</span>
+                                  )}
+                                  {(profile.entity?.whatsapp || profile.entity?.mobile) && (
+                                    <a className="profile-rel-action" href={waLink(profile.entity.whatsapp || profile.entity.mobile,stockWhatsAppMessage(profile.entity.distributor_name,group.company.company_name))} target="_blank" rel="noreferrer" onClick={() => trackDistributorActivity({event_type:'whatsapp_click',distributor_id:profile.entity.id,company_id:rel.company_id,division_id:rel.division_id||null,brand_id:rel.brand_id||null,distributorship_id:rel.id})}>
+                                      <MessageCircle size={13}/> Check Stock
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
                   visibleRelationships.map(rel => (
                     <div className="profile-rel" key={rel.id}>
                       <div>
@@ -1252,6 +1304,7 @@ export default function App(){
                       </div>
                     </div>
                   ))
+                  )
                 ) : (
                   <div className="result-state">{profile.relationships.length === 0 ? 'No active distributorships found.' : 'No companies, divisions or brands match your search.'}</div>
                 )}
