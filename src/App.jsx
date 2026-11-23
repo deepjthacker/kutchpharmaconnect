@@ -419,7 +419,7 @@ export default function App(){
   async function search(term){
     const requestId=++searchRequestRef.current
     try {
-    setLoading(true);setSearched(true);setError('')
+    setLoading(true);setSearched(true);setError('');setSearchFilter('all');setExpandedProductDistributors({})
     const searchUrl=new URL(window.location.href)
     searchUrl.searchParams.delete('view');searchUrl.searchParams.delete('type');searchUrl.searchParams.delete('id');searchUrl.searchParams.delete('category')
     if(term.trim())searchUrl.searchParams.set('q',term.trim())
@@ -513,6 +513,7 @@ export default function App(){
 
     const cards=[]
     const seen=new Set()
+    const matchedDistributorCards=new Map()
 
     // Brand matches are first-class results, not just a trigger for company relationships.
     if(brandRows.length){
@@ -565,12 +566,18 @@ export default function App(){
       }
 
       if(distributorMatch||locationMatch){
-        const key='distributor-'+rel.id
-        if(!seen.has(key)){
-          seen.add(key)
-          cards.push({type:'relationship',icon:'distributor',title:distributor.distributor_name,subtitle:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:null),relation:'Currently handles',target:company,contact:distributor,rel})
-        }
+        const current=matchedDistributorCards.get(distributor.id)||{type:'distributor',id:distributor.id,title:distributor.distributor_name,mobile:distributor.mobile||null,address:distributor.address||null,listings:[]}
+        current.listings.push({id:rel.id,companyName:company.company_name,scope:brand?'Brand: '+brand.brand_name:(division?'Division: '+division.division_name:'Company-level listing')})
+        matchedDistributorCards.set(distributor.id,current)
       }
+    })
+
+    // Group matching assignments into one result per distributor.
+    matchedDistributorCards.forEach(card=>{
+      card.listings=[...new Map(card.listings.map(item=>[item.id,item])).values()]
+      card.preview=[...new Set(card.listings.slice(0,3).map(item=>item.companyName+' · '+item.scope))]
+      card.listingCount=card.listings.length
+      cards.push(card)
     })
 
     // Show matching legal entities even when they have no direct distributor listing.
@@ -658,7 +665,7 @@ export default function App(){
     })
 
     if(requestId!==searchRequestRef.current)return
-    setResults(rankSearchItems(cards,term,item=>[item.title,item.subtitle,item.specs,item.companyName].filter(Boolean).join(' ')))
+    setResults(rankSearchItems(cards,term,item=>[item.title,item.subtitle,item.specs,item.companyName,...(item.preview||[])].filter(Boolean).join(' ')))
     setLoading(false)
     } catch (searchError) {
       if(requestId!==searchRequestRef.current)return
@@ -1347,8 +1354,9 @@ export default function App(){
                       { id: 'product', label: 'Products', count: results.filter(item => item.type === 'product').length },
                       { id: 'brand', label: 'Brands', count: results.filter(item => item.type === 'brand').length },
                       { id: 'division', label: 'Divisions', count: results.filter(item => item.type === 'division').length },
+                      { id: 'distributor', label: 'Distributors', count: results.filter(item => item.type === 'distributor').length },
                       { id: 'company', label: 'Companies', count: results.filter(item => item.type === 'company').length },
-                      { id: 'relationship', label: 'Distributor listings', count: results.filter(item => item.type === 'relationship').length }
+                      { id: 'relationship', label: 'Distributor relationships', count: results.filter(item => item.type === 'relationship').length }
                     ].filter(item => item.id === 'all' || item.count > 0).map(item => (
                       <button
                         key={item.id}
@@ -1382,7 +1390,21 @@ export default function App(){
                           <button className="result-open" aria-label={`Open ${r.title} profile`} onClick={e=>{e.stopPropagation();openProfile('company',r.id)}}><ArrowRight size={18}/></button>
                         </div>
                       )
-                      if (r.type === 'division') return (
+                                             if (r.type === 'distributor') return (
+                         <div className="result-card result-card-clickable" key={'distributor-'+r.id} role="link" tabIndex={0} onClick={()=>openProfile('distributor',r.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('distributor',r.id)}}}>
+                           <div className="result-icon distributor-icon"><Truck size={19}/></div>
+                           <div className="result-copy">
+                             <strong>{r.title}</strong>
+                             <span className="result-relation">Distributor · {r.listingCount} handled listing{r.listingCount===1?'':'s'}</span>
+                             {r.preview?.map((item,index)=><span className="result-meta" key={index}>{item}</span>)}
+                             {r.listingCount>3&&<span className="result-meta">+{r.listingCount-3} more handled listings</span>}
+                             {r.address&&<span className="result-meta">{r.address}</span>}
+                             {r.mobile&&<div className="result-phone"><Phone size={13}/><a href={phoneLink(r.mobile)} onClick={e=>{e.stopPropagation();trackDistributorActivity({event_type:'call_click',distributor_id:r.id})}}>{r.mobile}</a></div>}
+                           </div>
+                           <button className="result-open" aria-label={'Open '+r.title+' distributor profile'} onClick={e=>{e.stopPropagation();openProfile('distributor',r.id)}}><ArrowRight size={18}/></button>
+                         </div>
+                       )
+                       if (r.type === 'division') return (
                         <div className="result-card result-card-clickable" key={'division-'+r.id} role="link" tabIndex={0} onClick={() => openProfile('division',r.id)} onKeyDown={e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfile('division',r.id)}}}>
                           <div className="result-icon">{r.imageUrl ? <img src={r.imageUrl} alt={`${r.companyName} logo`} style={{width:'100%',height:'100%',objectFit:'contain',borderRadius:'inherit'}} /> : <Building2 size={19}/>}</div>
                           <div className="result-copy"><strong>{r.title}</strong><span className="result-division">Division</span><span className="result-relation">Company: {r.companyName}</span><span className="result-meta">Open division profile to view its own catalogue and distributor relationships.</span></div>
