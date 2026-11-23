@@ -4,6 +4,7 @@ import { normalizeSearchText, searchMatchScore, scoreSearchItem, rankSearchItems
 
 test('normalization handles punctuation and letter-number separators', () => {
   assert.equal(normalizeSearchText('AstraZeneca-500mg'), 'astra zeneca 500 mg')
+  assert.equal(normalizeSearchText('BMSLifesciences'), 'bms lifesciences')
 })
 
 test('exact primary name ranks above a secondary company/specification match', () => {
