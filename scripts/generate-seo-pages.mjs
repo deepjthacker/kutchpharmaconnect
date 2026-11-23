@@ -101,10 +101,10 @@ const ownershipSection = company => {
   const parent = company.parent_company_id ? companyById.get(company.parent_company_id) : null
   const children = subsidiariesByParent.get(company.id) || []
   if (!parent && !children.length && company.ownership_relationship !== 'joint_venture') return ''
-  const parentCard = parent ? \`<article class="card"><span class="pill">\${esc(ownershipLabel(company.ownership_relationship))}</span><p><strong>Parent / holding entity:</strong> <a href="\${companyProfileUrl(parent)}">\${esc(parent.company_name)}</a></p><p class="muted">\${company.ownership_percentage != null ? \`\${esc(company.ownership_percentage)}% ownership\` : ''}\${company.ownership_note ? \` · \${esc(company.ownership_note)}\` : ''}</p></article>\` : ''
-  const jvCard = company.ownership_relationship === 'joint_venture' ? \`<article class="card"><span class="pill">Joint venture</span><p>\${esc(company.ownership_note || 'Joint venture relationship recorded.')}</p></article>\` : ''
-  const childCards = children.map(child => \`<article class="card"><span class="pill">\${esc(ownershipLabel(child.ownership_relationship))}</span><p><strong><a href="\${companyProfileUrl(child)}">\${esc(child.company_name)}</a></strong></p><p class="muted">\${child.ownership_percentage != null ? \`\${esc(child.ownership_percentage)}% ownership\` : ''}\${child.ownership_note ? \` · \${esc(child.ownership_note)}\` : ''}</p></article>\`).join('')
-  return \`<h2>Corporate ownership structure</h2>\${parentCard}\${jvCard}\${children.length ? \`<p class="muted">Entities directly linked under this company. Each entity has its own distributor records and product catalogue.</p>\${childCards}\` : ''}\`
+  const parentCard = parent ? `<article class="card"><span class="pill">${esc(ownershipLabel(company.ownership_relationship))}</span><p><strong>Parent / holding entity:</strong> <a href="${companyProfileUrl(parent)}">${esc(parent.company_name)}</a></p><p class="muted">${company.ownership_percentage != null ? `${esc(company.ownership_percentage)}% ownership` : ''}${company.ownership_note ? ` · ${esc(company.ownership_note)}` : ''}</p></article>` : ''
+  const jvCard = company.ownership_relationship === 'joint_venture' ? `<article class="card"><span class="pill">Joint venture</span><p>${esc(company.ownership_note || 'Joint venture relationship recorded.')}</p></article>` : ''
+  const childCards = children.map(child => `<article class="card"><span class="pill">${esc(ownershipLabel(child.ownership_relationship))}</span><p><strong><a href="${companyProfileUrl(child)}">${esc(child.company_name)}</a></strong></p><p class="muted">${child.ownership_percentage != null ? `${esc(child.ownership_percentage)}% ownership` : ''}${child.ownership_note ? ` · ${esc(child.ownership_note)}` : ''}</p></article>`).join('')
+  return `<h2>Corporate ownership structure</h2>${parentCard}${jvCard}${children.length ? `<p class="muted">Entities directly linked under this company. Each entity has its own distributor records and product catalogue.</p>${childCards}` : ''}`
 }
 const distributorById = new Map(distributors.map(row => [row.id, row]))
 const divisionById = new Map(divisions.map(row => [row.id, row]))
@@ -115,7 +115,7 @@ for (const division of divisions) {
 }
 const divisionSection = company => {
   const rows = divisionsByCompany.get(company.id) || []
-  return rows.length ? \`<h2>Divisions</h2>\${rows.map(row => \`<article class="card"><strong>\${esc(row.division_name)}</strong></article>\`).join('')}\` : ''
+  return rows.length ? `<h2>Divisions</h2>${rows.map(row => `<article class="card"><strong>${esc(row.division_name)}</strong></article>`).join('')}` : ''
 }
 const locationById = new Map(locations.map(row => [row.id, row]))
 const relsByCompany = new Map()
