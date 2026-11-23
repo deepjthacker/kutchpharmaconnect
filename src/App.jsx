@@ -873,14 +873,14 @@ export default function App(){
     trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
       const [companyRes, relRes, divisionsRes]=await Promise.all([
-        supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
+        supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url,ownership_percentage,ownership_relationship,ownership_note,company_group_id').eq('id',id).eq('status','active').maybeSingle(),
         fetchAllPages(()=>supabase.from('distributorships').select('id,distributor_id,division_id,brand_id,location_id,territory,verification_status,verification_note').eq('company_id',id).eq('status','active').order('id')),
         supabase.from('divisions').select('id,division_name,company_id').eq('company_id',id).eq('status','active').order('division_name')
       ])
       if(companyRes.error||relRes.error||divisionsRes.error){setError((companyRes.error||relRes.error||divisionsRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
       const parentCompanyId=companyRes.data?.parent_company_id
-      const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
+      const familyRes=await supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url,ownership_percentage,ownership_relationship,ownership_note,company_group_id').or('id.eq.'+id+',parent_company_id.eq.'+id+(parentCompanyId?',id.eq.'+parentCompanyId:'' )).eq('status','active')
       const familyRows=familyRes.data||[]
       const subsidiaryRows=familyRows.filter(company=>company.parent_company_id===id)
       const subsidiaryIds=subsidiaryRows.map(company=>company.id)
@@ -897,7 +897,7 @@ export default function App(){
           subsidiary.distributorCount=subsidiary.distributorNames.length
         }
       }
-      const profileCompanyIds=[id,...subsidiaryIds]
+      const profileCompanyIds=[id]
       const [catalogRes,companyDivisionsRes]=await Promise.all([
         profileCompanyIds.length?fetchAllPages(()=>supabase.from('products').select('id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size').in('company_id',profileCompanyIds).eq('status','active').order('product_name')):{data:[],error:null},
         supabase.from('divisions').select('id,division_name,company_id').in('company_id',profileCompanyIds).eq('status','active').order('division_name')
@@ -1102,9 +1102,9 @@ export default function App(){
                     <div className="profile-list-title">Company group</div>
                     {(profile.entity.subsidiaries||[]).map(company=><div className="profile-rel company-subsidiary-row" key={company.id}>
                       <div className="company-subsidiary-copy">
-                        <small>Operating company</small>
+                        <small>{company.ownership_relationship==='majority_owned'?'Majority-owned subsidiary':company.ownership_relationship==='step_down_subsidiary'?'Step-down subsidiary':company.ownership_relationship==='joint_venture'?'Joint venture':company.ownership_relationship==='direct_subsidiary'?'Direct subsidiary':'Operating company'}</small>
                         <button className="profile-link-button" onClick={()=>openProfile('company',company.id)}>{company.company_name}</button>
-                        <span className="company-subsidiary-count">{company.distributorCount} active Kutch distributor {company.distributorCount===1?'relationship':'relationships'}</span>
+                        <span className="company-subsidiary-count">{company.ownership_percentage!=null?`${Number(company.ownership_percentage)}% ownership · `:''}{company.distributorCount} active Kutch distributor {company.distributorCount===1?'relationship':'relationships'}</span>
                         {company.distributorNames.length>0 && <span className="company-subsidiary-preview">{company.distributorNames.slice(0,3).join(' · ')}{company.distributorNames.length>3?' · +'+(company.distributorNames.length-3)+' more':''}</span>}
                       </div>
                       <button className="company-subsidiary-open" onClick={()=>openProfile('company',company.id)}>View distributors <ArrowRight size={15}/></button>
@@ -1245,7 +1245,7 @@ export default function App(){
 
                   {['company','division','brand'].includes(profile.type) && <div className="profile-list profile-product-catalogue">
                     <div className="profile-list-title">{profile.type==='company'?'Company product catalogue':profile.type==='division'?'Division product catalogue':'Brand product catalogue'} <span className="profile-catalog-count">{visibleCatalog.length} of {(profile.entity.catalog||[]).length}</span></div>
-                    <p className="result-meta">{profile.type==='company'?'Products across this company and its listed operating subsidiaries.':profile.type==='division'?'Every active product assigned to this division, including products whose brand may be unfamiliar.':'Every active product assigned to this brand, with its owning division and company.'} Select a product to view its distributor relationships.</p>
+                    <p className="result-meta">{profile.type==='company'?'Products assigned directly to this legal entity only. Subsidiary catalogues remain on their own company profiles.':profile.type==='division'?'Every active product assigned to this division, including products whose brand may be unfamiliar.':'Every active product assigned to this brand, with its owning division and company.'} Select a product to view its distributor relationships.</p>
                     <label className="catalog-search">
                       <Search size={16}/>
                       <input type="search" value={catalogSearch} onChange={e=>setCatalogSearch(e.target.value)} placeholder="Find a product by name, brand, division or composition…" aria-label="Search this product catalogue"/>
