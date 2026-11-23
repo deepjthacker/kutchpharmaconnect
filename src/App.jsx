@@ -947,7 +947,7 @@ export default function App(){
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
-        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,division_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active').order('id'))
+        fetchAllPages(()=>supabase.from('distributorships').select('id,company_id,division_id,brand_id,category_id,location_id,territory,verification_status,verification_note').eq('distributor_id',id).eq('status','active').order('id'))
       ])
       if(distRes.error||relRes.error){setError((distRes.error||relRes.error).message);setProfileLoading(false);return}
       const rels=relRes.data||[]
@@ -958,18 +958,21 @@ export default function App(){
       const divisionIds=[...new Set(rels.map(x=>x.division_id).filter(Boolean))]
       const locationIds=[...new Set(rels.map(x=>x.location_id).filter(Boolean))]
       const brandIds=[...new Set(rels.map(x=>x.brand_id).filter(Boolean))]
-      const [cRes,vRes,lRes,bRes]=await Promise.all([
+      const categoryIds=[...new Set(rels.map(x=>x.category_id).filter(Boolean))]
+      const [cRes,vRes,lRes,bRes,catRes]=await Promise.all([
         fetchByIds(companyIds,ids=>supabase.from('companies').select('id,company_name,short_name').in('id',ids).eq('status','active')),
         fetchByIds(divisionIds,ids=>supabase.from('divisions').select('id,division_name').in('id',ids)),
         fetchByIds(locationIds,ids=>supabase.from('locations').select('id,city,district,state,pincode').in('id',ids)),
-        fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active'))
+        fetchByIds(brandIds,ids=>supabase.from('brands').select('id,brand_name,company_id,division_id').in('id',ids).eq('status','active')),
+        fetchByIds(categoryIds,ids=>supabase.from('categories').select('id,name,category_name').in('id',ids))
       ])
-      if(cRes.error||vRes.error||lRes.error||bRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
+      if(cRes.error||vRes.error||lRes.error||bRes.error||catRes.error){setError((cRes.error||vRes.error||lRes.error||bRes.error||catRes.error).message||'Unable to load distributor profile data.');setProfileLoading(false);return}
       const cm=new Map((cRes.data||[]).map(x=>[x.id,x]))
       const vm=new Map((vRes.data||[]).map(x=>[x.id,x]))
       const lm=new Map((lRes.data||[]).map(x=>[x.id,x]))
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
-      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
+      const categoryMap=new Map((catRes.data||[]).map(x=>[x.id,{...x,display_name:x.category_name||x.name||'Category'}]))
+      setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,category:x.category_id?categoryMap.get(x.category_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
         trackDistributorActivity({event_type:'profile_view',distributor_id:id})
     }
     setProfileLoading(false)
@@ -1005,9 +1008,17 @@ export default function App(){
     )
     const visibleRelationships = (profile?.relationships || []).filter(rel => {
       if (profile?.type !== 'distributor' || !relationshipQuery) return true
-      return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name]
+      return [rel.company?.company_name, rel.division?.division_name, rel.brand?.brand_name, rel.category?.display_name, rel.location?.city, rel.location?.district, rel.territory]
         .some(value => String(value || '').toLowerCase().includes(relationshipQuery))
     })
+    const distributorCompanyGroups = profile?.type === 'distributor'
+      ? [...visibleRelationships.reduce((groups, rel) => {
+          const key = rel.company_id
+          if (!groups.has(key)) groups.set(key, { company: rel.company, relationships: [] })
+          groups.get(key).relationships.push(rel)
+          return groups
+        }, new Map()).values()]
+      : []
     return (
       <section className="profile-section">
         <div className="container profile-container">
