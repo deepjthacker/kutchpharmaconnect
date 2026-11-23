@@ -23,3 +23,12 @@ html[data-theme="dark"] .kpc-enquiry-modal{background:#111c2e;border-color:#3341
 html[data-theme="dark"] .kpc-enquiry-form>label{color:#cbd5e1}
 html[data-theme="dark"] .kpc-enquiry-form input:not([type=checkbox]),html[data-theme="dark"] .kpc-enquiry-form textarea{background:#0f172a;border-color:#334155;color:#e2e8f0}
 html[data-theme="dark"] .kpc-enquiry-close{background:#263449;color:#e2e8f0}
+
+
+.kpc-enquiry-open{display:inline-flex;align-items:center;gap:6px;border:1px solid #173a8f;border-radius:8px;padding:8px 12px;background:#173a8f;color:#fff;font-size:12px;font-weight:800}
+.kpc-enquiry-open:hover{background:#244caa}
+.profile-rel-actions button.profile-rel-action{display:inline-flex;align-items:center;gap:5px;border:1px solid #cfd8e6;border-radius:7px;padding:5px 8px;background:#fff;color:#263a5d;font:inherit;font-size:11px;font-weight:750;cursor:pointer}
+.profile-rel-actions button.profile-rel-action:hover{border-color:#9fb3d5;background:#f7f9fc}
+.contact-action.enquiry-action{border-color:#3159a8;color:#3159a8;background:#fff}
+html[data-theme="dark"] .kpc-enquiry-open{background:#3159a8;border-color:#5278bd}
+html[data-theme="dark"] .profile-rel-actions button.profile-rel-action{background:#172235;border-color:#334155;color:#dbeafe}
