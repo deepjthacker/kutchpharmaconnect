@@ -20,8 +20,14 @@ function TrendChart({data}) {
   const x=i=>l+(data.length<=1?0:i*(w-l-r)/(data.length-1)), y=v=>t+(h-t-b)*(1-v/max)
   const path=key=>data.map((d,i)=>(i?'L':'M')+' '+x(i)+' '+y(d[key])).join(' ')
   const labels=data.filter((d,i)=>i===0||i===data.length-1||i%Math.max(1,Math.ceil(data.length/6))===0)
+  const area=key=>path(key)+' L '+x(data.length-1)+' '+(h-b)+' L '+x(0)+' '+(h-b)+' Z'
   return <div className="kpc-chart-canvas"><svg viewBox={'0 0 '+w+' '+h} role="img" aria-label="Daily profile views, contact clicks and enquiries">
-    {[0,.25,.5,.75,1].map((p,i)=><g key={i}><line x1={l} x2={w-r} y1={t+(h-t-b)*p} y2={t+(h-t-b)*p} className="kpc-chart-grid"/><text x={l-9} y={t+(h-t-b)*p+4} textAnchor="end" className="kpc-chart-axis">{Math.round(max*(1-p))}</text></g>)}
+    <defs>
+      <linearGradient id="kpc-view-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#4778d0" stopOpacity=".22"/><stop offset="100%" stopColor="#4778d0" stopOpacity="0"/></linearGradient>
+      <linearGradient id="kpc-contact-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#16a085" stopOpacity=".16"/><stop offset="100%" stopColor="#16a085" stopOpacity="0"/></linearGradient>
+    </defs>
+    {[0,.25,.5,.75,1].map((p,i)=><g key={i}><line x1={l} x2={w-r} y1={t+(h-t-b)*p} y2={t+(h-t-b)*p} className="kpc-chart-gridline"/><text x={l-9} y={t+(h-t-b)*p+4} textAnchor="end" className="kpc-chart-axis">{Math.round(max*(1-p))}</text></g>)}
+    <path d={area('views')} fill="url(#kpc-view-fill)"/><path d={area('contacts')} fill="url(#kpc-contact-fill)"/>
     <path d={path('views')} className="kpc-chart-line kpc-chart-line-views"/><path d={path('contacts')} className="kpc-chart-line kpc-chart-line-contacts"/><path d={path('enquiries')} className="kpc-chart-line kpc-chart-line-enquiries"/>
     {data.map((d,i)=><g key={d.date}><circle cx={x(i)} cy={y(d.views)} r="2.5" className="kpc-chart-dot kpc-chart-dot-views"><title>{d.date}: {d.views} views</title></circle><circle cx={x(i)} cy={y(d.contacts)} r="2.5" className="kpc-chart-dot kpc-chart-dot-contacts"><title>{d.date}: {d.contacts} contact clicks</title></circle><circle cx={x(i)} cy={y(d.enquiries)} r="2.5" className="kpc-chart-dot kpc-chart-dot-enquiries"><title>{d.date}: {d.enquiries} enquiries</title></circle></g>)}
     {labels.map(d=><text key={d.date} x={x(data.indexOf(d))} y={h-10} textAnchor="middle" className="kpc-chart-axis">{dateLabel(d.date)}</text>)}
