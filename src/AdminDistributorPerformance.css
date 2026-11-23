@@ -1,0 +1,54 @@
+.kpc-performance-page{max-width:1180px;margin:0 auto}
+.kpc-performance-toolbar{display:flex;align-items:end;gap:12px;margin:18px 0}
+.kpc-performance-toolbar>label,.kpc-enquiry-filters>label{display:flex;flex-direction:column;gap:6px;color:#53627a;font-size:11px;font-weight:800}
+.kpc-performance-toolbar select,.kpc-enquiry-filters select{min-height:38px;border:1px solid #d7dee8;border-radius:9px;padding:8px 11px;background:#fff;color:#25344b;font:inherit}
+.kpc-performance-search{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;min-width:240px;max-width:430px;flex:1;border:1px solid #d7dee8;border-radius:9px;padding:0 11px;background:#fff}
+.kpc-performance-search svg{color:#728096;flex:none}
+.kpc-performance-search input{width:100%;min-width:0;height:38px;border:0;outline:0;background:transparent;color:#25344b;font:inherit;font-size:13px}
+.kpc-performance-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.kpc-performance-kpis>div{display:flex;flex-direction:column;gap:7px;min-width:0;padding:16px;border:1px solid #e0e6ef;border-radius:12px;background:#fff}
+.kpc-performance-kpis span{display:flex;align-items:center;gap:7px;color:#65728a;font-size:11px;font-weight:750}
+.kpc-performance-kpis span svg{color:#3159a8}
+.kpc-performance-kpis strong{font-size:27px;line-height:1;font-variant-numeric:tabular-nums;color:#172033}
+.kpc-performance-kpis small{font-size:10px;color:#748096}
+.kpc-performance-panel{margin-top:14px;padding:18px}
+.kpc-performance-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+.kpc-performance-section-head h2{font-size:19px;margin:0 0 5px}
+.kpc-performance-section-head p:not(.section-kicker){margin:0;color:#6d7a90;font-size:11px;line-height:1.5}
+.kpc-performance-section-head .admin-refresh{flex:none}
+.kpc-performance-table-wrap{width:100%;overflow:auto;border:1px solid #e4e9f0;border-radius:10px}
+.kpc-performance-table{width:100%;min-width:700px;border-collapse:collapse;text-align:left;font-size:12px}
+.kpc-performance-table th{padding:11px 12px;background:#f4f6fa;color:#68758a;font-size:10px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.kpc-performance-table td{padding:12px;border-top:1px solid #edf0f4;color:#35435a;font-variant-numeric:tabular-nums}
+.kpc-performance-table td:first-child{font-variant-numeric:normal}
+.kpc-performance-table td strong,.kpc-performance-table td small{display:block}
+.kpc-performance-table td strong{color:#24334b;font-size:12px}
+.kpc-performance-table td small{margin-top:3px;color:#7a879a;font-size:10px}
+.kpc-enquiry-filters{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:8px 0 12px}
+.kpc-enquiry-filters>span{font-size:11px;color:#758198}
+.kpc-admin-enquiry-list{display:grid;gap:10px}
+.kpc-admin-enquiry{padding:14px;border:1px solid #e2e7ee;border-radius:11px;background:#fff}
+.kpc-admin-enquiry-top{display:flex;justify-content:space-between;gap:12px}
+.kpc-admin-enquiry-top>div{display:flex;flex-direction:column;gap:3px}
+.kpc-admin-enquiry-top strong{font-size:14px;color:#25344b}
+.kpc-admin-enquiry-top span,.kpc-admin-enquiry-top small{font-size:11px;color:#6e7b90}
+.kpc-admin-enquiry-context{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:10px}
+.kpc-admin-enquiry-context strong{font-size:12px;color:#3159a8}
+.kpc-admin-enquiry-context span{font-size:11px;color:#6e7b90}
+.kpc-admin-enquiry-context em{font-size:10px;font-style:normal;color:#8b5c1b;background:#fff7e8;border-radius:5px;padding:4px 7px}
+.kpc-admin-enquiry>p{margin:10px 0;color:#36445b;font-size:12px;line-height:1.55;white-space:pre-wrap}
+.kpc-admin-enquiry-controls{display:grid;grid-template-columns:130px 150px minmax(180px,1fr) auto;align-items:end;gap:9px;padding-top:10px;border-top:1px solid #edf0f4}
+.kpc-admin-enquiry-controls label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#68758a;font-size:10px;font-weight:800}
+.kpc-admin-enquiry-controls input,.kpc-admin-enquiry-controls select{width:100%;min-width:0;height:36px;border:1px solid #d7dee8;border-radius:8px;padding:7px 9px;background:#fff;color:#25344b;font:inherit;font-size:12px}
+.kpc-admin-enquiry-controls .admin-refresh{min-height:36px}
+.kpc-performance-footnote{display:flex;align-items:flex-start;gap:7px;margin:14px 2px;color:#738096;font-size:11px;line-height:1.5}
+.kpc-performance-footnote svg{flex:none;color:#3159a8}
+@media(max-width:760px){.kpc-performance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpc-performance-section-head{display:block}.kpc-performance-section-head .admin-refresh{margin-top:10px}.kpc-admin-enquiry-controls{grid-template-columns:1fr 1fr}.kpc-admin-enquiry-notes{grid-column:1/-1}}
+@media(max-width:480px){.kpc-performance-toolbar{align-items:stretch;flex-direction:column}.kpc-performance-search{max-width:none}.kpc-performance-kpis>div{padding:12px}.kpc-performance-kpis strong{font-size:24px}.kpc-performance-panel{padding:13px}.kpc-admin-enquiry-top{display:block}.kpc-admin-enquiry-top>small{display:block;margin-top:5px}.kpc-admin-enquiry-controls{grid-template-columns:1fr}.kpc-admin-enquiry-notes{grid-column:auto}}
+html[data-theme="dark"] .kpc-performance-kpis>div,html[data-theme="dark"] .kpc-admin-enquiry{background:#111c2e;border-color:#334155}
+html[data-theme="dark"] .kpc-performance-kpis strong,html[data-theme="dark"] .kpc-performance-table td strong,html[data-theme="dark"] .kpc-admin-enquiry-top strong{color:#e2e8f0}
+html[data-theme="dark"] .kpc-performance-toolbar select,html[data-theme="dark"] .kpc-enquiry-filters select,html[data-theme="dark"] .kpc-performance-search,html[data-theme="dark"] .kpc-performance-search input,html[data-theme="dark"] .kpc-admin-enquiry-controls input,html[data-theme="dark"] .kpc-admin-enquiry-controls select{background:#111c2e;border-color:#334155;color:#e2e8f0}
+html[data-theme="dark"] .kpc-performance-table-wrap{border-color:#334155}
+html[data-theme="dark"] .kpc-performance-table th{background:#1e293b;color:#cbd5e1}
+html[data-theme="dark"] .kpc-performance-table td,html[data-theme="dark"] .kpc-admin-enquiry-controls{border-color:#334155;color:#cbd5e1}
+html[data-theme="dark"] .kpc-admin-enquiry>p{color:#cbd5e1}
