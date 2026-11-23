@@ -1,7 +1,7 @@
 import React from 'react'
 import { ArrowLeft, ShieldCheck, FileText, Mail, Info, AlertTriangle, MessageSquareWarning } from 'lucide-react'
 
-const updated = '28 October 2026'
+const updated = '23 November 2026'
 const pages = {
   about: { icon: Info, title: 'About KutchPharmaConnect', intro: 'A directory to help people discover pharmaceutical companies and distributor listings associated with Kutch, Gujarat.', sections: [
     ['What this directory does', 'KutchPharmaConnect helps users search company, subsidiary, brand, product-catalogue and distributor information in one place. It provides directory information and contact links so users can contact businesses directly.'],
