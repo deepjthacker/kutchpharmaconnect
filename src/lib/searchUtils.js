@@ -3,13 +3,13 @@
 export function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFKD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('en-IN')
     .replace(/([a-z])([0-9])/g, '$1 $2')
     .replace(/([0-9])([a-z])/g, '$1 $2')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
 }
 
 export function searchTokens(value) {
