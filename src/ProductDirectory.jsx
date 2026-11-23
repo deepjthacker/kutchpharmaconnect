@@ -7,7 +7,7 @@ import { applyFlexibleSearch, searchTokens } from './lib/searchUtils'
 import { resolveProductDistributors } from './lib/relationshipResolver'
 
 const PRODUCT_PAGE_SIZE = 60
-const PRODUCT_FIELDS = 'id,product_name,company_id,division_id,brand_id,generic_name,strength,dosage_form,pack_size'
+const PRODUCT_FIELDS = 'id,product_name,company_id,division_id,brand_id,category_id,generic_name,strength,dosage_form,pack_size'
 const PRODUCT_SEARCH_FIELDS = ['product_name','normalized_product_name','generic_name','strength','dosage_form','pack_size']
 
 async function fetchProductPage(term, offset = 0) {
