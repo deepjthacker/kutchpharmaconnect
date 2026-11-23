@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Building2, LoaderCircle, Search, Truck, MapPin, Phone, MessageCircle, Flag } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { fetchByIds } from './lib/queryHelpers'
+import { trackDistributorActivity } from './lib/distributorTracking'
 
 const browseCache = new Map()
 
@@ -397,9 +398,9 @@ export default function BrowseDirectory({ type, category, onBack, onOpenProfile,
                       {isCompanies && item.relationshipCount > 0 && item.verifiedCount === 0 && item.reviewCount === 0 && <span className="status-badge status-unverified" title="Company relationship data has not been independently confirmed."><span className="status-symbol">!</span> Not Verified</span>}
                       {!isCompanies && (
                         <div className="browse-contact-actions">
-                          {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>e.stopPropagation()}><Phone size={14}/><span>Call</span></a>}
-                          {item.mobile && <a className="contact-action whatsapp-action" href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MessageCircle size={14}/><span>WhatsApp</span></a>}
-                        {mapsLink(item) && <a className="contact-action maps-action" href={mapsLink(item)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}><MapPin size={14}/><span>Maps</span></a>}
+                          {item.mobile && <a className="contact-action call-action" href={phoneLink(item.mobile)} onClick={e=>{e.stopPropagation();trackDistributorActivity({event_type:'call_click',distributor_id:item.id})}}><Phone size={14}/><span>Call</span></a>}
+                          {item.mobile && <a className="contact-action whatsapp-action" href={waLink(item.whatsapp || item.mobile,distributorWhatsAppMessage(item.distributor_name))} target="_blank" rel="noreferrer" onClick={e=>{e.stopPropagation();trackDistributorActivity({event_type:'whatsapp_click',distributor_id:item.id})}}><MessageCircle size={14}/><span>WhatsApp</span></a>}
+                        {mapsLink(item) && <a className="contact-action maps-action" href={mapsLink(item)} target="_blank" rel="noreferrer" onClick={e=>{e.stopPropagation();trackDistributorActivity({event_type:'maps_click',distributor_id:item.id})}}><MapPin size={14}/><span>Maps</span></a>}
                         </div>
                       )}
                       {!isLocations && !isCatalogEntity && <button type="button" className="browse-report-action" onClick={e=>{e.stopPropagation();onReport?.({type:isCompanies?'company':'distributor',id:item.id,name:isCompanies?item.company_name:item.distributor_name,message:`Please review the directory information for ${isCompanies?item.company_name:item.distributor_name}.`})}}><Flag size={12}/> Report / Update Info</button>}
