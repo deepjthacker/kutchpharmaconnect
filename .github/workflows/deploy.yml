@@ -16,10 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -57,9 +54,14 @@ jobs:
           name: github-pages
           path: ./dist
 
-      - name: Wait for Pages artifact registration
-        run: sleep 15
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
 
+    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
