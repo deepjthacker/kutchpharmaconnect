@@ -10,7 +10,7 @@ export function resolveProductDistributors(product, distributorships = [], produ
   }
 
   ;(productLinks || []).filter(row => matchesProduct(row, 'product')).forEach(row => {
-    candidates.push({ ...row, scope: 'product', priority: 4, _categoryWildcard: row.category_id == null })
+    candidates.push({ ...row, scope: 'product', priority: 4 })
   })
   ;(distributorships || []).forEach(row => {
     if (row.company_id !== product.company_id) return
@@ -36,8 +36,8 @@ export function resolveProductDistributors(product, distributorships = [], produ
   productRows.forEach(row => {
     const compatible = [...contexts.entries()].filter(([, rows]) => {
       const sample = rows[0]
-      return (row.location_id ?? null) === (sample.location_id ?? null)
-        && String(row.territory || '').trim().toLowerCase() === String(sample.territory || '').trim().toLowerCase()
+      return (row.location_id == null || row.location_id === sample.location_id)
+        && (!String(row.territory || '').trim() || String(row.territory).trim().toLowerCase() === String(sample.territory || '').trim().toLowerCase())
         && (row.category_id == null || row.category_id === sample.category_id)
     })
     if (compatible.length) {
