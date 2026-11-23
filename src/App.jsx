@@ -1496,7 +1496,7 @@ export default function App(){
                                 <Phone size={13}/>
                                 <a
                                   href={phoneLink(r.target.mobile)}
-                                  onClick={e => {e.stopPropagation();trackEvent('phone_click',{entity_type:profileType})}}
+                                  onClick={e => {e.stopPropagation();trackEvent('phone_click',{entity_type:profileType});trackDistributorActivity({event_type:'call_click',distributor_id:r.contact?.id,company_id:r.rel.company_id,division_id:r.rel.division_id||null,brand_id:r.rel.brand_id||null,distributorship_id:r.rel.id})}}
                                 >
                                   {r.target.mobile}
                                 </a>
@@ -1505,12 +1505,12 @@ export default function App(){
 
                             <div className="result-actions">
                               {r.contact?.mobile && (
-                                <a href={phoneLink(r.contact.mobile)} onClick={e=>e.stopPropagation()}>
+                                <a href={phoneLink(r.contact.mobile)} onClick={e=>{e.stopPropagation();trackDistributorActivity({event_type:'call_click',distributor_id:r.contact.id,company_id:r.rel.company_id,division_id:r.rel.division_id||null,brand_id:r.rel.brand_id||null,distributorship_id:r.rel.id})}}>
                                   <Phone size={14}/> Call
                                 </a>
                               )}
                               {(r.contact?.whatsapp || r.contact?.mobile) && (
-                                <a href={waLink(r.contact.whatsapp || r.contact.mobile,stockWhatsAppMessage(r.contact.distributor_name,profileType==='company'?r.title:(r.target.company_name||r.title)))} target="_blank" rel="noreferrer" onClick={e=>{e.stopPropagation();trackEvent('whatsapp_stock_inquiry',{entity_type:profileType})}}>
+                                <a href={waLink(r.contact.whatsapp || r.contact.mobile,stockWhatsAppMessage(r.contact.distributor_name,profileType==='company'?r.title:(r.target.company_name||r.title)))} target="_blank" rel="noreferrer" onClick={e=>{e.stopPropagation();trackEvent('whatsapp_stock_inquiry',{entity_type:profileType});trackDistributorActivity({event_type:'whatsapp_click',distributor_id:r.contact?.id,company_id:r.rel.company_id,division_id:r.rel.division_id||null,brand_id:r.rel.brand_id||null,distributorship_id:r.rel.id})}}>
                                   <MessageCircle size={14}/> Check Stock on WhatsApp
                                 </a>
                               )}
