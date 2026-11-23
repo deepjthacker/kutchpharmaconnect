@@ -1143,27 +1143,36 @@ export default function App(){
 
               {profile.type === 'company' && (profile.entity.divisions?.length>0 || profile.entity.brands?.length>0) && (
                 <div className="profile-list company-catalog-structure">
-                  <div className="profile-list-title">Divisions &amp; brands</div>
+                  <div className="profile-list-title">Company structure</div>
                   {profile.entity.divisions?.length>0 && (
-                    <div className="profile-structure-group">
-                      <small className="profile-structure-label">Divisions</small>
-                      <div className="profile-structure-chips">
-                        {profile.entity.divisions.map(division=>(
-                          <button className="profile-structure-chip" key={division.id} onClick={()=>openProfile('division',division.id)}>
-                            {division.division_name}<ArrowRight size={13}/>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="company-division-tree">
+                      {profile.entity.divisions.map(division=>{
+                        const divisionBrands=(profile.entity.brands||[]).filter(brand=>brand.division_id===division.id)
+                        return (
+                          <section className="company-division-node" key={division.id}>
+                            <div className="company-division-heading">
+                              <small>Division</small>
+                              <button className="profile-link-button" onClick={()=>openProfile('division',division.id)}>{division.division_name}<ArrowRight size={13}/></button>
+                            </div>
+                            {divisionBrands.length>0 && (
+                              <div className="company-division-brands">
+                                <small>Brands in this division</small>
+                                <div className="profile-structure-chips">
+                                  {divisionBrands.map(brand=><button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>{brand.brand_name}<ArrowRight size={13}/></button>)}
+                                </div>
+                              </div>
+                            )}
+                          </section>
+                        )
+                      })}
                     </div>
                   )}
-                  {profile.entity.brands?.length>0 && (
+                  {(profile.entity.brands||[]).filter(brand=>!brand.division_id || !(profile.entity.divisions||[]).some(division=>division.id===brand.division_id)).length>0 && (
                     <div className="profile-structure-group">
-                      <small className="profile-structure-label">Brands</small>
+                      <small className="profile-structure-label">{profile.entity.divisions?.length ? 'Brands not linked to a division' : 'Brands'}</small>
                       <div className="profile-structure-chips">
-                        {profile.entity.brands.map(brand=>(
-                          <button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>
-                            {brand.brand_name}<ArrowRight size={13}/>
-                          </button>
+                        {(profile.entity.brands||[]).filter(brand=>!brand.division_id || !(profile.entity.divisions||[]).some(division=>division.id===brand.division_id)).map(brand=>(
+                          <button className="profile-structure-chip" key={brand.id} onClick={()=>openProfile('brand',brand.id)}>{brand.brand_name}<ArrowRight size={13}/></button>
                         ))}
                       </div>
                     </div>
