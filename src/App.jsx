@@ -356,7 +356,7 @@ export default function App(){
       if(!seen.has('product-'+x.id)){seen.add('product-'+x.id);next.push({type:'product',id:x.id,label:x.product_name,meta:'Product'})}
     })
     // Rank punctuation-insensitive and near-spelling matches before showing suggestions.
-    setSuggestions(rankSearchItems(next,term,item=>[item.label,item.meta]).slice(0,25))
+    setSuggestions(rankSearchItems(next,term,item=>item.label).slice(0,25))
     setSuggestionLoading(false)
   }
 
