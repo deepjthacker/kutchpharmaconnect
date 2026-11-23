@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Package, Search, LoaderCircle, Building2, Phone, MessageCircle, MapPin } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import DistributorEnquiryForm from './DistributorEnquiryForm'
+import { trackDistributorActivity } from './lib/distributorTracking'
 import { applyFlexibleSearch, searchTokens } from './lib/searchUtils'
 
 const PRODUCT_PAGE_SIZE = 60
@@ -107,6 +109,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
   const [loadingMore, setLoadingMore] = useState(false)
   const listRequestRef = useRef(0)
   const [product, setProduct] = useState(null)
+  const [enquiryTarget, setEnquiryTarget] = useState(null)
   const [company, setCompany] = useState(null)
   const [brand, setBrand] = useState(null)
   const [division, setDivision] = useState(null)
@@ -253,7 +256,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
   const filtered = items
   const specs = [product?.generic_name, product?.strength, product?.dosage_form, product?.pack_size].filter(Boolean).join(' · ')
 
-  return <section className="browse-section product-directory-section"><div className="container browse-container">
+  return <><section className="browse-section product-directory-section"><div className="container browse-container">
     <button className="back-button" onClick={onBack}><ArrowLeft size={16}/> {productId ? 'Back to Products' : 'Back'}</button>
     {productId ? <>
       {loading && <div className="result-state"><LoaderCircle className="spin" size={20}/> Loading product…</div>}
@@ -265,7 +268,7 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
           {specs && <p className="product-detail-specs">{specs}</p>}
           <div className="product-detail-company"><Building2 size={18}/><div><span>Company</span><strong>{company?.company_name || 'Company not assigned'}</strong></div>{company && <button type="button" onClick={() => onOpenCompany(company.id)} aria-label="Open company profile"><ArrowRight size={17}/></button>}</div>
           <div className="product-detail-distributors"><div className="product-detail-section-heading"><div><h2>Distributors in Kutch</h2></div><span>{distributors.length}</span></div>
-          {!distributors.length ? <div className="result-state">No active distributor links are listed for this product or company yet.</div> : distributors.map(d => <article className="product-distributor-card" key={d.id} onClick={() => onOpenDistributor(d.id)}><div className="product-distributor-copy"><strong>{d.distributor_name}</strong>{d.address && <span>{d.address}</span>}{d.scope !== 'product' && <small>Product information not available</small>}</div><div className="browse-contact-actions" onClick={e => e.stopPropagation()}>{d.mobile && <a className="contact-action call-action" href={phoneLink(d.mobile)}><Phone size={14}/><span>Call</span></a>}{(d.whatsapp || d.mobile) && <a className="contact-action whatsapp-action" href={waLink(d.whatsapp || d.mobile, `Hello ${d.distributor_name}, do you currently handle ${company?.company_name || product.product_name} and have stock available in Kutch? I found your contact through KutchPharmaConnect.`)} target="_blank" rel="noreferrer"><MessageCircle size={14}/><span>WhatsApp</span></a>}<a className="contact-action maps-action" href={mapsLink(d)} target="_blank" rel="noreferrer"><MapPin size={14}/><span>Maps</span></a></div></article>)}
+          {!distributors.length ? <div className="result-state">No active distributor links are listed for this product or company yet.</div> : distributors.map(d => <article className="product-distributor-card" key={d.id} onClick={() => onOpenDistributor(d.id)}><div className="product-distributor-copy"><strong>{d.distributor_name}</strong>{d.address && <span>{d.address}</span>}{d.scope !== 'product' && <small>Product information not available</small>}</div><div className="browse-contact-actions" onClick={e => e.stopPropagation()}>{d.mobile && <a className="contact-action call-action" href={phoneLink(d.mobile)} onClick={()=>trackDistributorActivity({event_type:'call_click',distributor_id:d.id,company_id:company?.id,division_id:product?.division_id,brand_id:product?.brand_id,product_id:product?.id})}><Phone size={14}/><span>Call</span></a>}{(d.whatsapp || d.mobile) && <a className="contact-action whatsapp-action" href={waLink(d.whatsapp || d.mobile, `Hello ${d.distributor_name}, do you currently handle ${company?.company_name || product.product_name} and have stock available in Kutch? I found your contact through KutchPharmaConnect.`)} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'whatsapp_click',distributor_id:d.id,company_id:company?.id,division_id:product?.division_id,brand_id:product?.brand_id,product_id:product?.id})}><MessageCircle size={14}/><span>WhatsApp</span></a>}<a className="contact-action maps-action" href={mapsLink(d)} target="_blank" rel="noreferrer" onClick={()=>trackDistributorActivity({event_type:'maps_click',distributor_id:d.id,company_id:company?.id,division_id:product?.division_id,brand_id:product?.brand_id,product_id:product?.id})}><MapPin size={14}/><span>Maps</span></a><button type="button" className="contact-action enquiry-action" onClick={()=>setEnquiryTarget({distributor:d,context:{company_id:company?.id,division_id:product?.division_id,brand_id:product?.brand_id,product_id:product?.id,company_name:company?.company_name,product_name:product?.product_name}})}><MessageCircle size={14}/><span>Enquire</span></button></div></article>)}
           </div>
         </div>
       </div>}
@@ -278,5 +281,5 @@ export default function ProductDirectory({ productId, onBack, onOpenProduct, onO
       {!loading && !error && !filtered.length && <div className="result-state">No matching products found.</div>}
       {!loading && !error && hasMore && <div className="product-load-more-wrap"><button type="button" className="product-load-more" onClick={loadMoreProducts} disabled={loadingMore}>{loadingMore ? <><LoaderCircle className="spin" size={16}/> Loading…</> : `Load more products (${items.length.toLocaleString()} of ${totalCount.toLocaleString()})`}</button></div>}
     </>}
-  </div></section>
+  </div></section>{enquiryTarget && <DistributorEnquiryForm distributor={enquiryTarget.distributor} context={enquiryTarget.context} onClose={()=>setEnquiryTarget(null)} />}</>
 }
