@@ -248,14 +248,20 @@ for (const distributor of distributors) {
   const cityLine = location ? [location.city, location.district, location.state].filter(Boolean).join(', ') : ''
   const description = `Find available business contact details and listed pharmaceutical company relationships for ${distributor.distributor_name}${cityLine ? ` in ${cityLine}` : ' in the Kutch region'}.`
   const uniqueRels = [...new Map(rels.map(rel => [relationshipKey(rel, rel.company_id), rel])).values()]
+  const whatsappNumber = distributor.whatsapp || distributor.mobile
+  const whatsappMessage = `Hello, I found ${distributor.distributor_name} through KutchPharmaConnect. I’m contacting you regarding your current distributorships in Kutch. KutchPharmaConnect: ${siteUrl}/`
+  const mapsQuery = [distributor.distributor_name, distributor.address, cityLine, 'Kutch', 'Gujarat'].filter(Boolean).join(', ')
+  const mapsHref = distributor.maps_url && /^https?:\/\//i.test(distributor.maps_url)
+    ? distributor.maps_url
+    : mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : null
   const contacts = [
     distributor.contact_person ? `<p><strong>Contact person:</strong> ${esc(distributor.contact_person)}</p>` : '',
     distributor.mobile ? `<p><strong>Phone:</strong> <a href="tel:${esc(distributor.mobile)}" data-kpc-event="call_click">${esc(distributor.mobile)}</a></p>` : '',
-    distributor.whatsapp ? `<p><strong>WhatsApp:</strong> <a href="https://wa.me/${esc(distributor.whatsapp.replace(/[^0-9]/g, ''))}" data-kpc-event="whatsapp_click">${esc(distributor.whatsapp)}</a></p>` : '',
+    whatsappNumber ? `<p><strong>WhatsApp:</strong> <a href="https://wa.me/${esc(whatsappNumber.replace(/[^0-9]/g, ''))}?text=${encodeURIComponent(whatsappMessage)}" data-kpc-event="whatsapp_click">${esc(whatsappNumber)}</a></p>` : '',
     distributor.email ? `<p><strong>Email:</strong> <a href="mailto:${esc(distributor.email)}" data-kpc-event="email_click">${esc(distributor.email)}</a></p>` : '',
     distributor.address ? `<p><strong>Address:</strong> ${esc(distributor.address)}${cityLine ? `, ${esc(cityLine)}` : ''}</p>` : cityLine ? `<p><strong>Location:</strong> ${esc(cityLine)}</p>` : '',
     distributor.website && /^https?:\/\//i.test(distributor.website) ? `<p><strong>Website:</strong> <a href="${esc(distributor.website)}" rel="nofollow noopener">${esc(distributor.website)}</a></p>` : '',
-    distributor.maps_url && /^https?:\/\//i.test(distributor.maps_url) ? `<p><a href="${esc(distributor.maps_url)}" rel="nofollow noopener" data-kpc-event="maps_click">View map / directions</a></p>` : ''
+    mapsHref ? `<p><a href="${esc(mapsHref)}" rel="nofollow noopener" data-kpc-event="maps_click">View map / directions</a></p>` : ''
   ].filter(Boolean).join('')
   const enquiryProfileUrl = `${siteUrl}/?view=profile&type=distributor&id=${encodeURIComponent(distributor.id)}`
   const enquiryCta = `<p><a class="cta" href="${enquiryProfileUrl}">Open profile to send an enquiry</a></p>`
