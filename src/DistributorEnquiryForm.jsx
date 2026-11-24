@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { CheckCircle2, LoaderCircle, X } from 'lucide-react'
-import { submitDistributorEnquiry } from './lib/distributorTracking'
+import { submitDistributorEnquiry, trackKpcAnalyticsEvent } from './lib/distributorTracking'
 import './distributor-enquiry.css'
 
 export default function DistributorEnquiryForm({ distributor, context = {}, onClose }) {
@@ -40,6 +40,12 @@ export default function DistributorEnquiryForm({ distributor, context = {}, onCl
       setError(submitError?.message || data?.error || 'Your enquiry could not be submitted. Please try again.')
       return
     }
+    trackKpcAnalyticsEvent('distributor_enquiry_submit', {
+      distributor_id: distributor?.id || undefined,
+      company_id: context.company_id || undefined,
+      product_id: context.product_id || undefined,
+      source_page: typeof window !== 'undefined' ? window.location.pathname : undefined
+    })
     setSuccess(true)
   }
 
