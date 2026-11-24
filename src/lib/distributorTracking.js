@@ -29,8 +29,19 @@ function requestContext() {
   }
 }
 
+export function trackKpcAnalyticsEvent(name, params = {}) {
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    window.gtag('event', name, params)
+  }
+}
+
 export async function trackDistributorActivity(details = {}) {
   if (!details.distributor_id) return
+  trackKpcAnalyticsEvent(`distributor_${details.event_type}`, {
+    distributor_id: details.distributor_id,
+    company_id: details.company_id || undefined,
+    source_page: typeof window !== 'undefined' ? window.location.pathname : undefined
+  })
   try {
     const { error } = await supabase.functions.invoke('record-distributor-activity', {
       body: { action: 'event', ...requestContext(), ...details }
