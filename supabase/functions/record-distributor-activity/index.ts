@@ -98,6 +98,51 @@ async function activeDistributor(id: string) {
   return Boolean(data);
 }
 
+
+async function verifyEnquiryRelationship(input: {
+  distributor_id: string | null;
+  company_id: string | null;
+  division_id: string | null;
+  brand_id: string | null;
+  product_id: string | null;
+  distributorship_id: string | null;
+  product_distributor_id: string | null;
+}): Promise<boolean> {
+  if (!input.distributor_id) return false;
+  if (input.distributorship_id && input.product_distributor_id) return false;
+
+  if (input.product_distributor_id) {
+    const { data, error } = await supabase
+      .from("product_distributors")
+      .select("id,distributor_id,product_id,status,verification_status")
+      .eq("id", input.product_distributor_id)
+      .maybeSingle();
+    if (error) throw error;
+    return Boolean(data &&
+      data.distributor_id === input.distributor_id &&
+      data.product_id === input.product_id &&
+      data.status === "active" &&
+      data.verification_status === "verified");
+  }
+
+  if (input.distributorship_id) {
+    const { data, error } = await supabase
+      .from("distributorships")
+      .select("id,distributor_id,company_id,division_id,brand_id,status,verification_status")
+      .eq("id", input.distributorship_id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data || data.distributor_id !== input.distributor_id ||
+        data.status !== "active" || data.verification_status !== "verified") return false;
+    if (input.company_id && data.company_id !== input.company_id) return false;
+    if (data.division_id && data.division_id !== input.division_id) return false;
+    if (data.brand_id && data.brand_id !== input.brand_id) return false;
+    return true;
+  }
+
+  return false;
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
   if (!ALLOWED_ORIGINS.has(origin)) {
@@ -196,20 +241,30 @@ Deno.serve(async (req: Request) => {
       if (recentError) throw recentError;
       if ((count || 0) >= 3) return json({ error: "Please wait before submitting another enquiry." }, 429, origin);
 
+      const company_id = cleanUuid(body?.company_id);
+      const division_id = cleanUuid(body?.division_id);
+      const brand_id = cleanUuid(body?.brand_id);
+      const product_id = cleanUuid(body?.product_id);
+      const distributorship_id = cleanUuid(body?.distributorship_id);
+      const product_distributor_id = cleanUuid(body?.product_distributor_id);
+      const verifiedRelationship = await verifyEnquiryRelationship({
+        distributor_id, company_id, division_id, brand_id, product_id,
+        distributorship_id, product_distributor_id
+      });
       const row = {
         distributor_id,
-        company_id: cleanUuid(body?.company_id),
-        division_id: cleanUuid(body?.division_id),
-        brand_id: cleanUuid(body?.brand_id),
-        product_id: cleanUuid(body?.product_id),
-        distributorship_id: cleanUuid(body?.distributorship_id),
-        product_distributor_id: cleanUuid(body?.product_distributor_id),
+        company_id,
+        division_id,
+        brand_id,
+        product_id,
+        distributorship_id,
+        product_distributor_id,
         customer_name,
         mobile,
         email,
         message,
         consent: true,
-        routing_status: distributor_id ? "routed" : "needs_review",
+        routing_status: verifiedRelationship ? "routed" : "needs_review",
         source_page,
         referrer,
         utm_source,
