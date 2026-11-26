@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase'
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase'
 
 const SESSION_KEY = 'kpc-distributor-activity-session'
 let currentProfile = null
