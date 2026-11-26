@@ -35,10 +35,10 @@ async function fetchAll(table, select, filters = {}) {
   return rows
 }
 
-function pageHtml({ title, description, canonical, body, schema, activityDistributorId = null }) {
-  const activityScript = activityDistributorId ? `<script>
+function pageHtml({ title, description, canonical, body, schema, activityProfile = null, activityDistributorId = null }) {
+  const activityScript = activityProfile ? `<script>
 (() => {
-  const config = ${JSON.stringify({ url: baseUrl, key: apiKey, distributorId: activityDistributorId })};
+  const config = ${JSON.stringify({ url: baseUrl, key: apiKey, profileType: activityProfile.type, profileId: activityProfile.id, distributorId: activityDistributorId })};
   const endpoint = config.url + '/functions/v1/record-distributor-activity';
   let sessionId = null;
   try {
@@ -59,7 +59,7 @@ function pageHtml({ title, description, canonical, body, schema, activityDistrib
   };
   const record = eventType => {
     if (typeof window.gtag === 'function') {
-      window.gtag('event', 'distributor_' + eventType, {
+      window.gtag('event', config.profileType + '_' + eventType, {
         distributor_id: config.distributorId,
         source_page: window.location.pathname
       });
@@ -75,6 +75,8 @@ function pageHtml({ title, description, canonical, body, schema, activityDistrib
       body: JSON.stringify({
         action: 'event',
         distributor_id: config.distributorId,
+        profile_type: config.profileType,
+        profile_id: config.profileId,
         event_type: eventType,
         ...context
       })
@@ -235,7 +237,8 @@ for (const company of companies) {
   await fs.mkdir(path.join(publicDir, 'companies', `${slug(company.company_name)}-${company.id.slice(0, 8)}`), { recursive: true })
   await fs.writeFile(path.join(publicDir, 'companies', `${slug(company.company_name)}-${company.id.slice(0, 8)}`, 'index.html'), pageHtml({
     title, description, canonical: url, body,
-    schema: { '@context': 'https://schema.org', '@type': 'Organization', name: company.company_name, url, description }
+    schema: { '@context': 'https://schema.org', '@type': 'Organization', name: company.company_name, url, description },
+    activityProfile: { type: 'company', id: company.id }
   }))
   sitemapUrls.push(url)
 }
@@ -270,6 +273,7 @@ for (const distributor of distributors) {
   await fs.writeFile(path.join(publicDir, 'distributors', `${slug(distributor.distributor_name)}-${distributor.id.slice(0, 8)}`, 'index.html'), pageHtml({
     title, description, canonical: url, body,
     schema: { '@context': 'https://schema.org', '@type': 'Organization', name: distributor.distributor_name, url, ...(distributor.website ? { sameAs: [distributor.website] } : {}), ...(distributor.address ? { address: { '@type': 'PostalAddress', streetAddress: distributor.address, addressLocality: location?.city || undefined, addressRegion: location?.state || 'Gujarat', addressCountry: 'IN' } } : {}) },
+    activityProfile: { type: 'distributor', id: distributor.id },
     activityDistributorId: distributor.id
   }))
   sitemapUrls.push(url)
