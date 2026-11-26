@@ -785,7 +785,7 @@ export default function App(){
         },
         relationships:pageRelationships.map(rel=>({...rel,company:companyRes.data,division:rel.division_id?vm.get(rel.division_id):null,brand:rel.brand_id?bm.get(rel.brand_id):null,distributor:dm.get(rel.distributor_id),location:rel.location_id?lm.get(rel.location_id):null})).filter(rel=>rel.distributor)
       })
-      trackEvent(type+'_view',{entity_type:type})
+      trackProfileView(type,id,{company_id:entity.company_id,division_id:isDivision?id:entity.division_id,brand_id:isDivision?null:id})
     }catch(err){setError(err?.message||'Unable to load '+type+' profile.')}
     setProfileLoading(false)
   }
@@ -861,7 +861,6 @@ export default function App(){
         },
         relationships:[...relationshipMap.values()]
       })
-      trackEvent('product_view',{entity_type:'product'})
       trackProfileView('product',id,{company_id:product.company_id,division_id:product.division_id,brand_id:product.brand_id})
     }catch(err){
       setError(err?.message||'Unable to load product details.')
@@ -876,7 +875,6 @@ export default function App(){
     setRelationshipSearch('')
     if(options.history!==false)pushRoute('profile',{type,id})
     setProfileLoading(true);setError('')
-    trackEvent(type==='company'?'company_view':'distributor_view',{entity_type:type})
     if(type==='company'){
       const [companyRes, relRes, divisionsRes]=await Promise.all([
         supabase.from('companies').select('id,company_name,short_name,parent_company_id,image_url,ownership_percentage,ownership_relationship,ownership_note,company_group_id').eq('id',id).eq('status','active').maybeSingle(),
