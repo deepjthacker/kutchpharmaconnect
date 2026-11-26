@@ -229,8 +229,11 @@ Deno.serve(async (req: Request) => {
         return json({ error: "Invalid activity details" }, 400, origin);
       }
 
+      const resolvedProfileType = profile_type || (event_type === "profile_view" && distributor_id ? "distributor" : null);
+      const resolvedProfileId = profile_id || distributor_id;
+
       if (event_type === "profile_view") {
-        if (!profile_type || !profile_id || !(await activeProfile(profile_type, profile_id))) {
+        if (!resolvedProfileType || !resolvedProfileId || !(await activeProfile(resolvedProfileType, resolvedProfileId))) {
           return json({ error: "A valid active profile type and ID are required" }, 400, origin);
         }
       } else {
@@ -238,9 +241,6 @@ Deno.serve(async (req: Request) => {
           return json({ error: "An active distributor is required for contact clicks" }, 400, origin);
         }
       }
-
-      const resolvedProfileType = profile_type || "distributor";
-      const resolvedProfileId = profile_id || distributor_id;
 
       if (session_id) {
         const { count, error } = await supabase
