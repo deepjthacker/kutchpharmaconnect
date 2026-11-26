@@ -190,6 +190,31 @@ Deno.serve(async (req: Request) => {
     const utm_medium = cleanText(body?.utm_medium, 200);
     const utm_campaign = cleanText(body?.utm_campaign, 200);
 
+    if (action === "session_start") {
+      if (!(await allowRate(req, "session_start", 60, 60_000))) {
+        return json({ error: "Session start rate limit reached" }, 429, origin);
+      }
+      const session_id = cleanUuid(body?.session_id);
+      if (!session_id) return json({ error: "A valid session ID is required" }, 400, origin);
+      const { error: sessionError } = await supabase
+        .from("kpc_visitor_sessions")
+        .upsert({
+          session_id,
+          landing_page: source_page,
+          landing_referrer: referrer,
+          utm_source,
+          utm_medium,
+          utm_campaign
+        }, { onConflict: "session_id", ignoreDuplicates: true });
+      if (sessionError) throw sessionError;
+      const { error: updateError } = await supabase
+        .from("kpc_visitor_sessions")
+        .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("session_id", session_id);
+      if (updateError) throw updateError;
+      return json({ ok: true }, 200, origin);
+    }
+
     if (action === "event") {
       if (!(await allowRate(req, "event", 120, 60_000))) {
         return json({ error: "Activity rate limit reached. Please try again shortly." }, 429, origin);
