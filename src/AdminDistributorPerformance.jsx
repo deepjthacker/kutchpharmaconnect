@@ -89,12 +89,12 @@ export default function AdminDistributorPerformance({onBack}) {
     views:reportEvents.filter(x=>x.event_type==='profile_view').length,calls:reportEvents.filter(x=>x.event_type==='call_click').length,
     whatsapp:reportEvents.filter(x=>x.event_type==='whatsapp_click').length,maps:reportEvents.filter(x=>x.event_type==='maps_click').length,
     emails:reportEvents.filter(x=>x.event_type==='email_click').length,enquiries:enquiries.length,
-    sessions:new Set(reportEvents.map(x=>x.session_id).filter(Boolean)).size,
+    sessions:sessions.filter(x=>!x.is_internal).length,
     converted:enquiries.filter(x=>x.status==='converted').length,new:enquiries.filter(x=>x.status==='new').length,
     engaged:new Set(reportEvents.map(x=>x.distributor_id).filter(Boolean)).size,
     due:enquiries.filter(x=>x.follow_up_at&&new Date(x.follow_up_at)<=new Date()&&!['converted','not_converted','invalid'].includes(x.status)).length,
     review:enquiries.filter(x=>x.routing_status==='needs_review').length
-  }),[reportEvents,enquiries])
+  }),[reportEvents,enquiries,sessions])
   const trend=useMemo(()=>{
     const n=Number(days),rows=Array.from({length:n},(_,i)=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-(n-1-i));return {date:dateKey(d),views:0,contacts:0,enquiries:0}})
     const ix=new Map(rows.map((r,i)=>[r.date,i]))
