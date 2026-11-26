@@ -54,7 +54,7 @@ export default function AdminDistributorPerformance({onBack}) {
       supabase.from('distributor_contact_events').select('id,distributor_id,event_type,profile_type,profile_id,session_id,company_id,division_id,brand_id,product_id,occurred_at,source_page,referrer,utm_source,utm_medium,utm_campaign,companies(company_name),products(product_name)').gte('occurred_at',since).order('occurred_at',{ascending:false}).limit(10000),
       supabase.from('distributor_enquiries').select('id,distributor_id,company_id,division_id,brand_id,product_id,customer_name,mobile,email,message,consent,routing_status,status,source_page,created_at,updated_at,admin_notes,contacted_at,follow_up_at,distributors(distributor_name),companies(company_name),divisions(division_name),brands(brand_name),products(product_name)').gte('created_at',since).order('created_at',{ascending:false}).limit(5000),
       supabase.from('distributors').select('id,distributor_name,mobile,whatsapp').eq('status','active').order('distributor_name'),
-      supabase.from('kpc_visitor_sessions').select('session_id,first_seen_at,last_seen_at,landing_page,landing_referrer,utm_source,utm_medium,utm_campaign,').gte('last_seen_at',since).order('last_seen_at',{ascending:false}).limit(10000)
+      supabase.from('kpc_visitor_sessions').select('session_id,first_seen_at,last_seen_at,landing_page,landing_referrer,utm_source,utm_medium,utm_campaign').gte('last_seen_at',since).order('last_seen_at',{ascending:false}).limit(10000)
     ])
     const bad=eventRes.error||enquiryRes.error||distributorRes.error||sessionRes.error
     if(bad){setError(bad.message||'Could not load distributor performance.');setLoading(false);return}
