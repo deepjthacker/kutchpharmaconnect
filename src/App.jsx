@@ -12,7 +12,7 @@ import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import DistributorEnquiryForm from './DistributorEnquiryForm'
-import { trackDistributorActivity, trackProfileView, setCurrentProfile } from './lib/distributorTracking'
+import { trackDistributorActivity, trackProfileView, setCurrentProfile, startTrackingSession } from './lib/distributorTracking'
 import SiteFeedback from './SiteFeedback'
 const PolicyPages = lazy(() => import('./PolicyPages'))
 
@@ -142,6 +142,8 @@ export default function App(){
     if(view==='admin')return {kpc:'admin'}
     return {kpc:'home',q:url.searchParams.get('q')||''}
   }
+
+  useEffect(()=>{ startTrackingSession() },[])
 
   useEffect(()=>{
     const hadKpcState=Boolean(window.history.state?.kpc)
