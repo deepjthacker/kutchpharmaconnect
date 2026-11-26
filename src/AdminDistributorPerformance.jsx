@@ -46,7 +46,7 @@ function DonutChart({items}) {
 export default function AdminDistributorPerformance({onBack}) {
   const [days,setDays]=useState('30'),[search,setSearch]=useState(''),[statusFilter,setStatusFilter]=useState('all'),[visibleTrend,setVisibleTrend]=useState({views:true,contacts:true,enquiries:true})
   const [events,setEvents]=useState([]),[enquiries,setEnquiries]=useState([]),[distributors,setDistributors]=useState([]),[sessions,setSessions]=useState([])
-  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[savingId,setSavingId]=useState(''),[savingSessionId,setSavingSessionId]=useState(''),[notice,setNotice]=useState('')
+  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[savingId,setSavingId]=useState(''),[notice,setNotice]=useState('')
   async function load() {
     setLoading(true);setError('');setNotice('')
     const since=new Date(Date.now()-Number(days)*86400000).toISOString()
@@ -54,24 +54,14 @@ export default function AdminDistributorPerformance({onBack}) {
       supabase.from('distributor_contact_events').select('id,distributor_id,event_type,profile_type,profile_id,session_id,company_id,division_id,brand_id,product_id,occurred_at,source_page,referrer,utm_source,utm_medium,utm_campaign,companies(company_name),products(product_name)').gte('occurred_at',since).order('occurred_at',{ascending:false}).limit(10000),
       supabase.from('distributor_enquiries').select('id,distributor_id,company_id,division_id,brand_id,product_id,customer_name,mobile,email,message,consent,routing_status,status,source_page,created_at,updated_at,admin_notes,contacted_at,follow_up_at,distributors(distributor_name),companies(company_name),divisions(division_name),brands(brand_name),products(product_name)').gte('created_at',since).order('created_at',{ascending:false}).limit(5000),
       supabase.from('distributors').select('id,distributor_name,mobile,whatsapp').eq('status','active').order('distributor_name'),
-      supabase.from('kpc_visitor_sessions').select('session_id,first_seen_at,last_seen_at,landing_page,landing_referrer,utm_source,utm_medium,utm_campaign,is_internal,internal_note').gte('last_seen_at',since).order('last_seen_at',{ascending:false}).limit(10000)
+      supabase.from('kpc_visitor_sessions').select('session_id,first_seen_at,last_seen_at,landing_page,landing_referrer,utm_source,utm_medium,utm_campaign,').gte('last_seen_at',since).order('last_seen_at',{ascending:false}).limit(10000)
     ])
     const bad=eventRes.error||enquiryRes.error||distributorRes.error||sessionRes.error
     if(bad){setError(bad.message||'Could not load distributor performance.');setLoading(false);return}
     setEvents(eventRes.data||[]);setEnquiries(enquiryRes.data||[]);setDistributors(distributorRes.data||[]);setSessions(sessionRes.data||[]);setLoading(false)
   }
   useEffect(()=>{load()},[days])
-  const internalSessionIds=useMemo(()=>new Set(sessions.filter(x=>x.is_internal).map(x=>x.session_id)),[sessions])
-  const reportEvents=useMemo(()=>events.filter(event=>!event.session_id||!internalSessionIds.has(event.session_id)),[events,internalSessionIds])
-  async function toggleInternalSession(session) {
-    setSavingSessionId(session.session_id);setError('');setNotice('')
-    const nextValue=!session.is_internal
-    const {error:updateError}=await supabase.from('kpc_visitor_sessions').update({is_internal:nextValue,updated_at:new Date().toISOString()}).eq('session_id',session.session_id)
-    setSavingSessionId('')
-    if(updateError){setError(updateError.message);return}
-    setSessions(old=>old.map(row=>row.session_id===session.session_id?{...row,is_internal:nextValue}:row))
-    setNotice(nextValue?'Session excluded from business-performance reports. Original events are preserved.':'Session included in business-performance reports.')
-  }
+  const reportEvents=events
   const performance=useMemo(()=>{
     const map=new Map()
     distributors.forEach(d=>map.set(d.id,{id:d.id,name:d.distributor_name,mobile:d.mobile,profileViews:0,calls:0,whatsapp:0,maps:0,emails:0,enquiries:0,converted:0,newEnquiries:0}))
@@ -89,7 +79,7 @@ export default function AdminDistributorPerformance({onBack}) {
     views:reportEvents.filter(x=>x.event_type==='profile_view').length,calls:reportEvents.filter(x=>x.event_type==='call_click').length,
     whatsapp:reportEvents.filter(x=>x.event_type==='whatsapp_click').length,maps:reportEvents.filter(x=>x.event_type==='maps_click').length,
     emails:reportEvents.filter(x=>x.event_type==='email_click').length,enquiries:enquiries.length,
-    sessions:sessions.filter(x=>!x.is_internal).length,
+    sessions:sessions.length,
     converted:enquiries.filter(x=>x.status==='converted').length,new:enquiries.filter(x=>x.status==='new').length,
     engaged:new Set(reportEvents.map(x=>x.distributor_id).filter(Boolean)).size,
     due:enquiries.filter(x=>x.follow_up_at&&new Date(x.follow_up_at)<=new Date()&&!['converted','not_converted','invalid'].includes(x.status)).length,
@@ -145,17 +135,6 @@ export default function AdminDistributorPerformance({onBack}) {
         <div className="kpc-performance-section-head"><div><p className="section-kicker">PROFILE INTEREST</p><h2>Views by profile type</h2><p>Recorded profile views, grouped by the actual entity type.</p></div></div>
         <div className="kpc-channel-list">{profileTypeBreakdown.map(item=><div key={item.type}><label>{item.type.charAt(0).toUpperCase()+item.type.slice(1)}</label><strong>{item.count.toLocaleString('en-IN')}</strong></div>)}</div>
       </section>
-      <section className="admin-panel kpc-performance-panel">
-        <div className="kpc-performance-section-head"><div><p className="section-kicker">VISITOR SESSION CONTROLS</p><h2>Exclude internal testing</h2><p>Mark your own test sessions as internal. Their original event records remain stored and can be included again at any time.</p></div></div>
-        <div className="kpc-admin-enquiry-list">
-          {sessions.map(session=><article className="kpc-admin-enquiry" key={session.session_id}>
-            <div className="kpc-admin-enquiry-top"><div><strong>{session.is_internal?'Internal / excluded':'Visitor session'}</strong><span>{session.session_id}</span></div><small>{new Date(session.last_seen_at).toLocaleString('en-IN')}</small></div>
-            <div className="kpc-admin-enquiry-context"><span>First seen: {new Date(session.first_seen_at).toLocaleString('en-IN')}</span><span>Landing page: {session.landing_page||'Not captured'}</span><span>Referrer: {session.landing_referrer||'Direct / unavailable'}</span><span>Campaign: {[session.utm_source,session.utm_medium,session.utm_campaign].filter(Boolean).join(' / ')||'No UTM tags'}</span></div>
-            <label><input type="checkbox" checked={Boolean(session.is_internal)} disabled={savingSessionId===session.session_id} onChange={()=>toggleInternalSession(session)}/> Exclude this session from business-performance reports</label>
-          </article>)}
-          {!sessions.length&&<div className="admin-state">No visitor sessions recorded in this reporting period.</div>}
-        </div>
-      </section>
       <section className="kpc-chart-grid">
         <article className="admin-panel kpc-chart-panel kpc-chart-wide"><div className="kpc-chart-heading"><div><p className="section-kicker">ACTIVITY TREND</p><h2>Engagement over time</h2><p>Daily profile views, contact clicks and submitted enquiries.</p></div><TrendingUp size={19}/></div><div className="kpc-chart-legend" aria-label="Toggle chart series">{[{key:'views',label:'Profile views'},{key:'contacts',label:'Contact clicks'},{key:'enquiries',label:'Enquiries'}].map(item=><button type="button" key={item.key} className={!visibleTrend[item.key]?'is-muted':''} aria-pressed={visibleTrend[item.key]} onClick={()=>setVisibleTrend(old=>({...old,[item.key]:!old[item.key]}))}><i className={item.key}/>{item.label}</button>)}</div><TrendChart data={trend} visibleSeries={visibleTrend}/></article>
         <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">ENQUIRY PIPELINE</p><h2>Enquiry status</h2><p>Submissions by current status.</p></div><ClipboardList size={19}/></div><DonutChart items={statusItems}/></article>
@@ -169,7 +148,7 @@ export default function AdminDistributorPerformance({onBack}) {
         <div className="kpc-enquiry-filters"><label>Status<select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{STATUSES.map(s=><option key={s} value={s}>{s.replace('_',' ')}</option>)}</select></label><span>{filteredEnquiries.length} enquiries shown</span></div>
         <div className="kpc-admin-enquiry-list">{filteredEnquiries.map(row=><article className="kpc-admin-enquiry" key={row.id}><div className="kpc-admin-enquiry-top"><div><strong>{row.customer_name}</strong><span>{row.mobile}{row.email?' · '+row.email:''}</span></div><small>{new Date(row.created_at).toLocaleString('en-IN')}</small></div><div className="kpc-admin-enquiry-context"><strong>{row.distributors?.distributor_name||'Needs admin review'}</strong><span>{[row.companies?.company_name,row.divisions?.division_name,row.brands?.brand_name,row.products?.product_name].filter(Boolean).join(' · ')||'General distributor enquiry'}</span>{row.routing_status==='needs_review'&&<em><AlertTriangle size={12}/> Manual routing review required</em>}</div><p>{row.message}</p><div className="kpc-admin-enquiry-controls"><label>Status<select value={row.status} onChange={e=>setEnquiries(old=>old.map(x=>x.id===row.id?{...x,status:e.target.value}:x))}>{STATUSES.map(s=><option key={s} value={s}>{s.replace('_',' ')}</option>)}</select></label><label>Follow-up<input type="date" value={row.follow_up_at?row.follow_up_at.slice(0,10):''} onChange={e=>setEnquiries(old=>old.map(x=>x.id===row.id?{...x,follow_up_at:e.target.value?new Date(e.target.value+'T12:00:00').toISOString():null}:x))}/></label><label className="kpc-admin-enquiry-notes">Admin notes<input value={row.admin_notes||''} maxLength={2000} onChange={e=>setEnquiries(old=>old.map(x=>x.id===row.id?{...x,admin_notes:e.target.value}:x))} placeholder="Add follow-up notes"/></label><button className="admin-refresh" onClick={()=>updateEnquiry(row)} disabled={savingId===row.id}>{savingId===row.id?<LoaderCircle size={14} className="spin"/>:'Save'}</button></div></article>)}{!filteredEnquiries.length&&<div className="admin-state">No customer enquiries in this period.</div>}</div>
       </section>
-      <p className="kpc-performance-footnote"><Eye size={14}/> Activity starts from the date tracking was enabled. Historical clicks cannot be reconstructed. Session counts are browser sessions, not unique people. Internal sessions are excluded from the metrics above.</p>
+      <p className="kpc-performance-footnote"><Eye size={14}/> Activity starts from the date tracking was enabled. Historical clicks cannot be reconstructed. Session counts are browser sessions, not unique people.</p>
     </>}
   </div>
 }
