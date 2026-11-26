@@ -87,6 +87,27 @@ async function allowRate(req: Request, action: string, maxHits: number, windowMs
   return data === true;
 }
 
+
+async function activeProfile(type: string, id: string): Promise<boolean> {
+  const tableByType: Record<string, string> = {
+    company: "companies",
+    distributor: "distributors",
+    division: "divisions",
+    brand: "brands",
+    product: "products"
+  };
+  const table = tableByType[type];
+  if (!table) return false;
+  const { data, error } = await supabase
+    .from(table)
+    .select("id")
+    .eq("id", id)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
 async function activeDistributor(id: string) {
   const { data, error } = await supabase
     .from("distributors")
@@ -169,6 +190,31 @@ Deno.serve(async (req: Request) => {
     const utm_medium = cleanText(body?.utm_medium, 200);
     const utm_campaign = cleanText(body?.utm_campaign, 200);
 
+    if (action === "session_start") {
+      if (!(await allowRate(req, "session_start", 60, 60_000))) {
+        return json({ error: "Session start rate limit reached" }, 429, origin);
+      }
+      const session_id = cleanUuid(body?.session_id);
+      if (!session_id) return json({ error: "A valid session ID is required" }, 400, origin);
+      const { error: sessionError } = await supabase
+        .from("kpc_visitor_sessions")
+        .upsert({
+          session_id,
+          landing_page: source_page,
+          landing_referrer: referrer,
+          utm_source,
+          utm_medium,
+          utm_campaign
+        }, { onConflict: "session_id", ignoreDuplicates: true });
+      if (sessionError) throw sessionError;
+      const { error: updateError } = await supabase
+        .from("kpc_visitor_sessions")
+        .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("session_id", session_id);
+      if (updateError) throw updateError;
+      return json({ ok: true }, 200, origin);
+    }
+
     if (action === "event") {
       if (!(await allowRate(req, "event", 120, 60_000))) {
         return json({ error: "Activity rate limit reached. Please try again shortly." }, 429, origin);
@@ -176,12 +222,26 @@ Deno.serve(async (req: Request) => {
       const distributor_id = cleanUuid(body?.distributor_id);
       const event_type = cleanText(body?.event_type, 40);
       const session_id = cleanUuid(body?.session_id);
-      if (!distributor_id || !event_type || !EVENT_TYPES.has(event_type)) {
+      const profile_type = cleanText(body?.profile_type, 30);
+      const profile_id = cleanUuid(body?.profile_id);
+
+      if (!event_type || !EVENT_TYPES.has(event_type)) {
         return json({ error: "Invalid activity details" }, 400, origin);
       }
-      if (!(await activeDistributor(distributor_id))) {
-        return json({ error: "Distributor is not active" }, 404, origin);
+
+      const resolvedProfileType = profile_type || (event_type === "profile_view" && distributor_id ? "distributor" : null);
+      const resolvedProfileId = profile_id || distributor_id;
+
+      if (event_type === "profile_view") {
+        if (!resolvedProfileType || !resolvedProfileId || !(await activeProfile(resolvedProfileType, resolvedProfileId))) {
+          return json({ error: "A valid active profile type and ID are required" }, 400, origin);
+        }
+      } else {
+        if (!distributor_id || !(await activeDistributor(distributor_id))) {
+          return json({ error: "An active distributor is required for contact clicks" }, 400, origin);
+        }
       }
+
       if (session_id) {
         const { count, error } = await supabase
           .from("distributor_contact_events")
@@ -190,10 +250,31 @@ Deno.serve(async (req: Request) => {
           .gte("created_at", new Date(Date.now() - 60_000).toISOString());
         if (error) throw error;
         if ((count || 0) >= 50) return json({ error: "Activity limit reached" }, 429, origin);
+
+        const { error: sessionInsertError } = await supabase
+          .from("kpc_visitor_sessions")
+          .upsert({
+            session_id,
+            landing_page: source_page,
+            landing_referrer: referrer,
+            utm_source,
+            utm_medium,
+            utm_campaign
+          }, { onConflict: "session_id", ignoreDuplicates: true });
+        if (sessionInsertError) throw sessionInsertError;
+
+        const { error: sessionUpdateError } = await supabase
+          .from("kpc_visitor_sessions")
+          .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq("session_id", session_id);
+        if (sessionUpdateError) throw sessionUpdateError;
       }
+
       const row = {
         distributor_id,
         event_type,
+        profile_type: resolvedProfileType,
+        profile_id: resolvedProfileId,
         company_id: cleanUuid(body?.company_id),
         division_id: cleanUuid(body?.division_id),
         brand_id: cleanUuid(body?.brand_id),

@@ -12,7 +12,7 @@ import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import DistributorEnquiryForm from './DistributorEnquiryForm'
-import { trackDistributorActivity } from './lib/distributorTracking'
+import { trackDistributorActivity, trackProfileView, setCurrentProfile, startTrackingSession } from './lib/distributorTracking'
 import SiteFeedback from './SiteFeedback'
 const PolicyPages = lazy(() => import('./PolicyPages'))
 
@@ -142,6 +142,8 @@ export default function App(){
     if(view==='admin')return {kpc:'admin'}
     return {kpc:'home',q:url.searchParams.get('q')||''}
   }
+
+  useEffect(()=>{ startTrackingSession() },[])
 
   useEffect(()=>{
     const hadKpcState=Boolean(window.history.state?.kpc)
@@ -860,6 +862,7 @@ export default function App(){
         relationships:[...relationshipMap.values()]
       })
       trackEvent('product_view',{entity_type:'product'})
+      trackProfileView('product',id,{company_id:product.company_id,division_id:product.division_id,brand_id:product.brand_id})
     }catch(err){
       setError(err?.message||'Unable to load product details.')
     }
@@ -948,6 +951,7 @@ export default function App(){
       const catalogDistributors=[...(dRes.data||[]),...(subsidiaryDistributorsRes.data||[])]
       const enrichedCompanyCatalog=enrichCatalogProducts(catalogProducts,catalogCompanies,catalogDivisions,catalogBrands,catalogRelations,catalogProductLinks,catalogDistributors)
       setProfile({type:'company',entity:{...companyRes.data,parentCompany:companyRes.data?.parent_company_id?profileCompanyMap.get(companyRes.data.parent_company_id):null,divisions:companyDivisionsRes.data||divisionsRes.data||[],brands:companyBrandsRes.data||[],subsidiaries:[...subsidiarySummaryMap.values()],catalog:enrichedCompanyCatalog},relationships:rels.map(x=>({...x,distributor:dm.get(x.distributor_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,category:x.category_id?categoryMap.get(x.category_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.distributor)})
+      trackProfileView('company',id,{company_id:id})
     }else{
       const [distRes,relRes]=await Promise.all([
         supabase.from('distributors').select('id,distributor_name,contact_person,mobile,whatsapp,email,address,maps_url,city_id,image_url').eq('id',id).eq('status','active').maybeSingle(),
@@ -977,12 +981,13 @@ export default function App(){
       const bm=new Map((bRes.data||[]).map(x=>[x.id,x]))
       const categoryMap=new Map((catRes.data||[]).map(x=>[x.id,{...x,display_name:x.category_name||x.name||'Category'}]))
       setProfile({type:'distributor',entity:distRes.data,relationships:rels.map(x=>({...x,company:cm.get(x.company_id),division:x.division_id?vm.get(x.division_id):null,brand:x.brand_id?bm.get(x.brand_id):null,category:x.category_id?categoryMap.get(x.category_id):null,location:x.location_id?lm.get(x.location_id):null})).filter(x=>x.company)})
-        trackDistributorActivity({event_type:'profile_view',distributor_id:id})
+      trackProfileView('distributor',id,{distributor_id:id})
     }
     setProfileLoading(false)
   }
 
   function closeProfile(){
+    setCurrentProfile(null,null)
     // "Back to search" is a deterministic action: return to the last search
     // instead of stepping through intermediate entity profiles one at a time.
     const currentUrl=new URL(window.location.href)
