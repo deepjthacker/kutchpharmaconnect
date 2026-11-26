@@ -59,8 +59,11 @@ function pageHtml({ title, description, canonical, body, schema, activityProfile
   };
   const record = eventType => {
     if (typeof window.gtag === 'function') {
-      window.gtag('event', config.profileType + '_' + eventType, {
-        distributor_id: config.distributorId,
+      window.gtag('event', eventType === 'profile_view' ? config.profileType + '_view' : 'distributor_' + eventType, {
+        profile_type: config.profileType,
+        profile_id: config.profileId,
+        company_id: config.profileType === 'company' ? config.profileId : undefined,
+        distributor_id: config.distributorId || undefined,
         source_page: window.location.pathname
       });
     }
@@ -77,6 +80,7 @@ function pageHtml({ title, description, canonical, body, schema, activityProfile
         distributor_id: config.distributorId,
         profile_type: config.profileType,
         profile_id: config.profileId,
+        company_id: config.profileType === 'company' ? config.profileId : null,
         event_type: eventType,
         ...context
       })
