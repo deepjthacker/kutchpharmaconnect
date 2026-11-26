@@ -61,6 +61,10 @@ function sendActivity(body) {
   })
 }
 
+export function startTrackingSession() {
+  return sendActivity({ action: 'session_start', ...requestContext() })
+}
+
 export function trackProfileView(type, id, context = {}) {
   if (!type || !id) return Promise.resolve(false)
   setCurrentProfile(type, id)
