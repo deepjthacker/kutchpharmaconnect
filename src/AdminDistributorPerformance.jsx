@@ -102,7 +102,7 @@ export default function AdminDistributorPerformance({onBack}) {
     enquiries.forEach(e=>{const i=ix.get(dateKey(e.created_at));if(i!==undefined)rows[i].enquiries++})
     return rows
   },[days,reportEvents,enquiries])
-  const eventBreakdown=useMemo(()=>Object.keys(EVENT_LABELS).map(k=>({id:k,label:EVENT_LABELS[k],value:reportEvents.filter(e=>e.event_type===k).length})),[events])
+  const eventBreakdown=useMemo(()=>Object.keys(EVENT_LABELS).map(k=>({id:k,label:EVENT_LABELS[k],value:reportEvents.filter(e=>e.event_type===k).length})),[reportEvents])
   const companyInsights=useMemo(()=>{
     const map=new Map()
     reportEvents.forEach(e=>{if(e.company_id){const x=map.get(e.company_id)||{id:e.company_id,label:e.companies?.company_name||'Company',value:0};x.value++;map.set(e.company_id,x)}})
@@ -114,7 +114,7 @@ export default function AdminDistributorPerformance({onBack}) {
     reportEvents.forEach(e=>{if(e.product_id){const x=map.get(e.product_id)||{id:e.product_id,label:e.products?.product_name||'Product',value:0};x.value++;map.set(e.product_id,x)}})
     enquiries.forEach(e=>{if(e.product_id){const x=map.get(e.product_id)||{id:e.product_id,label:e.products?.product_name||'Product',value:0};x.label=e.products?.product_name||x.label;x.value++;map.set(e.product_id,x)}})
     return [...map.values()].sort((a,b)=>b.value-a.value).slice(0,5)
-  },[events,enquiries])
+  },[reportEvents,enquiries])
   const profileTypeBreakdown=['company','distributor','division','brand','product'].map(type=>({type,count:reportEvents.filter(e=>e.event_type==='profile_view'&&e.profile_type===type).length}))
   const topDistributors=performance.filter(x=>x.profileViews+x.calls+x.whatsapp+x.maps+x.emails+x.enquiries>0).slice(0,6).map(x=>({id:x.id,label:x.name,value:x.enquiries*3+x.calls+x.whatsapp+x.profileViews*.15}))
   const statusItems=STATUSES.map(s=>({label:s.replace('_',' '),value:enquiries.filter(e=>e.status===s).length}))
