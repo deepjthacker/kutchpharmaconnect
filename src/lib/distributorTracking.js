@@ -1,6 +1,7 @@
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase'
 
 const SESSION_KEY = 'kpc-distributor-activity-session'
+const VISITOR_KEY = 'kpc-visitor-id'
 let currentProfile = null
 
 function getSessionId() {
@@ -17,6 +18,20 @@ function getSessionId() {
   }
 }
 
+export function getKpcVisitorId() {
+  if (typeof window === 'undefined') return null
+  try {
+    let id = window.localStorage.getItem(VISITOR_KEY)
+    if (!id) {
+      id = window.crypto?.randomUUID?.() || null
+      if (id) window.localStorage.setItem(VISITOR_KEY, id)
+    }
+    return id
+  } catch {
+    return null
+  }
+}
+
 function requestContext() {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
@@ -26,7 +41,8 @@ function requestContext() {
     utm_source: params.get('utm_source'),
     utm_medium: params.get('utm_medium'),
     utm_campaign: params.get('utm_campaign'),
-    session_id: getSessionId()
+    session_id: getSessionId(),
+    visitor_id: getKpcVisitorId()
   }
 }
 
@@ -63,6 +79,14 @@ function sendActivity(body) {
 
 export function startTrackingSession() {
   return sendActivity({ action: 'session_start', ...requestContext() })
+}
+
+export function trackSearchActivity(term, resultCount) {
+  const searchTerm = String(term || '').trim().slice(0, 120)
+  if (!searchTerm || !Number.isInteger(resultCount) || resultCount < 0) return Promise.resolve(false)
+  trackKpcAnalyticsEvent('search_results', { search_term: searchTerm, result_count: resultCount })
+  if (resultCount === 0) trackKpcAnalyticsEvent('search_no_results', { search_term: searchTerm })
+  return sendActivity({ action: 'search', ...requestContext(), search_term: searchTerm, result_count: resultCount })
 }
 
 export function trackProfileView(type, id, context = {}) {
