@@ -94,7 +94,7 @@ export default function AdminDistributorPerformance({onBack}) {
     engaged:new Set(reportEvents.map(x=>x.distributor_id).filter(Boolean)).size,
     due:enquiries.filter(x=>x.follow_up_at&&new Date(x.follow_up_at)<=new Date()&&!['converted','not_converted','invalid'].includes(x.status)).length,
     review:enquiries.filter(x=>x.routing_status==='needs_review').length
-  }),[reportEvents,enquiries,sessions])
+  }),[reportEvents,enquiries,sessions,reportSearchEvents])
   const trend=useMemo(()=>{
     const n=Number(days),rows=Array.from({length:n},(_,i)=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-(n-1-i));return {date:dateKey(d),views:0,contacts:0,enquiries:0}})
     const ix=new Map(rows.map((r,i)=>[r.date,i]))
