@@ -242,8 +242,8 @@ Deno.serve(async (req: Request) => {
       if (!rawTerm || !Number.isInteger(result_count) || result_count < 0 || result_count > 10000) {
         return json({ error: "Valid search term and result count are required" }, 400, origin);
       }
-      const looksLikeEmail = /[^\\s@]+@[^\\s@]+\\.[^\\s@]+/.test(rawTerm);
-      const looksLikePhone = /(?:\\+?\\d[\\d\\s().-]{7,}\\d)/.test(rawTerm);
+      const looksLikeEmail = /[^\s@]+@[^\s@]+\.[^\s@]+/.test(rawTerm);
+      const looksLikePhone = /(?:\+?\d[\d\s().-]{7,}\d)/.test(rawTerm);
       const search_term = looksLikeEmail || looksLikePhone ? "[redacted]" : rawTerm;
       if (session_id) {
         const { error: sessionUpsertError } = await supabase
