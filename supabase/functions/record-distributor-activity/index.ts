@@ -236,6 +236,7 @@ Deno.serve(async (req: Request) => {
       }
       const session_id = cleanUuid(body?.session_id);
       const visitor_id = cleanUuid(body?.visitor_id);
+      const is_internal = await isInternalVisitor(visitor_id);
       const rawTerm = cleanText(body?.search_term, 120);
       const result_count = body?.result_count;
       if (!rawTerm || !Number.isInteger(result_count) || result_count < 0 || result_count > 10000) {
@@ -263,6 +264,7 @@ Deno.serve(async (req: Request) => {
       const { error: insertError } = await supabase.from("kpc_search_events").insert({
         visitor_id, session_id, search_term, result_count,
         is_zero_result: result_count === 0,
+        is_internal,
         source_page, referrer, utm_source, utm_medium, utm_campaign
       });
       if (insertError) throw insertError;
@@ -276,6 +278,8 @@ Deno.serve(async (req: Request) => {
       const distributor_id = cleanUuid(body?.distributor_id);
       const event_type = cleanText(body?.event_type, 40);
       const session_id = cleanUuid(body?.session_id);
+      const visitor_id = cleanUuid(body?.visitor_id);
+      const is_internal = await isInternalVisitor(visitor_id);
       const profile_type = cleanText(body?.profile_type, 30);
       const profile_id = cleanUuid(body?.profile_id);
 
@@ -309,8 +313,8 @@ Deno.serve(async (req: Request) => {
           .from("kpc_visitor_sessions")
           .upsert({
             session_id,
-            visitor_id: cleanUuid(body?.visitor_id),
-            is_internal: await isInternalVisitor(cleanUuid(body?.visitor_id)),
+            visitor_id,
+            is_internal,
             landing_page: source_page,
             landing_referrer: referrer,
             utm_source,
@@ -321,7 +325,7 @@ Deno.serve(async (req: Request) => {
 
         const { error: sessionUpdateError } = await supabase
           .from("kpc_visitor_sessions")
-          .update({ visitor_id: cleanUuid(body?.visitor_id), is_internal: await isInternalVisitor(cleanUuid(body?.visitor_id)), last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .update({ visitor_id, is_internal, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
           .eq("session_id", session_id);
         if (sessionUpdateError) throw sessionUpdateError;
       }
@@ -338,6 +342,7 @@ Deno.serve(async (req: Request) => {
         distributorship_id: cleanUuid(body?.distributorship_id),
         product_distributor_id: cleanUuid(body?.product_distributor_id),
         session_id,
+        is_internal,
         source_page,
         referrer,
         utm_source,
