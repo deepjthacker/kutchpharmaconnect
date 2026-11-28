@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, BarChart3, Download, LoaderCircle, RefreshCw, Search, Users, MousePointerClick, ClipboardList, TrendingUp, Phone, MessageCircle, MapPin, Mail, CalendarClock, AlertTriangle, Eye, Package, Building2 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import './AdminDistributorPerformance.css'
+import { getKpcVisitorId } from './lib/distributorTracking'
 
 const EVENT_LABELS = { profile_view:'Profile views', call_click:'Call clicks', whatsapp_click:'WhatsApp clicks', maps_click:'Maps clicks', email_click:'Email clicks' }
 const STATUSES = ['new','contacted','converted','not_converted','invalid']
@@ -45,23 +46,29 @@ function DonutChart({items}) {
 
 export default function AdminDistributorPerformance({onBack}) {
   const [days,setDays]=useState('30'),[search,setSearch]=useState(''),[statusFilter,setStatusFilter]=useState('all'),[visibleTrend,setVisibleTrend]=useState({views:true,contacts:true,enquiries:true})
-  const [events,setEvents]=useState([]),[enquiries,setEnquiries]=useState([]),[distributors,setDistributors]=useState([]),[sessions,setSessions]=useState([])
+  const [events,setEvents]=useState([]),[searchEvents,setSearchEvents]=useState([]),[enquiries,setEnquiries]=useState([]),[distributors,setDistributors]=useState([]),[sessions,setSessions]=useState([]),[isCurrentBrowserInternal,setIsCurrentBrowserInternal]=useState(false)
   const [loading,setLoading]=useState(true),[error,setError]=useState(''),[savingId,setSavingId]=useState(''),[notice,setNotice]=useState('')
   async function load() {
     setLoading(true);setError('');setNotice('')
     const since=new Date(Date.now()-Number(days)*86400000).toISOString()
-    const [eventRes,enquiryRes,distributorRes,sessionRes]=await Promise.all([
-      supabase.from('distributor_contact_events').select('id,distributor_id,event_type,profile_type,profile_id,session_id,company_id,division_id,brand_id,product_id,occurred_at,source_page,referrer,utm_source,utm_medium,utm_campaign,companies(company_name),products(product_name)').gte('occurred_at',since).order('occurred_at',{ascending:false}).limit(10000),
+    const visitorId=getKpcVisitorId()
+    const [eventRes,searchRes,enquiryRes,distributorRes,sessionRes,internalRes]=await Promise.all([
+      supabase.from('distributor_contact_events').select('id,distributor_id,event_type,profile_type,profile_id,session_id,is_internal,company_id,division_id,brand_id,product_id,occurred_at,source_page,referrer,utm_source,utm_medium,utm_campaign,companies(company_name),products(product_name)').gte('occurred_at',since).order('occurred_at',{ascending:false}).limit(10000),
+      supabase.from('kpc_search_events').select('id,visitor_id,session_id,search_term,result_count,is_zero_result,is_internal,created_at,source_page,referrer,utm_source,utm_medium,utm_campaign').gte('created_at',since).order('created_at',{ascending:false}).limit(10000),
       supabase.from('distributor_enquiries').select('id,distributor_id,company_id,division_id,brand_id,product_id,customer_name,mobile,email,message,consent,routing_status,status,source_page,created_at,updated_at,admin_notes,contacted_at,follow_up_at,distributors(distributor_name),companies(company_name),divisions(division_name),brands(brand_name),products(product_name)').gte('created_at',since).order('created_at',{ascending:false}).limit(5000),
       supabase.from('distributors').select('id,distributor_name,mobile,whatsapp').eq('status','active').order('distributor_name'),
-      supabase.from('kpc_visitor_sessions').select('session_id,first_seen_at,last_seen_at,landing_page,landing_referrer,utm_source,utm_medium,utm_campaign').gte('last_seen_at',since).order('last_seen_at',{ascending:false}).limit(10000)
+      supabase.from('kpc_visitor_sessions').select('session_id,visitor_id,is_internal,first_seen_at,last_seen_at,landing_page,landing_referrer,utm_source,utm_medium,utm_campaign').gte('last_seen_at',since).order('last_seen_at',{ascending:false}).limit(10000),
+      visitorId ? supabase.from('kpc_internal_visitors').select('visitor_id').eq('visitor_id',visitorId).maybeSingle() : Promise.resolve({data:null,error:null})
     ])
-    const bad=eventRes.error||enquiryRes.error||distributorRes.error||sessionRes.error
+    const bad=eventRes.error||searchRes.error||enquiryRes.error||distributorRes.error||sessionRes.error||internalRes.error
     if(bad){setError(bad.message||'Could not load distributor performance.');setLoading(false);return}
-    setEvents(eventRes.data||[]);setEnquiries(enquiryRes.data||[]);setDistributors(distributorRes.data||[]);setSessions(sessionRes.data||[]);setLoading(false)
+    setEvents(eventRes.data||[]);setSearchEvents(searchRes.data||[]);setEnquiries(enquiryRes.data||[]);setDistributors(distributorRes.data||[]);setSessions(sessionRes.data||[]);setIsCurrentBrowserInternal(Boolean(internalRes.data));setLoading(false)
   }
   useEffect(()=>{load()},[days])
-  const reportEvents=events
+  const internalSessionIds=new Set(sessions.filter(s=>s.is_internal).map(s=>s.session_id))
+  const externalSessions=sessions.filter(s=>!s.is_internal)
+  const reportEvents=events.filter(e=>!e.is_internal&&!internalSessionIds.has(e.session_id))
+  const reportSearchEvents=searchEvents.filter(e=>!e.is_internal&&!internalSessionIds.has(e.session_id))
   const performance=useMemo(()=>{
     const map=new Map()
     distributors.forEach(d=>map.set(d.id,{id:d.id,name:d.distributor_name,mobile:d.mobile,profileViews:0,calls:0,whatsapp:0,maps:0,emails:0,enquiries:0,converted:0,newEnquiries:0}))
@@ -79,7 +86,10 @@ export default function AdminDistributorPerformance({onBack}) {
     views:reportEvents.filter(x=>x.event_type==='profile_view').length,calls:reportEvents.filter(x=>x.event_type==='call_click').length,
     whatsapp:reportEvents.filter(x=>x.event_type==='whatsapp_click').length,maps:reportEvents.filter(x=>x.event_type==='maps_click').length,
     emails:reportEvents.filter(x=>x.event_type==='email_click').length,enquiries:enquiries.length,
-    sessions:sessions.length,
+    sessions:externalSessions.length,
+    searches:reportSearchEvents.length,
+    zeroSearches:reportSearchEvents.filter(x=>x.is_zero_result).length,
+    returningVisitors:(()=>{const counts=new Map();externalSessions.forEach(s=>{if(s.visitor_id)counts.set(s.visitor_id,(counts.get(s.visitor_id)||0)+1)});return [...counts.values()].filter(n=>n>1).length})(),
     converted:enquiries.filter(x=>x.status==='converted').length,new:enquiries.filter(x=>x.status==='new').length,
     engaged:new Set(reportEvents.map(x=>x.distributor_id).filter(Boolean)).size,
     due:enquiries.filter(x=>x.follow_up_at&&new Date(x.follow_up_at)<=new Date()&&!['converted','not_converted','invalid'].includes(x.status)).length,
@@ -93,6 +103,38 @@ export default function AdminDistributorPerformance({onBack}) {
     return rows
   },[days,reportEvents,enquiries])
   const eventBreakdown=useMemo(()=>Object.keys(EVENT_LABELS).map(k=>({id:k,label:EVENT_LABELS[k],value:reportEvents.filter(e=>e.event_type===k).length})),[reportEvents])
+  const searchTermBreakdown=useMemo(()=>{
+    const map=new Map()
+    reportSearchEvents.forEach(e=>{const key=e.search_term||'(redacted)';const row=map.get(key)||{id:key,label:key,value:0,zero:0};row.value++;if(e.is_zero_result)row.zero++;map.set(key,row)})
+    return [...map.values()].sort((a,b)=>b.value-a.value)
+  },[reportSearchEvents])
+  const topSearchTerms=searchTermBreakdown.slice(0,8)
+  const zeroResultTerms=searchTermBreakdown.filter(x=>x.zero>0).sort((a,b)=>b.zero-a.zero).slice(0,8)
+  const trafficSources=useMemo(()=>{
+    const map=new Map()
+    externalSessions.forEach(s=>{
+      let source=s.utm_source||''
+      if(!source&&s.landing_referrer){try{source=new URL(s.landing_referrer).hostname.replace(/^www\\./,'')}catch{source='Referral / other'}}
+      if(!source)source='Direct / unknown'
+      map.set(source,(map.get(source)||0)+1)
+    })
+    return [...map.entries()].map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,8)
+  },[externalSessions])
+  async function toggleCurrentBrowserInternal(){
+    const visitorId=getKpcVisitorId()
+    if(!visitorId){setError('This browser does not support persistent visitor identification.');return}
+    setError('');setNotice('')
+    const nextInternal=!isCurrentBrowserInternal
+    const result=nextInternal
+      ? await supabase.from('kpc_internal_visitors').insert({visitor_id:visitorId,label:'Admin / testing browser'})
+      : await supabase.from('kpc_internal_visitors').delete().eq('visitor_id',visitorId)
+    if(result.error){setError(result.error.message);return}
+    const {error:updateError}=await supabase.from('kpc_visitor_sessions').update({is_internal:nextInternal,internal_note:nextInternal?'Admin / testing browser':null}).eq('visitor_id',visitorId)
+    if(updateError){setError(updateError.message);return}
+    setIsCurrentBrowserInternal(nextInternal)
+    setNotice(nextInternal?'This browser is now excluded from external usage metrics.':'This browser is included in external usage metrics again.')
+    await load()
+  }
   const companyInsights=useMemo(()=>{
     const map=new Map()
     reportEvents.forEach(e=>{if(e.company_id){const x=map.get(e.company_id)||{id:e.company_id,label:e.companies?.company_name||'Company',value:0};x.value++;map.set(e.company_id,x)}})
@@ -121,7 +163,7 @@ export default function AdminDistributorPerformance({onBack}) {
 
   return <div className="admin-page kpc-performance-page">
     <div className="admin-head"><div><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> Control Center</button><p className="section-kicker">DISTRIBUTOR ANALYTICS</p><h1>Distributor Performance</h1><p>One view of distributor engagement, customer enquiries and follow-up work.</p></div><button className="admin-refresh" onClick={load} disabled={loading}><RefreshCw size={15}/> Refresh</button></div>
-    <div className="kpc-performance-toolbar"><label>Reporting period<select value={days} onChange={e=>setDays(e.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label><label className="kpc-performance-search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search distributor or enquiry"/></label><span className="kpc-data-updated">Live database data · refreshed {loading?'…':new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span></div>
+    <div className="kpc-performance-toolbar"><label>Reporting period<select value={days} onChange={e=>setDays(e.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label><label className="kpc-performance-search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search distributor or enquiry"/></label><button className="admin-refresh" onClick={toggleCurrentBrowserInternal}>{isCurrentBrowserInternal?'Include this browser':'Exclude this browser'}</button><span className="kpc-data-updated">Live database data · refreshed {loading?'…':new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span></div>
     {error&&<div className="admin-error">{error}</div>}{notice&&<div className="admin-success">{notice}</div>}
     {loading?<div className="admin-state"><LoaderCircle className="spin" size={20}/> Loading performance data…</div>:<>
       <section className="kpc-performance-kpis">
@@ -130,6 +172,13 @@ export default function AdminDistributorPerformance({onBack}) {
         <div><span><Eye size={16}/> Profile views</span><strong>{totals.views.toLocaleString('en-IN')}</strong><small>All five profile types</small></div>
         <div><span><MousePointerClick size={16}/> Contact clicks</span><strong>{(totals.calls+totals.whatsapp+totals.maps+totals.emails).toLocaleString('en-IN')}</strong><small>{totals.calls} calls · {totals.whatsapp} WhatsApp</small></div>
         <div><span><CalendarClock size={16}/> Follow-ups due</span><strong>{totals.due.toLocaleString('en-IN')}</strong><small>{totals.review} enquiries need routing review</small></div>
+        <div><span><Search size={16}/> Searches</span><strong>{totals.searches.toLocaleString('en-IN')}</strong><small>{totals.zeroSearches} searches returned no results</small></div>
+        <div><span><Users size={16}/> Returning browsers</span><strong>{totals.returningVisitors.toLocaleString('en-IN')}</strong><small>Visitor IDs with 2+ sessions in period</small></div>
+      </section>
+      <section className="kpc-chart-grid">
+        <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">SEARCH INTENT</p><h2>Top search terms</h2><p>Searches completed on the directory.</p></div><Search size={19}/></div><HorizontalBars items={topSearchTerms} color="#4778d0"/></article>
+        <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">SEARCH GAPS</p><h2>Zero-result searches</h2><p>Terms visitors searched for but could not match.</p></div><AlertTriangle size={19}/></div><HorizontalBars items={zeroResultTerms.map(x=>({...x,value:x.zero}))} color="#d49a36"/></article>
+        <article className="admin-panel kpc-chart-panel"><div className="kpc-chart-heading"><div><p className="section-kicker">ACQUISITION</p><h2>Traffic sources</h2><p>External sessions by campaign or referrer.</p></div><TrendingUp size={19}/></div><HorizontalBars items={trafficSources} color="#16a085"/></article>
       </section>
       <section className="admin-panel kpc-performance-panel">
         <div className="kpc-performance-section-head"><div><p className="section-kicker">PROFILE INTEREST</p><h2>Views by profile type</h2><p>Recorded profile views, grouped by the actual entity type.</p></div></div>
