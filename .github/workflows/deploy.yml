@@ -1,3 +1,7 @@
+# Deploy from a fresh workflow run when Pages deployment fails.
+# Do not rerun only the failed deploy job after an artifact was already uploaded:
+# GitHub Pages may see duplicate "github-pages" artifacts from the same run.
+
 name: Deploy KutchPharmaConnect to GitHub Pages
 
 on:
