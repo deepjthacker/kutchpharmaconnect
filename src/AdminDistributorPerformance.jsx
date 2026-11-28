@@ -114,7 +114,7 @@ export default function AdminDistributorPerformance({onBack}) {
     const map=new Map()
     externalSessions.forEach(s=>{
       let source=s.utm_source||''
-      if(!source&&s.landing_referrer){try{source=new URL(s.landing_referrer).hostname.replace(/^www\\./,'')}catch{source='Referral / other'}}
+      if(!source&&s.landing_referrer){try{source=new URL(s.landing_referrer).hostname.replace(/^www\./,'')}catch{source='Referral / other'}}
       if(!source)source='Direct / unknown'
       map.set(source,(map.get(source)||0)+1)
     })
