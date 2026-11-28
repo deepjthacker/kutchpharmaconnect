@@ -108,6 +108,17 @@ async function activeProfile(type: string, id: string): Promise<boolean> {
   return Boolean(data);
 }
 
+async function isInternalVisitor(visitorId: string | null): Promise<boolean> {
+  if (!visitorId) return false;
+  const { data, error } = await supabase
+    .from("kpc_internal_visitors")
+    .select("visitor_id")
+    .eq("visitor_id", visitorId)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
 async function activeDistributor(id: string) {
   const { data, error } = await supabase
     .from("distributors")
@@ -195,11 +206,15 @@ Deno.serve(async (req: Request) => {
         return json({ error: "Session start rate limit reached" }, 429, origin);
       }
       const session_id = cleanUuid(body?.session_id);
+      const visitor_id = cleanUuid(body?.visitor_id);
       if (!session_id) return json({ error: "A valid session ID is required" }, 400, origin);
+      const is_internal = await isInternalVisitor(visitor_id);
       const { error: sessionError } = await supabase
         .from("kpc_visitor_sessions")
         .upsert({
           session_id,
+          visitor_id,
+          is_internal,
           landing_page: source_page,
           landing_referrer: referrer,
           utm_source,
@@ -209,9 +224,48 @@ Deno.serve(async (req: Request) => {
       if (sessionError) throw sessionError;
       const { error: updateError } = await supabase
         .from("kpc_visitor_sessions")
-        .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({ visitor_id, is_internal, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("session_id", session_id);
       if (updateError) throw updateError;
+      return json({ ok: true }, 200, origin);
+    }
+
+    if (action === "search") {
+      if (!(await allowRate(req, "search", 40, 60_000))) {
+        return json({ error: "Search analytics rate limit reached" }, 429, origin);
+      }
+      const session_id = cleanUuid(body?.session_id);
+      const visitor_id = cleanUuid(body?.visitor_id);
+      const rawTerm = cleanText(body?.search_term, 120);
+      const result_count = body?.result_count;
+      if (!rawTerm || !Number.isInteger(result_count) || result_count < 0 || result_count > 10000) {
+        return json({ error: "Valid search term and result count are required" }, 400, origin);
+      }
+      const looksLikeEmail = /[^\\s@]+@[^\\s@]+\\.[^\\s@]+/.test(rawTerm);
+      const looksLikePhone = /(?:\\+?\\d[\\d\\s().-]{7,}\\d)/.test(rawTerm);
+      const search_term = looksLikeEmail || looksLikePhone ? "[redacted]" : rawTerm;
+      const is_internal = await isInternalVisitor(visitor_id);
+      if (session_id) {
+        const { error: sessionUpsertError } = await supabase
+          .from("kpc_visitor_sessions")
+          .upsert({
+            session_id, visitor_id, is_internal,
+            landing_page: source_page, landing_referrer: referrer,
+            utm_source, utm_medium, utm_campaign
+          }, { onConflict: "session_id", ignoreDuplicates: true });
+        if (sessionUpsertError) throw sessionUpsertError;
+        const { error: sessionUpdateError } = await supabase
+          .from("kpc_visitor_sessions")
+          .update({ visitor_id, is_internal, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq("session_id", session_id);
+        if (sessionUpdateError) throw sessionUpdateError;
+      }
+      const { error: insertError } = await supabase.from("kpc_search_events").insert({
+        visitor_id, session_id, search_term, result_count,
+        is_zero_result: result_count === 0,
+        source_page, referrer, utm_source, utm_medium, utm_campaign
+      });
+      if (insertError) throw insertError;
       return json({ ok: true }, 200, origin);
     }
 
@@ -255,6 +309,8 @@ Deno.serve(async (req: Request) => {
           .from("kpc_visitor_sessions")
           .upsert({
             session_id,
+            visitor_id: cleanUuid(body?.visitor_id),
+            is_internal: await isInternalVisitor(cleanUuid(body?.visitor_id)),
             landing_page: source_page,
             landing_referrer: referrer,
             utm_source,
@@ -265,7 +321,7 @@ Deno.serve(async (req: Request) => {
 
         const { error: sessionUpdateError } = await supabase
           .from("kpc_visitor_sessions")
-          .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .update({ visitor_id: cleanUuid(body?.visitor_id), is_internal: await isInternalVisitor(cleanUuid(body?.visitor_id)), last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
           .eq("session_id", session_id);
         if (sessionUpdateError) throw sessionUpdateError;
       }
