@@ -245,7 +245,6 @@ Deno.serve(async (req: Request) => {
       const looksLikeEmail = /[^\\s@]+@[^\\s@]+\\.[^\\s@]+/.test(rawTerm);
       const looksLikePhone = /(?:\\+?\\d[\\d\\s().-]{7,}\\d)/.test(rawTerm);
       const search_term = looksLikeEmail || looksLikePhone ? "[redacted]" : rawTerm;
-      const is_internal = await isInternalVisitor(visitor_id);
       if (session_id) {
         const { error: sessionUpsertError } = await supabase
           .from("kpc_visitor_sessions")
