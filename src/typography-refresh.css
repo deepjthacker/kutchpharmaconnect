@@ -1,0 +1,96 @@
+/* KPC typography refresh — clearer hierarchy, stronger weights and readable small text. */
+:root {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body { font-size: 16px; line-height: 1.55; font-weight: 450; }
+h1, h2, h3, h4, h5, h6 { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; font-weight: 750; line-height: 1.2; }
+button, input, select, textarea { font-family: inherit; }
+
+/* Public directory: stronger company/distributor names and comfortable reading sizes. */
+.brand-text { font-size: 23px !important; font-weight: 800 !important; letter-spacing: -.035em !important; }
+.brand-tagline { font-size: 13px !important; font-weight: 550 !important; }
+.hero-copy, .browse-header p:not(.section-kicker), .featured-heading p:not(.section-kicker) {
+  font-size: 16px !important; line-height: 1.65 !important;
+}
+.eyebrow, .section-kicker, .profile-kicker { font-size: 13px !important; font-weight: 750 !important; }
+.section-heading > p, .browse-header p, .profile-short, .profile-summary,
+.result-division, .result-relation, .result-meta, .result-phone,
+.profile-rel span, .profile-rel small, .profile-rel-phone, .profile-rel-location,
+.browse-card-copy span, .browse-card-copy small, .browse-location,
+.suggestion-copy small, .suggestion-empty, .location-detail-summary span,
+.product-detail-specs, .product-hierarchy-row > small, .profile-structure-label,
+.profile-catalog-count, .catalog-product-specs, .catalog-product-more,
+.catalog-product-no-distributor {
+  font-size: 14px !important; line-height: 1.5 !important;
+}
+.result-copy strong, .result-target, .browse-card-copy strong,
+.suggestion-copy strong, .profile-rel strong, .catalog-product-name {
+  font-size: 16px !important; font-weight: 700 !important; line-height: 1.4 !important;
+}
+.profile-heading h2 { font-size: clamp(24px, 3vw, 30px) !important; font-weight: 750 !important; }
+.profile-list-title, .profile-link-button { font-size: 16px !important; font-weight: 700 !important; }
+.catalog-product-generic, .profile-structure-chip { font-size: 14px !important; line-height: 1.5 !important; }
+.catalog-product-hierarchy button, .catalog-product-distributor button { font-size: 14px !important; line-height: 1.45 !important; font-weight: 650 !important; }
+.catalog-product-hierarchy small, .catalog-product-distributor-heading small,
+.catalog-product-distributor > span { font-size: 12px !important; }
+.result-actions a, .profile-actions a, .profile-rel-action,
+.browse-location-links button, .quick-search-filters button,
+.location-detail-back, .location-detail-list button,
+.product-load-more, .quick-links button, .category-card,
+.header-nav .menu-item, .header-nav .menu-theme-button,
+.header-nav .admin-menu-button, .search-box button {
+  font-size: 14px !important; font-weight: 650 !important;
+}
+.search-box input, .browse-search input, .catalog-search input,
+input, select, textarea { font-size: 15px !important; }
+.search-hint, .suggestion-heading, .browse-count, .verified-badge,
+.verified-badge-small, .status-badge { font-size: 13px !important; }
+.result-state, .contact-panel > div, .report-help, .report-success p,
+.location-detail-list button { font-size: 14px !important; line-height: 1.5 !important; }
+
+/* Admin workspace: improve legibility without changing its compact layout. */
+.admin-head p:not(.section-kicker), .admin-state, .admin-error,
+.admin-report > p, .admin-help, .admin-note, .admin-progress-row,
+.admin-company-copy span, .admin-company-copy small, .admin-contact,
+.admin-report-top small, .admin-table, .admin-table th,
+.admin-link small, .admin-stat small, .admin-stat span,
+.admin-tool-row, .admin-publish-meta, .admin-publish-location-note,
+.admin-company-match-line span, .admin-company-match-line small,
+.admin-company-publish-top small, .admin-company-publish-hint,
+.admin-danger-zone p, .admin-publish-summary span {
+  font-size: 13px !important; line-height: 1.5 !important;
+}
+.admin-company-copy strong, .admin-report > strong, .admin-link strong,
+.admin-panel h2, .admin-publish-section-head h3,
+.admin-company-match-line strong, .admin-company-publish-top strong {
+  font-size: 15px !important; font-weight: 700 !important;
+}
+.admin-refresh, .admin-actions button, .admin-filters button,
+.admin-tool-button, .admin-inline-actions button, .admin-actions-inline button,
+.admin-company-match-actions button, .admin-company-selected button,
+.admin-delete-btn, .admin-back, .admin-signout, .admin-status,
+.admin-publish-section select, .admin-publish-section input,
+.admin-publish-section textarea, .admin-company-relationship-fields label {
+  font-size: 13px !important;
+}
+.admin-stat strong { font-size: 24px !important; font-weight: 750 !important; }
+.report-modal label, .report-submit, .report-error, .report-target span { font-size: 13px !important; }
+
+/* Keep text comfortably readable on narrow screens as well. */
+@media (max-width: 600px) {
+  body { font-size: 15.5px; }
+  .hero-copy, .browse-header p:not(.section-kicker) { font-size: 15px !important; }
+  .result-copy strong, .result-target, .browse-card-copy strong,
+  .suggestion-copy strong, .profile-rel strong, .catalog-product-name { font-size: 15px !important; }
+  .result-division, .result-relation, .result-meta, .result-phone,
+  .profile-rel span, .profile-rel small, .profile-rel-phone,
+  .browse-card-copy span, .browse-card-copy small, .catalog-product-specs,
+  .catalog-product-more, .catalog-product-no-distributor { font-size: 13px !important; }
+  .header-nav .menu-item, .header-nav .menu-theme-button,
+  .header-nav .admin-menu-button { font-size: 14px !important; }
+}
