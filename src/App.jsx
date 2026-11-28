@@ -12,7 +12,7 @@ import DistributorSubmissionLauncher from './DistributorSubmissionLauncher'
 import ErrorBoundary from './ErrorBoundary'
 import ProfileShareActions from './ProfileShareActions'
 import DistributorEnquiryForm from './DistributorEnquiryForm'
-import { trackDistributorActivity, trackProfileView, setCurrentProfile, startTrackingSession } from './lib/distributorTracking'
+import { trackDistributorActivity, trackProfileView, setCurrentProfile, startTrackingSession, trackSearchActivity } from './lib/distributorTracking'
 import SiteFeedback from './SiteFeedback'
 const PolicyPages = lazy(() => import('./PolicyPages'))
 
@@ -668,7 +668,7 @@ export default function App(){
     })
 
     if(requestId!==searchRequestRef.current)return
-    setResults(rankSearchItems(cards,term,item=>[
+    const rankedResults = rankSearchItems(cards,term,item=>[
       item.title,
       item.subtitle,
       item.brandName,
@@ -681,7 +681,9 @@ export default function App(){
       item.target?.company_name,
       item.target?.distributor_name,
       item.rel?.territory
-    ]))
+    ])
+    setResults(rankedResults)
+    trackSearchActivity(term, rankedResults.length)
     setLoading(false)
     } catch (searchError) {
       if(requestId!==searchRequestRef.current)return
